@@ -1,0 +1,44 @@
+/*
+ * ASW_CanCallback.c
+ *
+ *  Created on: 2026年10月22日
+ *      Author: CENSORED
+ */
+
+#include "ASW_CanCallback.h"
+#include "MCAL.h"
+#include "UDS_CanTp.h"
+
+CAN_FD_MESSAGE TX_DATA1 =
+{
+	.ProtocolMode = 0U,
+	.Extended = 1U,
+	.Length = 8U,
+	.Remote = 0U,
+	.Error = 0U,
+	.BRS = 0U,
+	.ESI = 0U,
+	.DLC = 8U,
+	.ID = 0x1801FF10U,
+	.Reserved = 0U,
+	.Timestamp = 0.0,
+	.Data = {0U}
+};
+
+CAN_RXStr CAN_CHN1_RX[CAN_CHN1_RX_COUNT] =
+{
+	{UDS_FUNREQ_ADDR, &UDS_FunReq, 0U, 0U, UDS_CanTpRxCallback, NULL_PTR},
+	{UDS_PHYREQ_ADDR, &UDS_PhyReq, 0U, 0U, UDS_CanTpRxCallback, NULL_PTR},
+	{UDS_RESP_ADDR,   &UDS_Resp,   0U, 0U, UDS_CanTpRxCallback, NULL_PTR},
+};
+
+CAN_TXStr CAN_CHN1_TX[CAN_CHN1_TX_COUNT] =
+{
+	{
+		.Data = &TX_DATA1,
+		.send_period = 100U,
+		.last_send_tick = 0U,
+		.Callback = NULL_PTR,
+		.Enable = 1U
+	}
+};
