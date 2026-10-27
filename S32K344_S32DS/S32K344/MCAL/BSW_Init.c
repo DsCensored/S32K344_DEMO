@@ -91,6 +91,9 @@ static void MCAL_UART_Init(void)
 
 	/* UART_PRECOMPILE_SUPPORT == STD_OFF, so the generated config must be passed */
 	Uart_Init(&Uart_xConfig);
+
+	/* UART 驱动初始化完成后，启动 BSW 层的接收 */
+	BSW_UART6_Init();
 }
 
 static void MCAL_Init(void)
@@ -106,8 +109,5 @@ static void MCAL_Init(void)
 void BSW_Init(void)
 {
 	MCAL_Init();
-
-	/* UART 驱动初始化完成后，启动 BSW 层的接收 */
-	BSW_UART6_Init();
 }
 

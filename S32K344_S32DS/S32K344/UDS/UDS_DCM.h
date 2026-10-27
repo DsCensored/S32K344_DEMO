@@ -19,6 +19,24 @@ void UDS_DCM_Init(void);
  */
 void UDS_DCM_RxIndication(const unsigned char *req, unsigned int len,
                           UDS_DcmAddressType addr);
+
+/*
+ * Call UDS_DCM_Poll() periodically (e.g. every 100 ms).
+ *
+ * Besides the session/security/reset timers it drives the NRC 0x78
+ * (requestCorrectlyReceived-ResponsePending) sequence:
+ *   - the first 0x78 of a request is sent immediately from
+ *     UDS_DCM_RxIndication(),
+ *   - on every poll the handler that returned 0x78 is executed again,
+ *   - a further 0x78 is sent every UDS_DCM_RESPONSE_PENDING_DELAY_MS until
+ *     the handler returns 0 (positive response) or an NRC.
+ *
+ * While the sequence is active, the pending request is always processed to
+ * completion.  A newly received request is discarded (it is not queued) and
+ * answered with NRC 0x21 (busyRepeatRequest) on physical addressing; on
+ * functional addressing it is ignored, as no negative response is allowed for
+ * it.
+ */
 void UDS_DCM_Poll(void);
 
 UDS_DcmSessionType UDS_DCM_GetSession(void);

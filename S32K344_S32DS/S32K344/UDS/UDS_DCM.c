@@ -36,6 +36,128 @@ static unsigned char UDS_DcmSessionMask(UDS_DcmSessionType session)
 	}
 }
 
+/* Send the positive response that a handler has prepared in UDS_TxBuf[]. */
+static void UDS_DcmSendPositiveResponse(unsigned char sid, unsigned int rspLen)
+{
+	UDS_TxBuf[0] = (unsigned char)(sid + 0x40U);
+
+	if (rspLen < 2U)
+	{
+		rspLen = 2U;
+	}
+
+	if (0U == UDS_CanTpSend(rspLen))
+	{
+		UDS_CanSendNRC(sid, NRC_BUSY_REPEAT_REQUEST);
+	}
+}
+
+static void UDS_DcmClearPendingResponse(void)
+{
+	UDS_DcmCtx.Pending.Active = 0U;
+	UDS_DcmCtx.Pending.ReqLen = 0U;
+}
+
+/*
+ * Store the request of a handler that answered with NRC 0x78 so that
+ * UDS_DCM_Poll() can call the same handler again.
+ *
+ * Returns 0 when the request is longer than UDS_DCM_PENDING_REQ_MAX_LEN and
+ * therefore cannot be replayed.
+ */
+static unsigned char UDS_DcmStartPendingResponse(const UDS_DcmServiceType *service,
+                                                 unsigned char sid,
+                                                 const unsigned char *req,
+                                                 unsigned int len,
+                                                 UDS_DcmAddressType addr,
+                                                 unsigned char suppressPosRsp)
+{
+	if (len > UDS_DCM_PENDING_REQ_MAX_LEN)
+	{
+		return 0U;
+	}
+
+	memcpy(UDS_DcmCtx.Pending.Req, req, len);
+
+	UDS_DcmCtx.Pending.Handler = service->Handler;
+	UDS_DcmCtx.Pending.ReqLen = len;
+	UDS_DcmCtx.Pending.SID = sid;
+	UDS_DcmCtx.Pending.Addr = (unsigned char)addr;
+	UDS_DcmCtx.Pending.SuppressPosRsp = suppressPosRsp;
+	UDS_DcmCtx.Pending.Tick = BSW_GetSystemTick();
+	UDS_DcmCtx.Pending.Active = 1U;
+
+	return 1U;
+}
+
+/*
+ * 0x78 is a negative response, so it shall not be sent for a functionally
+ * addressed request (ISO 14229-1).  Such a request is still processed: only
+ * the 0x78 frames are suppressed and the final positive response is sent.
+ */
+static void UDS_DcmSendPendingNrc(void)
+{
+	if (UDS_DCM_ADDRESS_FUNCTIONAL == UDS_DcmCtx.Pending.Addr)
+	{
+		return;
+	}
+
+	UDS_CanSendNRCForAddr(UDS_DcmCtx.Pending.SID,
+	                      NRC_REQUEST_CORRECTLY_RECEIVED_RESPONSE_PENDING,
+	                      UDS_DcmCtx.Pending.Addr);
+}
+
+/*
+ * Called from UDS_DCM_Poll() while a handler answers with NRC 0x78.
+ *
+ * The handler is executed on every poll, because the service may use this
+ * call to make progress.  A repeated 0x78 is only put on the bus after
+ * UDS_DCM_RESPONSE_PENDING_DELAY_MS has elapsed since the previous one.
+ */
+static void UDS_DcmProcessPendingResponse(unsigned int now)
+{
+	UDS_DcmPendingType *pending = &UDS_DcmCtx.Pending;
+	unsigned int rspLen = 0U;
+	unsigned char sid;
+	unsigned char addr;
+	unsigned char suppressPosRsp;
+	unsigned char nrc;
+
+	/* The handler refills UDS_TxBuf[] and rspLen for the final response. */
+	nrc = pending->Handler(pending->Req, pending->ReqLen, &rspLen);
+
+	if (NRC_REQUEST_CORRECTLY_RECEIVED_RESPONSE_PENDING == nrc)
+	{
+		if ((now - pending->Tick) >= UDS_DCM_RESPONSE_PENDING_DELAY_MS)
+		{
+			pending->Tick = now;
+			UDS_DcmCtx.SessionTick = now;	/* response activity resets S3 */
+			UDS_DcmSendPendingNrc();
+		}
+		return;
+	}
+
+	sid = pending->SID;
+	addr = pending->Addr;
+	suppressPosRsp = pending->SuppressPosRsp;
+
+	UDS_DcmClearPendingResponse();
+	UDS_DcmCtx.SessionTick = now;
+
+	if (0U != nrc)
+	{
+		/* Use the addressing mode of the pending request: a new request may
+		 * have been received while the handler was running. */
+		UDS_CanSendNRCForAddr(sid, (UdsNrc_t)nrc, addr);
+		return;
+	}
+
+	if (0U == suppressPosRsp)
+	{
+		UDS_DcmSendPositiveResponse(sid, rspLen);
+	}
+}
+
 void UDS_DCM_RxIndication(const unsigned char *req, unsigned int len,
                           UDS_DcmAddressType addr)
 {
@@ -57,6 +179,23 @@ void UDS_DCM_RxIndication(const unsigned char *req, unsigned int len,
 	}
 
 	sid = req[0];
+
+	/* A 0x78 sequence is still running, so the server is busy.  Dispatching
+	 * the new request would overwrite the pending context (and the final
+	 * response would no longer match its request), so the new request is
+	 * discarded and the pending one is processed to completion.
+	 * Physically addressed requests are answered with NRC 0x21
+	 * (busyRepeatRequest); functionally addressed requests are ignored, as
+	 * no negative response is allowed for them. */
+	if (0U != UDS_DcmCtx.Pending.Active)
+	{
+		if (UDS_DCM_ADDRESS_FUNCTIONAL != addr)
+		{
+			UDS_CanSendNRCForAddr(sid, NRC_BUSY_REPEAT_REQUEST,
+			                      (unsigned char)addr);
+		}
+		return;
+	}
 
 	/* Determine from the configuration table whether this SID has
 	 * sub-functions.  This keeps the dispatcher independent of
@@ -152,6 +291,25 @@ void UDS_DCM_RxIndication(const unsigned char *req, unsigned int len,
 
 	nrc = service->Handler(req, len, &rspLen);
 
+	/* NRC 0x78: the handler needs more time.  The first 0x78 is sent
+	 * immediately; UDS_DCM_Poll() then calls the same handler again and
+	 * repeats 0x78 every UDS_DCM_RESPONSE_PENDING_DELAY_MS until the handler
+	 * returns 0 or another NRC. */
+	if (NRC_REQUEST_CORRECTLY_RECEIVED_RESPONSE_PENDING == nrc)
+	{
+		if (0U != UDS_DcmStartPendingResponse(service, sid, req, len,
+		                                      addr, suppressPosRsp))
+		{
+			UDS_DcmCtx.SessionTick = BSW_GetSystemTick();
+			UDS_DcmSendPendingNrc();
+			return;
+		}
+
+		/* The request is too long to be stored and replayed, so it cannot
+		 * be kept pending. */
+		nrc = NRC_GENERAL_REJECT;
+	}
+
 	if (0U != nrc)
 	{
 		UDS_CanSendNRC(sid, (UdsNrc_t)nrc);
@@ -163,17 +321,7 @@ void UDS_DCM_RxIndication(const unsigned char *req, unsigned int len,
 		return;
 	}
 
-	UDS_TxBuf[0] = (unsigned char)(sid + 0x40U);
-
-	if (rspLen < 2U)
-	{
-		rspLen = 2U;
-	}
-
-	if (0U == UDS_CanTpSend(rspLen))
-	{
-		UDS_CanSendNRC(sid, NRC_BUSY_REPEAT_REQUEST);
-	}
+	UDS_DcmSendPositiveResponse(sid, rspLen);
 }
 
 void UDS_DCM_Poll(void)
@@ -188,6 +336,9 @@ void UDS_DCM_Poll(void)
 		UDS_DcmCtx.Seed = 0U;
 		UDS_DcmCtx.SeedLevel = 0U;
 		UDS_DcmCtx.SecurityFailCount = 0U;
+
+		/* Defensive: a pending handler must not survive a session reset. */
+		UDS_DcmClearPendingResponse();
 	}
 
 	if ((0U != UDS_DcmCtx.SecurityDelayActive) &&
@@ -203,6 +354,12 @@ void UDS_DCM_Poll(void)
 	{
 		UDS_DcmCtx.ResetPending = 0U;
 		UDS_DCM_ResetHook();
+	}
+
+	/* A handler that answered with NRC 0x78 is called again on every poll. */
+	if (0U != UDS_DcmCtx.Pending.Active)
+	{
+		UDS_DcmProcessPendingResponse(now);
 	}
 
 	UDS_DcmCfgPoll();

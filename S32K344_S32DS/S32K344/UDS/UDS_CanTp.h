@@ -116,6 +116,14 @@ void UDS_CanTpRxCallback(CAN_FD_MESSAGE* Data);
 void UDS_CanSendNRC(unsigned char SID, UdsNrc_t NRC);
 
 /*
+ * Same as UDS_CanSendNRC(), but with an explicit addressing mode
+ * (UDS_DCM_ADDRESS_PHYSICAL / UDS_DCM_ADDRESS_FUNCTIONAL) instead of the
+ * addressing mode of the most recently received request.  Used for responses
+ * that belong to an older request, e.g. the final response after NRC 0x78.
+ */
+void UDS_CanSendNRCForAddr(unsigned char SID, UdsNrc_t NRC, unsigned char addr);
+
+/*
  * Fill UDS_TxBuf[0..len-1] first, then call UDS_CanTpSend(len).
  * While UDS_CanTpIsTxBusy() is non-zero, UDS_TxBuf is not used by the
  * transport layer; the active request is copied into a private buffer.

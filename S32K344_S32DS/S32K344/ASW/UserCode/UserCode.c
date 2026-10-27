@@ -47,7 +47,7 @@ static void ASW_userTask100ms(void)
 static void ASW_userTask1000ms(void)
 {
 //	TX_DATA1.Data[0] = BSW_GetCpuLoad();
-	char data[] = "Hallo world";
+	unsigned char data[] = "Hallo world";
 	BSW_UART6_Send(data,sizeof(data));
 }
 

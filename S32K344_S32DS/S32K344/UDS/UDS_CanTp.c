@@ -63,15 +63,19 @@ static void UDS_CanTpQueueCtrl(Can_IdType canId, const unsigned char *buf, unsig
 	UDS_CtrlLastTick = BSW_GetSystemTick();
 }
 
-void UDS_CanSendNRC(unsigned char SID, UdsNrc_t NRC)
+void UDS_CanSendNRCForAddr(unsigned char SID, UdsNrc_t NRC, unsigned char addr)
 {
 	unsigned char buf[8];
 
 	/* ISO 14229-1: a negative response shall not be sent for a request
 	 * received on functional addressing.  All NRC paths (unknown service,
 	 * unknown sub-function, wrong session, security, handler NRC, ...)
-	 * end up here, so this is the single place where they are filtered. */
-	if (UDS_DCM_ADDRESS_FUNCTIONAL == UDS_RxReq.Addr)
+	 * end up here, so this is the single place where they are filtered.
+	 *
+	 * The addressing mode is a parameter because the response does not
+	 * always belong to the most recent request: while a handler answers
+	 * with NRC 0x78, a new request may update UDS_RxReq.Addr. */
+	if (UDS_DCM_ADDRESS_FUNCTIONAL == addr)
 	{
 		switch(NRC)
 		{
@@ -96,6 +100,11 @@ void UDS_CanSendNRC(unsigned char SID, UdsNrc_t NRC)
 	buf[7] = UDS_INVFIL;
 
 	UDS_CanTpQueueCtrl(UDS_RESP_ADDR, buf, 8U);
+}
+
+void UDS_CanSendNRC(unsigned char SID, UdsNrc_t NRC)
+{
+	UDS_CanSendNRCForAddr(SID, NRC, UDS_RxReq.Addr);
 }
 
 /*
