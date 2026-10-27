@@ -82,6 +82,8 @@ extern const IntCtrl_Ip_CtrlConfigType intCtrlConfig;
  * NOTE: For application specific handlers, these functions must be implemented in the application code!
  */
 extern void undefined_handler(void);
+extern void Dma0_Ch16_IRQHandler(void);
+extern void Dma0_Ch17_IRQHandler(void);
 extern void PIT_0_ISR(void);
 
 #ifdef  PLATFORM_IP_ENABLE_INT_CTRL

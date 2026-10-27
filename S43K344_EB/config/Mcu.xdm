@@ -1765,6 +1765,13 @@
                         <d:var name="McuClockFrequencySelect" 
                                type="ENUMERATION" value="AIPS_SLOW_CLK"/>
                       </d:ctr>
+                      <d:ctr name="McuClockReferencePoint_UART6Clock" 
+                             type="IDENTIFIABLE">
+                        <d:var name="McuClockReferencePointFrequency" 
+                               type="FLOAT" value="4.0E7"/>
+                        <d:var name="McuClockFrequencySelect" 
+                               type="ENUMERATION" value="AIPS_SLOW_CLK"/>
+                      </d:ctr>
                     </d:lst>
                   </d:ctr>
                 </d:lst>

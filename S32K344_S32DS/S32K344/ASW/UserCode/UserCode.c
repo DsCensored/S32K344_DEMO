@@ -8,6 +8,7 @@
 #include "UserOs.h"
 #include "ASW_CanCallback.h"
 #include "BSW_CanCallback.h"
+#include "BSW_UART.h"
 #include "can_fd_message.h"
 #include "SchM_Can_43_FLEXCAN.h"
 #include "UDS_CanTp.h"
@@ -18,6 +19,7 @@ static void ASW_userTask2ms(void)
 	Can_43_FLEXCAN_MainFunction_Read();
 	Can_43_FLEXCAN_MainFunction_Write();
 	Can_43_FLEXCAN_MainFunction_Mode();
+	BSW_UART6_RxPoll();
 }
 static void ASW_userTask5ms(void)
 {
@@ -44,7 +46,9 @@ static void ASW_userTask100ms(void)
 }
 static void ASW_userTask1000ms(void)
 {
-	TX_DATA1.Data[0] = BSW_GetCpuLoad();
+//	TX_DATA1.Data[0] = BSW_GetCpuLoad();
+	char data[] = "Hallo world";
+	BSW_UART6_Send(data,sizeof(data));
 }
 
 void ASW_Init(void)

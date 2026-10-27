@@ -110,6 +110,8 @@ static const uint8 au8Port_PartitionList[PORT_MAX_PARTITION] =
 static const uint32 au32Port_PinToPartitionMap[PORT_MAX_CONFIGURED_PADS_U16] =
 {
     (uint32)0x00000001,
+    (uint32)0x00000001,
+    (uint32)0x00000001,
     (uint32)0x00000001
 };
 
@@ -139,8 +141,6 @@ static const Port_Siul2_UnUsedPinType Port_aUnusedPads[PORT_MAX_UNUSED_PADS_U16]
     { (uint16)12, PORT_SIUL2_0_U8 },
     { (uint16)13, PORT_SIUL2_0_U8 },
     { (uint16)14, PORT_SIUL2_0_U8 },
-    { (uint16)15, PORT_SIUL2_0_U8 },
-    { (uint16)16, PORT_SIUL2_0_U8 },
     { (uint16)17, PORT_SIUL2_0_U8 },
     { (uint16)18, PORT_SIUL2_0_U8 },
     { (uint16)19, PORT_SIUL2_0_U8 },
@@ -370,7 +370,9 @@ static const Port_Siul2_PinConfigType Port_aUsedPinConfigs[PORT_MAX_CONFIGURED_P
 {
     /* Mscr Id, Mscr Value, Mscr Siul Instance, Output Level, Direction, IsGpio, Direction Configurable, Mode Changeable, IsImcrAvailable, Imcr Id */
     { (uint16)6, (uint32)0x00080000, (uint8)PORT_SIUL2_0_U8, (uint8)1, PORT_PIN_IN, (boolean)FALSE, (boolean)FALSE, (boolean)TRUE, (boolean)TRUE, 0 },
-    { (uint16)7, (uint32)0x00200004, (uint8)PORT_SIUL2_0_U8, (uint8)1, PORT_PIN_OUT, (boolean)FALSE, (boolean)FALSE, (boolean)TRUE, (boolean)FALSE, 65535 }
+    { (uint16)7, (uint32)0x00200004, (uint8)PORT_SIUL2_0_U8, (uint8)1, PORT_PIN_OUT, (boolean)FALSE, (boolean)FALSE, (boolean)TRUE, (boolean)FALSE, 65535 },
+    { (uint16)15, (uint32)0x00080000, (uint8)PORT_SIUL2_0_U8, (uint8)0, PORT_PIN_IN, (boolean)FALSE, (boolean)FALSE, (boolean)TRUE, (boolean)TRUE, 193 },
+    { (uint16)16, (uint32)0x00200005, (uint8)PORT_SIUL2_0_U8, (uint8)0, PORT_PIN_OUT, (boolean)FALSE, (boolean)FALSE, (boolean)TRUE, (boolean)FALSE, 65535 }
 };
 
 #ifdef PORT_CODE_SIZE_OPTIMIZATION
@@ -575,7 +577,7 @@ static const Port_Siul2_ImcrConfigType Port_aSIUL2_0_ImcrInitConfig[PORT_SIUL2_0
     { (uint8)0x00, (uint8)0 },
     { (uint8)0x00, (uint8)0 },
     { (uint8)0x00, (uint8)0 },
-    { (uint8)0x00, (uint8)0 },
+    { (uint8)0x02, (uint8)0 },
     { (uint8)0x00, (uint8)0 },
     { (uint8)0x00, (uint8)0 },
     { (uint8)0x00, (uint8)0 },

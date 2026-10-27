@@ -11,6 +11,10 @@
 #include "MCU.h"
 #include "Can_43_FLEXCAN.h"
 #include "CanIf.h"
+#include "CDD_Uart.h"
+#include "Dma_Ip.h"
+#include "Dma_Mux_Ip.h"
+#include "BSW_UART.h"
 
 static void MCAL_MCU_Init(void)
 {
@@ -50,7 +54,8 @@ static void MCAL_GPT_Init(void)
 {
 	Gpt_Init(&Gpt_Config);
 	Gpt_EnableNotification(GptConf_GptChannelConfiguration_GptChannelConfiguration_PIT0_CH0);
-	Gpt_StartTimer(GptConf_GptChannelConfiguration_GptChannelConfiguration_PIT0_CH0, 40000);
+	//39999比40000的OS精度更高
+	Gpt_StartTimer(GptConf_GptChannelConfiguration_GptChannelConfiguration_PIT0_CH0, 39999);
 }
 
 static void MCAL_PORT_Init(void)
@@ -72,6 +77,22 @@ static void MCAL_CAN_Init(void)
     Can_43_FLEXCAN_SetControllerMode(Can_43_FLEXCANConf_CanController_CanController_0, CAN_CS_STARTED);
 }
 
+static void MCAL_UART_Init(void)
+{
+	/* DMA must be initialized before the UART driver:
+	 * LPUART/FlexIO UART request DMA transfers through Dma_Ip directly. */
+	if (DMA_IP_STATUS_SUCCESS != Dma_Ip_Init(&Dma_Ip_xDmaInitPB))
+	{
+		/* TODO: report DET / project specific error handling */
+	}
+
+	/* DMAMUX routing (LPUART TX/RX request -> DMA channel) */
+	Dma_Mux_Ip_Init(&Dma_Mux_Config);
+
+	/* UART_PRECOMPILE_SUPPORT == STD_OFF, so the generated config must be passed */
+	Uart_Init(&Uart_xConfig);
+}
+
 static void MCAL_Init(void)
 {
 	MCAL_MCU_Init();
@@ -79,10 +100,14 @@ static void MCAL_Init(void)
 	MCAL_Platform_Init();
 	MCAL_GPT_Init();
 	MCAL_CAN_Init();
+	MCAL_UART_Init();
 }
 
 void BSW_Init(void)
 {
 	MCAL_Init();
+
+	/* UART 驱动初始化完成后，启动 BSW 层的接收 */
+	BSW_UART6_Init();
 }
 
