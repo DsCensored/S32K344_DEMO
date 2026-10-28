@@ -1,4 +1,4 @@
-/*==================================================================================================
+﻿/*==================================================================================================
 *   Project              : RTD AUTOSAR 4.7
 *   Platform             : CORTEXM
 *   Peripheral           : 
@@ -415,8 +415,39 @@ uint8 Sys_GetCoreID(void)
  */
 
 
+extern uint32 __INIT_INTERRUPT_START[];
+extern uint32 __interrupts_init_end[];
+extern uint32 __interrupts_ram_start[];
+extern uint32 __sram_bss_start[];
+extern uint32 __sram_bss_end[];
+
 void SystemInit(void)
 {
+    /* Make sure the vector table is present in RAM: startup_cm7.s switches
+     * VTOR to __RAM_INTERRUPT_START, and IntCtrl installs handlers there. */
+    {
+        uint32 *bss = __sram_bss_start;
+        uint32 bssCount = ((uint32)__sram_bss_end -
+                           (uint32)__sram_bss_start) / 4U;
+        uint32 *src = __INIT_INTERRUPT_START;
+        uint32 *dst = __interrupts_ram_start;
+        uint32 count = ((uint32)__interrupts_init_end -
+                        (uint32)__INIT_INTERRUPT_START) / 4U;
+        uint32 i;
+
+        for (i = 0U; i < bssCount; i++)
+        {
+            bss[i] = 0U;
+        }
+
+        for (i = 0U; i < count; i++)
+        {
+            dst[i] = src[i];
+        }
+        __asm volatile ("dsb" ::: "memory");
+        __asm volatile ("isb" ::: "memory");
+    }
+
     uint32 i;
     uint32 coreMask = 0UL;
     uint8 coreId = OsIf_GetCoreID();
@@ -483,7 +514,9 @@ void SystemInit(void)
         rasr[1] = ((uint32)0x03080001UL)|(((uint32)MPU_TCM_32KB_SIZE - 1) << 1);
     }
 
-    rbar[2]=(uint32)__ROM_CODE_START;
+    /* MPU base must be aligned to the region size (4 MB).  The APP is linked
+     * at 0x00448000, so align the code region down to 0x00400000. */
+    rbar[2]=((uint32)__ROM_CODE_START) & 0xFFC00000UL;
 #if defined(S32K311) || defined(S32K341) || defined(S32M276) || defined(S32K310) || defined(S32M274)
     rasr[2]=0x070B0027UL; /* Size: import information from linker symbol, Type: Normal, Inner Cache Policy: Inner write-back, write and read allocate, Outer Cache Policy: Outer write-back. write and read allocate, Shareable: No, Privileged Access: Read-Only, Unprivileged Access: Read-Only */
 #elif defined(S32K342) || defined(S32K312) || defined(S32K322)
@@ -750,3 +783,7 @@ void Enable_FPU(void)
 #ifdef __cplusplus
 }
 #endif
+
+
+
+

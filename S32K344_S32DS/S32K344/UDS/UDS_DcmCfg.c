@@ -1,4 +1,4 @@
-/*
+﻿/*
  * UDS_DcmCfg.c
  *
  *  DCM user configuration:
@@ -14,6 +14,10 @@
 #include "UDS_CanTp.h"
 #include "UserOS.h"
 #include "Mcu.h"
+#include "Gpt.h"
+#include "Can_43_FLEXCAN.h"
+#include "SchM_Can_43_FLEXCAN.h"
+#include "Boot_Shared.h"
 #include <string.h>
 
 UDS_DcmContextType UDS_DcmCtx;
@@ -45,13 +49,25 @@ static unsigned char UDS_DcmSessionDefault(const unsigned char *req, unsigned in
 	return UDS_DcmSetSession(UDS_DCM_SESSION_DEFAULT, rspLen);
 }
 
+static unsigned char BootJumpRequest = 0U;
+static unsigned int BootJumpTick = 0U;
+
 static unsigned char UDS_DcmSessionProgramming(const unsigned char *req, unsigned int len, unsigned int *rspLen)
 {
 	(void)req;
 	(void)len;
-	return UDS_DcmSetSession(UDS_DCM_SESSION_PROGRAMMING, rspLen);
-}
+	(void)rspLen;
 
+	/* 0x10 0x02: answer 0x78 and let UDS_DcmCfgPoll() (DCM task context)
+	 * write the magic and reset the ECU.  Doing the reset in the DCM task
+	 * avoids re-entering the CAN driver from the reception callback. */
+	UDS_CanSendNRC(0x10U, NRC_REQUEST_CORRECTLY_RECEIVED_RESPONSE_PENDING);
+
+	BootJumpTick = BSW_GetSystemTick();
+	BootJumpRequest = 1U;
+
+	return (unsigned char)UDS_DCM_NRC_NO_RESPONSE;
+}
 static unsigned char UDS_DcmSessionExtended(const unsigned char *req, unsigned int len, unsigned int *rspLen)
 {
 	(void)req;
@@ -404,20 +420,29 @@ static unsigned char UDS_DcmWriteDataByIdentifier(const unsigned char *req,
 /* Routine control 0x31                                                      */
 /* ------------------------------------------------------------------------- */
 
-static unsigned char UDS_DcmRoutineStartDemo(unsigned int *status)
+static unsigned char UDS_DcmRoutineStartDemo(const unsigned char *req, unsigned int len,
+                                             unsigned int *status)
 {
+	(void)req;
+	(void)len;
 	*status = 0x00U;
 	return 0U;
 }
 
-static unsigned char UDS_DcmRoutineStopDemo(unsigned int *status)
+static unsigned char UDS_DcmRoutineStopDemo(const unsigned char *req, unsigned int len,
+                                            unsigned int *status)
 {
+	(void)req;
+	(void)len;
 	*status = 0x00U;
 	return 0U;
 }
 
-static unsigned char UDS_DcmRoutineResultDemo(unsigned int *status)
+static unsigned char UDS_DcmRoutineResultDemo(const unsigned char *req, unsigned int len,
+                                              unsigned int *status)
 {
+	(void)req;
+	(void)len;
 	*status = 0x00U;
 	return 0U;
 }
@@ -467,7 +492,7 @@ static unsigned char UDS_DcmRoutineControl(const unsigned char *req, unsigned in
 		{
 			return NRC_SUBFUNCTION_NOT_SUPPORTED;
 		}
-		nrc = routine->Start(&status);
+		nrc = routine->Start(req, len, &status);
 	}
 	else if (0x02U == subFn)
 	{
@@ -475,7 +500,7 @@ static unsigned char UDS_DcmRoutineControl(const unsigned char *req, unsigned in
 		{
 			return NRC_SUBFUNCTION_NOT_SUPPORTED;
 		}
-		nrc = routine->Stop(&status);
+		nrc = routine->Stop(req, len, &status);
 	}
 	else if (0x03U == subFn)
 	{
@@ -483,7 +508,7 @@ static unsigned char UDS_DcmRoutineControl(const unsigned char *req, unsigned in
 		{
 			return NRC_SUBFUNCTION_NOT_SUPPORTED;
 		}
-		nrc = routine->Result(&status);
+		nrc = routine->Result(req, len, &status);
 	}
 	else
 	{
@@ -543,7 +568,7 @@ const UDS_DcmServiceType UDS_DcmServices[] =
 {
 	/* SID   SubFn  SessionMask                                        SecurityLevel           AddrMask                Handler */
 	{0x10U, 0x01U, UDS_DCM_SESSION_MASK_ALL,                           UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmSessionDefault},
-	{0x10U, 0x02U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmSessionProgramming},
+	{0x10U, 0x02U, UDS_DCM_SESSION_MASK_ALL,                           UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmSessionProgramming},
 	{0x10U, 0x03U, UDS_DCM_SESSION_MASK_ALL,                           UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmSessionExtended},
 
 	{0x11U, 0x01U, UDS_DCM_SESSION_MASK_ALL,                           UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmResetHard},
@@ -578,11 +603,39 @@ void UDS_DcmCfgInit(void)
 	/* Add application-specific initialization here. */
 }
 
-void UDS_DcmCfgPoll(void)
+void UDS_DcmCfgSessionTimeout(void)
 {
-	/* Add application-specific DCM timers here. */
+	/* The application stays in the default session on an S3 timeout. */
 }
 
+void UDS_DcmCfgPoll(void)
+{
+	/* The APP->Boot request is completed here, in the DCM task context:
+	 * write the magic, clean it to the SRAM and reset (app_jump_boot()). */
+	if (0U != BootJumpRequest)
+	{
+		if (((BSW_GetSystemTick() - BootJumpTick) >= 100U) &&
+		    (0U == UDS_CanTpIsTxBusy()))
+		{
+			BootJumpRequest = 0U;
+
+			__asm volatile ("cpsid i" ::: "memory");
+
+			/* Write and clean the cache line so the value is in the SRAM. */
+			Boot_RamFlagSet(BOOT_RAM_REQUEST_PROGRAMMING);
+			*(volatile unsigned int *)0xE000EF68UL = BOOT_RAM_FLAG_ADDR;
+			__asm volatile ("dsb" ::: "memory");
+
+
+			{
+				volatile unsigned int d;
+				for (d = 0U; d < 500000U; d++) { }
+			}
+
+			Mcu_PerformReset();
+		}
+	}
+}
 /*
  * Default reset implementation.  Override in application code if a different
  * reset sequence is required.
@@ -591,3 +644,18 @@ __attribute__((weak)) void UDS_DCM_ResetHook(void)
 {
 	Mcu_PerformReset();
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

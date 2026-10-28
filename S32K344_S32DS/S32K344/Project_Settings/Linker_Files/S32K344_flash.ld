@@ -44,8 +44,11 @@ ENTRY(Reset_Handler)
 
 MEMORY
 {
-    /*int_pflash              : ORIGIN = 0x00448000, LENGTH = 0x003D4000    /* 4096KB - 176KB (sBAF + HSE)*/
-    int_pflash              : ORIGIN = 0x00400000, LENGTH = 0x003D4000
+    /* Application run area.  The bootloader owns 0x00400000..0x00447FFF
+     * (boot code 0x00400000..0x0043FFFF, boot flag sector 0x00440000).
+     * The APP is linked at the original address 0x00448000 again so that the
+     * bootloader can jump to it.  See Boot_Shared.h / Boot.h for the map. */
+    int_pflash              : ORIGIN = 0x00448000, LENGTH = 0x0018C000    /* 1584KB App run area */
     int_dflash              : ORIGIN = 0x10000000, LENGTH = 0x00020000    /* 128KB */
     int_itcm                : ORIGIN = 0x00000000, LENGTH = 0x00010000    /* 64KB */
     int_dtcm                : ORIGIN = 0x20000000, LENGTH = 0x0001F000    /* 124KB */
@@ -54,8 +57,10 @@ MEMORY
     int_sram_fls_rsv        : ORIGIN = 0x2042FF00, LENGTH = 0x00000100
     int_sram_no_cacheable   : ORIGIN = 0x20430000, LENGTH = 0x0000FF00    /* 64KB, needs to include int_sram_results  */
     int_sram_results        : ORIGIN = 0x2043FF00, LENGTH = 0x00000100
-    int_sram_shareable      : ORIGIN = 0x20440000, LENGTH = 0x00004000    /* 16KB */
-    ram_rsvd2               : ORIGIN = 0x20444000, LENGTH = 0             /* End of SRAM */
+    /* Last 16 bytes (0x20443FF0..0x20443FFF) are reserved for the APP->Boot
+     * programming request flag, which must survive the ECU reset. */
+    int_sram_shareable      : ORIGIN = 0x20440000, LENGTH = 0x00003FF0    /* 16KB - 16B boot flag */
+    ram_rsvd2               : ORIGIN = 0x20443FF0, LENGTH = 0             /* End of SRAM */
 }
 
 SECTIONS
@@ -176,6 +181,11 @@ SECTIONS
     {
         . = ALIGN(4);
         __non_cacheable_data_start__ = .;
+        . = ALIGN(4096);
+        __interrupts_ram_start = .;
+        . += __interrupts_init_end - __interrupts_init_start;
+        . = ALIGN(4);
+        __interrupts_ram_end = .;
         *(.mcal_data_no_cacheable)
         . = ALIGN(4);
         *(.mcal_const_no_cacheable)
@@ -215,15 +225,6 @@ SECTIONS
     } > int_sram_shareable
 
     __shareable_data_rom_end = __shareable_data_rom + (__shareable_data_end__ - __shareable_data_start__);
-
-    .int_vector :
-    {
-        . = ALIGN(2048);
-        __interrupts_ram_start = .;
-        . += __interrupts_init_end - __interrupts_init_start;
-        . = ALIGN(4);
-        __interrupts_ram_end = .;
-    } > int_dtcm
 
     __tcm_data_rom = __shareable_data_rom_end;
 
@@ -320,6 +321,9 @@ SECTIONS
     __ROM_DTCM_DATA_START    = __tcm_data_rom;
     __ROM_DTCM_END           = __tcm_data_rom_end;
 
+    __interrupts_rom_start    = __interrupts_init_start;
+    __interrupts_rom_end      = __interrupts_init_end;
+
     __INIT_TABLE             = __init_table;
     __ZERO_TABLE             = __zero_table;
 
@@ -361,3 +365,5 @@ SECTIONS
     ASSERT(__standby_ram_end__ <= __STANDBY_RAM_LIMIT_END, "Memory for standby ram overflow")
 
 }
+
+

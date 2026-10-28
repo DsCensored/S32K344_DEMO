@@ -1,4 +1,4 @@
-/*
+﻿/*
  * UDS_DCM.c
  *
  *  Generic DCM core.  Service tables, handlers, routines and security
@@ -125,6 +125,13 @@ static void UDS_DcmProcessPendingResponse(unsigned int now)
 
 	/* The handler refills UDS_TxBuf[] and rspLen for the final response. */
 	nrc = pending->Handler(pending->Req, pending->ReqLen, &rspLen);
+
+	if (UDS_DCM_NRC_NO_RESPONSE == nrc)
+	{
+		UDS_DcmClearPendingResponse();
+		UDS_DcmCtx.SessionTick = now;
+		return;
+	}
 
 	if (NRC_REQUEST_CORRECTLY_RECEIVED_RESPONSE_PENDING == nrc)
 	{
@@ -291,6 +298,11 @@ void UDS_DCM_RxIndication(const unsigned char *req, unsigned int len,
 
 	nrc = service->Handler(req, len, &rspLen);
 
+	if (UDS_DCM_NRC_NO_RESPONSE == nrc)
+	{
+		return;
+	}
+
 	/* NRC 0x78: the handler needs more time.  The first 0x78 is sent
 	 * immediately; UDS_DCM_Poll() then calls the same handler again and
 	 * repeats 0x78 every UDS_DCM_RESPONSE_PENDING_DELAY_MS until the handler
@@ -331,6 +343,10 @@ void UDS_DCM_Poll(void)
 	if ((UDS_DCM_SESSION_DEFAULT != UDS_DcmCtx.Session) &&
 	    ((now - UDS_DcmCtx.SessionTick) >= UDS_DCM_SESSION_TIMEOUT_MS))
 	{
+		/* Give the application a chance to react to the S3 timeout before
+		 * the session is dropped (the bootloader jumps to the APP here). */
+		UDS_DcmCfgSessionTimeout();
+
 		UDS_DcmCtx.Session = UDS_DCM_SESSION_DEFAULT;
 		UDS_DcmCtx.SecurityUnlocked = 0U;
 		UDS_DcmCtx.Seed = 0U;
@@ -374,5 +390,7 @@ unsigned char UDS_DCM_IsSecurityUnlocked(void)
 {
 	return UDS_DcmCtx.SecurityUnlocked;
 }
+
+
 
 

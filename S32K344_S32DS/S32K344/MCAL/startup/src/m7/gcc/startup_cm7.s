@@ -742,6 +742,17 @@ _INIT_DATA_BSS:
   bl init_data_bss
 
 SET_VTOR_TCM:
+/* Make sure the vector table is copied to RAM before VTOR points to it. */
+ldr  r1, =__INIT_INTERRUPT_START
+ldr  r2, =__RAM_INTERRUPT_START
+ldr  r3, =__interrupts_init_end
+CopyVectors_Loop:
+ldr  r4,[r1]
+str  r4,[r2]
+adds r1,r1,#4
+adds r2,r2,#4
+cmp  r1,r3
+blo  CopyVectors_Loop
 /* Set VTOR to default vector table */
 ldr  r0, =VTOR_REG
 ldr  r1, =__RAM_INTERRUPT_START
@@ -856,3 +867,4 @@ bx r14
 
 .align 4
 .ltorg
+

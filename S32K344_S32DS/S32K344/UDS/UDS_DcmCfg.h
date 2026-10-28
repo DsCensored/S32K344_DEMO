@@ -1,4 +1,4 @@
-/*
+﻿/*
  * UDS_DcmCfg.h
  *
  *  DCM user configuration.
@@ -16,6 +16,9 @@
 #define UDS_DCM_SECURITY_MAX_ATTEMPTS   3U
 #define UDS_DCM_RESET_DELAY_MS          100U
 #define UDS_DCM_NO_SUBFN                0xFFU
+
+/* Internal pseudo NRC: the handler already took care of the response (e.g. it`r`n * resets the ECU) and the DCM must not send anything. */
+#define UDS_DCM_NRC_NO_RESPONSE         0xFEU
 
 /*
  * NRC 0x78 (requestCorrectlyReceived-ResponsePending) handling.
@@ -165,7 +168,9 @@ struct UDS_DcmDid
     UDS_DcmDidWriteType Write;
 };
 
-typedef unsigned char (*UDS_DcmRoutineHandlerType)(unsigned int *status);
+typedef unsigned char (*UDS_DcmRoutineHandlerType)(const unsigned char *req,
+                                                   unsigned int len,
+                                                   unsigned int *status);
 
 typedef struct
 {
@@ -188,5 +193,8 @@ extern const unsigned int UDS_DcmDidCount;
 
 void UDS_DcmCfgInit(void);
 void UDS_DcmCfgPoll(void);
+void UDS_DcmCfgSessionTimeout(void);
 
 #endif /* UDS_DCMCFG_H_ */
+
+
