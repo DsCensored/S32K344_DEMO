@@ -17,9 +17,28 @@
 #define BOOT_RAM_FLAG_ADDR              0x20443FF0UL
 #define BOOT_RAM_FLAG_AUX_ADDR          0x20443FF4UL
 #define BOOT_RAM_FLAG_MAGIC             0xA5A5A5A5UL
+#define BOOT_RAM_PRECOND_MAGIC          0x5AA55AA5UL
 
 #define BOOT_RAM_REQUEST_NONE           0x00000000UL
 #define BOOT_RAM_REQUEST_PROGRAMMING    0x00000001UL
+
+/* QCC 04.171: 31 01 02 03 must be executed before 10 02.  The result is
+ * passed from the APP to the bootloader in the aux word of the handshake
+ * area (the main word carries the programming request magic). */
+static inline void Boot_PrecondSet(void)
+{
+    *(volatile uint32_t *)BOOT_RAM_FLAG_AUX_ADDR = BOOT_RAM_PRECOND_MAGIC;
+}
+
+static inline uint32_t Boot_PrecondGet(void)
+{
+    return *(volatile uint32_t *)BOOT_RAM_FLAG_AUX_ADDR;
+}
+
+static inline void Boot_PrecondClear(void)
+{
+    *(volatile uint32_t *)BOOT_RAM_FLAG_AUX_ADDR = 0UL;
+}
 
 /* APP side: write the magic that makes the bootloader stay in programming. */
 static inline void Boot_RamFlagSet(uint32_t request)
@@ -27,7 +46,6 @@ static inline void Boot_RamFlagSet(uint32_t request)
     (void)request;
 
     *(volatile uint32_t *)BOOT_RAM_FLAG_ADDR = BOOT_RAM_FLAG_MAGIC;
-    *(volatile uint32_t *)BOOT_RAM_FLAG_AUX_ADDR = 0UL;
 }
 
 /* Boot side: clear the magic. */

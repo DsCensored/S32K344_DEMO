@@ -11,7 +11,7 @@
 #ifndef UDS_DCMCFG_H_
 #define UDS_DCMCFG_H_
 
-#define UDS_DCM_SESSION_TIMEOUT_MS      5000U
+#define UDS_DCM_SESSION_TIMEOUT_MS      30000U
 #define UDS_DCM_SECURITY_DELAY_MS       10000U
 #define UDS_DCM_SECURITY_MAX_ATTEMPTS   3U
 #define UDS_DCM_RESET_DELAY_MS          100U
@@ -196,5 +196,6 @@ void UDS_DcmCfgPoll(void);
 void UDS_DcmCfgSessionTimeout(void);
 
 #endif /* UDS_DCMCFG_H_ */
+
 
 

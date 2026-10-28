@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Boot.c
  *
  * Bootloader boot flow, application validation/jump and the standard CRC32

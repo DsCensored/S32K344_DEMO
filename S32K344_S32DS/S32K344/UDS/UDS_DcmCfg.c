@@ -1,4 +1,4 @@
-﻿/*
+/*
  * UDS_DcmCfg.c
  *
  *  DCM user configuration:
@@ -51,6 +51,7 @@ static unsigned char UDS_DcmSessionDefault(const unsigned char *req, unsigned in
 
 static unsigned char BootJumpRequest = 0U;
 static unsigned int BootJumpTick = 0U;
+static unsigned char UDS_DcmPreconditionOk = 0U;
 
 static unsigned char UDS_DcmSessionProgramming(const unsigned char *req, unsigned int len, unsigned int *rspLen)
 {
@@ -58,11 +59,18 @@ static unsigned char UDS_DcmSessionProgramming(const unsigned char *req, unsigne
 	(void)len;
 	(void)rspLen;
 
+	/* QCC 04.171: 10 02 is only accepted after 31 01 02 03. */
+	if (0U == UDS_DcmPreconditionOk)
+	{
+		return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+	}
+
 	/* 0x10 0x02: answer 0x78 and let UDS_DcmCfgPoll() (DCM task context)
 	 * write the magic and reset the ECU.  Doing the reset in the DCM task
 	 * avoids re-entering the CAN driver from the reception callback. */
 	UDS_CanSendNRC(0x10U, NRC_REQUEST_CORRECTLY_RECEIVED_RESPONSE_PENDING);
 
+	UDS_DcmPreconditionOk = 0U;
 	BootJumpTick = BSW_GetSystemTick();
 	BootJumpRequest = 1U;
 
@@ -109,24 +117,49 @@ static unsigned char UDS_DcmKeepSession(const unsigned char *req, unsigned int l
 }
 
 
+static unsigned char UDS_DcmResetSecurity(void)
+{
+	if (0U == (UDS_DcmCtx.SecurityUnlocked & UDS_DCM_SECURITY_LEVEL1))
+	{
+		return (unsigned char)NRC_SECURITY_ACCESS_DENIED;
+	}
+
+	return 0U;
+}
+
 static unsigned char UDS_DcmResetHard(const unsigned char *req, unsigned int len, unsigned int *rspLen)
 {
+	unsigned char nrc = UDS_DcmResetSecurity();
 	(void)req;
 	(void)len;
+	if (0U != nrc)
+	{
+		return nrc;
+	}
 	return UDS_DcmRequestReset(0x01U, rspLen);
 }
 
 static unsigned char UDS_DcmResetKeyOffOn(const unsigned char *req, unsigned int len, unsigned int *rspLen)
 {
+	unsigned char nrc = UDS_DcmResetSecurity();
 	(void)req;
 	(void)len;
+	if (0U != nrc)
+	{
+		return nrc;
+	}
 	return UDS_DcmRequestReset(0x02U, rspLen);
 }
 
 static unsigned char UDS_DcmResetSoft(const unsigned char *req, unsigned int len, unsigned int *rspLen)
 {
+	unsigned char nrc = UDS_DcmResetSecurity();
 	(void)req;
 	(void)len;
+	if (0U != nrc)
+	{
+		return nrc;
+	}
 	return UDS_DcmRequestReset(0x03U, rspLen);
 }
 
@@ -246,8 +279,25 @@ static unsigned char UDS_DcmKeyRequest(const unsigned char *req, unsigned int le
  */
 static unsigned char UDS_DcmF190Data[17] =
 {
-	'W', 'O', 'R', 'L', 'D', 'W', 'I', 'D', 'E', 'V', 'I', 'N', '0', '0', '0', '0', '1'
+	'W', 'O', 'R', 'L', 'D', 'W', 'I', 'D', 'E', 'V', 'I', 'N', '0', '0', '0', '0', '2'
 };
+
+static unsigned char UDS_DcmF184Read(const UDS_DcmDidType *did,
+                                     unsigned char *buf,
+                                     unsigned int maxLen,
+                                     unsigned int *outLen)
+{
+	(void)did;
+
+	if (maxLen < 9U)
+	{
+		return NRC_RESPONSE_TOO_LONG;
+	}
+
+	memset(buf, 0xFF, 9U);
+	*outLen = 9U;
+	return 0U;
+}
 
 static unsigned char UDS_DcmF190Read(const UDS_DcmDidType *did,
                                      unsigned char *buf,
@@ -283,7 +333,8 @@ static unsigned char UDS_DcmF190Write(const UDS_DcmDidType *did,
 
 const UDS_DcmDidType UDS_DcmDids[] =
 {
-	{0xF190U, UDS_DcmF190Read, UDS_DcmF190Write}
+	{0xF190U, UDS_DcmF190Read, UDS_DcmF190Write},
+	{0xF184U, UDS_DcmF184Read, 0}
 };
 
 const unsigned int UDS_DcmDidCount =
@@ -389,6 +440,11 @@ static unsigned char UDS_DcmWriteDataByIdentifier(const unsigned char *req,
 		return NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
 	}
 
+	if (0U == (UDS_DcmCtx.SecurityUnlocked & UDS_DCM_SECURITY_LEVEL1))
+	{
+		return (unsigned char)NRC_SECURITY_ACCESS_DENIED;
+	}
+
 	did = (unsigned short)(((unsigned short)req[1] << 8) | req[2]);
 	didCfg = UDS_DcmFindDid(did);
 
@@ -425,6 +481,7 @@ static unsigned char UDS_DcmRoutineStartDemo(const unsigned char *req, unsigned 
 {
 	(void)req;
 	(void)len;
+	UDS_DcmPreconditionOk = 1U;
 	*status = 0x00U;
 	return 0U;
 }
@@ -486,6 +543,14 @@ static unsigned char UDS_DcmRoutineControl(const unsigned char *req, unsigned in
 		return NRC_REQUEST_OUT_OF_RANGE;
 	}
 
+	if (0x0203U != routineId)
+	{
+		if (0U == (UDS_DcmCtx.SecurityUnlocked & UDS_DCM_SECURITY_LEVEL1))
+		{
+			return (unsigned char)NRC_SECURITY_ACCESS_DENIED;
+		}
+	}
+
 	if (0x01U == subFn)
 	{
 		if (0 == routine->Start)
@@ -528,6 +593,86 @@ static unsigned char UDS_DcmRoutineControl(const unsigned char *req, unsigned in
 	return 0U;
 }
 
+extern void ASW_SetNormalCommEnabled(unsigned char enabled);
+
+static unsigned char UDS_DcmCommunicationDisabled;
+
+static unsigned char UDS_DcmCommunicationControl(const unsigned char *req,
+                                                 unsigned int len,
+                                                 unsigned int *rspLen)
+{
+	unsigned char subFn;
+
+	if (len < 3U)
+	{
+		return (unsigned char)NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
+	}
+
+	subFn = (unsigned char)(req[1] & 0x7FU);
+	if ((0x00U != subFn) && (0x03U != subFn))
+	{
+		return (unsigned char)NRC_SUBFUNCTION_NOT_SUPPORTED;
+	}
+
+	if (0x03U != req[2])
+	{
+		return (unsigned char)NRC_REQUEST_OUT_OF_RANGE;
+	}
+
+	UDS_DcmCommunicationDisabled = (0x03U == subFn) ? 1U : 0U;
+	ASW_SetNormalCommEnabled((0x03U == subFn) ? 0U : 1U);
+
+	UDS_TxBuf[1] = subFn;
+	*rspLen = 2U;
+	return 0U;
+}
+
+static unsigned char UDS_DcmDtcSettingOff;
+
+static unsigned char UDS_DcmControlDtcSetting(const unsigned char *req,
+                                              unsigned int len,
+                                              unsigned int *rspLen)
+{
+	unsigned char subFn;
+
+	if (len < 2U)
+	{
+		return (unsigned char)NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
+	}
+
+	subFn = (unsigned char)(req[1] & 0x7FU);
+	if ((0x01U != subFn) && (0x02U != subFn))
+	{
+		return (unsigned char)NRC_SUBFUNCTION_NOT_SUPPORTED;
+	}
+
+	UDS_DcmDtcSettingOff = (0x02U == subFn) ? 1U : 0U;
+
+	UDS_TxBuf[1] = subFn;
+	*rspLen = 2U;
+	return 0U;
+}
+
+static unsigned char UDS_DcmClearDiagnosticInformation(const unsigned char *req,
+                                                       unsigned int len,
+                                                       unsigned int *rspLen)
+{
+	(void)req;
+
+	if (len < 4U)
+	{
+		return (unsigned char)NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
+	}
+
+	*rspLen = 1U;
+	return 0U;
+}
+
+unsigned char UDS_DcmIsCommunicationDisabled(void)
+{
+	return UDS_DcmCommunicationDisabled;
+}
+
 /* ------------------------------------------------------------------------- */
 /* Configuration tables                                                      */
 /* ------------------------------------------------------------------------- */
@@ -568,29 +713,33 @@ const UDS_DcmServiceType UDS_DcmServices[] =
 {
 	/* SID   SubFn  SessionMask                                        SecurityLevel           AddrMask                Handler */
 	{0x10U, 0x01U, UDS_DCM_SESSION_MASK_ALL,                           UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmSessionDefault},
-	{0x10U, 0x02U, UDS_DCM_SESSION_MASK_ALL,                           UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmSessionProgramming},
+	{0x10U, 0x02U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmSessionProgramming},
 	{0x10U, 0x03U, UDS_DCM_SESSION_MASK_ALL,                           UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmSessionExtended},
 
-	{0x11U, 0x01U, UDS_DCM_SESSION_MASK_ALL,                           UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmResetHard},
-	{0x11U, 0x02U, UDS_DCM_SESSION_MASK_ALL,                           UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmResetKeyOffOn},
-	{0x11U, 0x03U, UDS_DCM_SESSION_MASK_ALL,                           UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmResetSoft},
+	{0x11U, 0x01U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmResetHard},
+	{0x11U, 0x02U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmResetKeyOffOn},
+	{0x11U, 0x03U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmResetSoft},
 
 	{0x22U, UDS_DCM_NO_SUBFN, UDS_DCM_SESSION_MASK_ALL,                UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmReadDataByIdentifier},
 
-	{0x2EU, UDS_DCM_NO_SUBFN, (UDS_DCM_SESSION_MASK_EXTENDED |
-	                          UDS_DCM_SESSION_MASK_PROGRAMMING),       UDS_DCM_SECURITY_LEVEL1, UDS_DCM_ADDR_MASK_ALL, UDS_DcmWriteDataByIdentifier},
+	{0x28U, 0x00U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmCommunicationControl},
+	{0x28U, 0x03U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmCommunicationControl},
+
+	{0x2EU, UDS_DCM_NO_SUBFN, UDS_DCM_SESSION_MASK_EXTENDED,           UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmWriteDataByIdentifier},
 
 	{0x27U, 0x01U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmSeedRequest},
 	{0x27U, 0x02U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmKeyRequest},
 	{0x27U, 0x03U, UDS_DCM_SESSION_MASK_PROGRAMMING,                   UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmSeedRequest},
 	{0x27U, 0x04U, UDS_DCM_SESSION_MASK_PROGRAMMING,                   UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmKeyRequest},
 
-	{0x31U, 0x01U, (UDS_DCM_SESSION_MASK_EXTENDED |
-	                UDS_DCM_SESSION_MASK_PROGRAMMING),                 UDS_DCM_SECURITY_NONE, UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmRoutineControl},
-	{0x31U, 0x02U, (UDS_DCM_SESSION_MASK_EXTENDED |
-	                UDS_DCM_SESSION_MASK_PROGRAMMING),                 UDS_DCM_SECURITY_LEVEL1, UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmRoutineControl},
-	{0x31U, 0x03U, (UDS_DCM_SESSION_MASK_EXTENDED |
-	                UDS_DCM_SESSION_MASK_PROGRAMMING),                 UDS_DCM_SECURITY_LEVEL1, UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmRoutineControl},
+	{0x31U, 0x01U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmRoutineControl},
+	{0x31U, 0x02U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmRoutineControl},
+	{0x31U, 0x03U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmRoutineControl},
+
+	{0x85U, 0x01U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmControlDtcSetting},
+	{0x85U, 0x02U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmControlDtcSetting},
+
+	{0x14U, UDS_DCM_NO_SUBFN, (UDS_DCM_SESSION_MASK_DEFAULT | UDS_DCM_SESSION_MASK_EXTENDED), UDS_DCM_SECURITY_NONE, UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmClearDiagnosticInformation},
 
 	{0x3EU, 0x00U, UDS_DCM_SESSION_MASK_ALL,                           UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmKeepSession},
 };
@@ -644,6 +793,9 @@ __attribute__((weak)) void UDS_DCM_ResetHook(void)
 {
 	Mcu_PerformReset();
 }
+
+
+
 
 
 

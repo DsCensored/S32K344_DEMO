@@ -187,6 +187,12 @@ void UDS_DCM_RxIndication(const unsigned char *req, unsigned int len,
 
 	sid = req[0];
 
+	/* AUTOSAR: any request received in a non-default session restarts S3. */
+	if (UDS_DCM_SESSION_DEFAULT != UDS_DcmCtx.Session)
+	{
+		UDS_DcmCtx.SessionTick = BSW_GetSystemTick();
+	}
+
 	/* A 0x78 sequence is still running, so the server is busy.  Dispatching
 	 * the new request would overwrite the pending context (and the final
 	 * response would no longer match its request), so the new request is
@@ -390,6 +396,7 @@ unsigned char UDS_DCM_IsSecurityUnlocked(void)
 {
 	return UDS_DcmCtx.SecurityUnlocked;
 }
+
 
 
 

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * UDS_DcmCfg.c
  *
  *  DCM user configuration:
@@ -15,10 +15,15 @@
 #include "UserOS.h"
 #include "Mcu.h"
 #include "Boot.h"
+#include "Boot_Shared.h"
 #include "Boot_Program.h"
 #include <string.h>
 
 UDS_DcmContextType UDS_DcmCtx;
+
+static unsigned char UDS_DcmPreconditionOk = 0U;
+
+static unsigned char UDS_DcmRequestReset(unsigned char subFn, unsigned int *rspLen);
 
 /* ------------------------------------------------------------------------- */
 /* Session / reset                                                           */
@@ -45,12 +50,10 @@ static unsigned char UDS_DcmSessionDefault(const unsigned char *req, unsigned in
 	(void)req;
 	(void)len;
 
-	/* 10 02 -> 10 01: answer 50 01 first, then automatically leave the
-	 * bootloader and start the application. */
-	if ((UDS_DCM_SESSION_PROGRAMMING == UDS_DcmCtx.Session) ||
-	    (UDS_DCM_SESSION_EXTENDED == UDS_DcmCtx.Session))
+	/* QCC 04.171: in the programming session 10 01 resets the ECU. */
+	if (UDS_DCM_SESSION_PROGRAMMING == UDS_DcmCtx.Session)
 	{
-		Boot_RequestJumpToApp();
+		return UDS_DcmRequestReset(0x01U, rspLen);
 	}
 
 	return UDS_DcmSetSession(UDS_DCM_SESSION_DEFAULT, rspLen);
@@ -61,9 +64,14 @@ static unsigned char UDS_DcmSessionProgramming(const unsigned char *req, unsigne
 	(void)req;
 	(void)len;
 
-	/* In the bootloader 0x10 0x02 is answered immediately with 0x50 0x02 and
-	 * keeps the ECU in the bootloader (no timeout jump to the APP). */
+	/* QCC 04.171: 10 02 is only accepted after 31 01 02 03. */
+	if (0U == UDS_DcmPreconditionOk)
+	{
+		return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+	}
+
 	Boot_StayInBoot();
+	UDS_DcmPreconditionOk = 0U;
 
 	return UDS_DcmSetSession(UDS_DCM_SESSION_PROGRAMMING, rspLen);
 }
@@ -109,24 +117,52 @@ static unsigned char UDS_DcmKeepSession(const unsigned char *req, unsigned int l
 }
 
 
+static unsigned char UDS_DcmResetSecurity(void)
+{
+	unsigned char required = (UDS_DCM_SESSION_PROGRAMMING == UDS_DcmCtx.Session)
+	    ? UDS_DCM_SECURITY_LEVEL2 : UDS_DCM_SECURITY_LEVEL1;
+
+	if (0U == (UDS_DcmCtx.SecurityUnlocked & required))
+	{
+		return (unsigned char)NRC_SECURITY_ACCESS_DENIED;
+	}
+
+	return 0U;
+}
+
 static unsigned char UDS_DcmResetHard(const unsigned char *req, unsigned int len, unsigned int *rspLen)
 {
+	unsigned char nrc = UDS_DcmResetSecurity();
 	(void)req;
 	(void)len;
+	if (0U != nrc)
+	{
+		return nrc;
+	}
 	return UDS_DcmRequestReset(0x01U, rspLen);
 }
 
 static unsigned char UDS_DcmResetKeyOffOn(const unsigned char *req, unsigned int len, unsigned int *rspLen)
 {
+	unsigned char nrc = UDS_DcmResetSecurity();
 	(void)req;
 	(void)len;
+	if (0U != nrc)
+	{
+		return nrc;
+	}
 	return UDS_DcmRequestReset(0x02U, rspLen);
 }
 
 static unsigned char UDS_DcmResetSoft(const unsigned char *req, unsigned int len, unsigned int *rspLen)
 {
+	unsigned char nrc = UDS_DcmResetSecurity();
 	(void)req;
 	(void)len;
+	if (0U != nrc)
+	{
+		return nrc;
+	}
 	return UDS_DcmRequestReset(0x03U, rspLen);
 }
 
@@ -249,6 +285,42 @@ static unsigned char UDS_DcmF190Data[17] =
 	'W', 'O', 'R', 'L', 'D', 'W', 'I', 'D', 'E', 'V', 'I', 'N', '0', '0', '0', '0', '1'
 };
 
+static unsigned char UDS_DcmF184Read(const UDS_DcmDidType *did,
+                                     unsigned char *buf,
+                                     unsigned int maxLen,
+                                     unsigned int *outLen)
+{
+	(void)did;
+
+	if (maxLen < 9U)
+	{
+		return NRC_RESPONSE_TOO_LONG;
+	}
+
+	(void)BootProg_ReadFingerprint(buf);
+	*outLen = 9U;
+	return 0U;
+}
+
+static unsigned char UDS_DcmF184Write(const UDS_DcmDidType *did,
+                                      const unsigned char *buf,
+                                      unsigned int len)
+{
+	(void)did;
+
+	if (9U != len)
+	{
+		return NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
+	}
+
+	if (0U != BootProg_WriteFingerprint(buf))
+	{
+		return NRC_GENERAL_PROGRAMMING_FAILURE;
+	}
+
+	return 0U;
+}
+
 static unsigned char UDS_DcmF190Read(const UDS_DcmDidType *did,
                                      unsigned char *buf,
                                      unsigned int maxLen,
@@ -283,7 +355,8 @@ static unsigned char UDS_DcmF190Write(const UDS_DcmDidType *did,
 
 const UDS_DcmDidType UDS_DcmDids[] =
 {
-	{0xF190U, UDS_DcmF190Read, UDS_DcmF190Write}
+	{0xF190U, UDS_DcmF190Read, UDS_DcmF190Write},
+	{0xF184U, UDS_DcmF184Read, UDS_DcmF184Write}
 };
 
 const unsigned int UDS_DcmDidCount =
@@ -389,6 +462,16 @@ static unsigned char UDS_DcmWriteDataByIdentifier(const unsigned char *req,
 		return NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
 	}
 
+	{
+		unsigned char required = (UDS_DCM_SESSION_PROGRAMMING == UDS_DcmCtx.Session)
+		    ? UDS_DCM_SECURITY_LEVEL2 : UDS_DCM_SECURITY_LEVEL1;
+
+		if (0U == (UDS_DcmCtx.SecurityUnlocked & required))
+		{
+			return (unsigned char)NRC_SECURITY_ACCESS_DENIED;
+		}
+	}
+
 	did = (unsigned short)(((unsigned short)req[1] << 8) | req[2]);
 	didCfg = UDS_DcmFindDid(did);
 
@@ -432,7 +515,7 @@ static unsigned char UDS_DcmRequestDownload(const unsigned char *req,
 {
 	unsigned int addr;
 	unsigned int size;
-	unsigned char maxBlock = 0U;
+	unsigned int maxBlock = 0U;
 	unsigned char nrc;
 
 	if (len < 11U)
@@ -455,9 +538,11 @@ static unsigned char UDS_DcmRequestDownload(const unsigned char *req,
 		return nrc;
 	}
 
+	/* lengthFormatIdentifier = 0x20: the following maxNumberOfBlockLength is
+	 * two bytes long. */
 	UDS_TxBuf[1] = 0x20U;
-	UDS_TxBuf[2] = 0x00U;
-	UDS_TxBuf[3] = maxBlock;
+	UDS_TxBuf[2] = (unsigned char)(maxBlock >> 8);
+	UDS_TxBuf[3] = (unsigned char)maxBlock;
 	*rspLen = 4U;
 	return 0U;
 }
@@ -500,11 +585,8 @@ static unsigned char UDS_DcmTransferExit(const unsigned char *req,
 		return nrc;
 	}
 
-	UDS_TxBuf[1] = (unsigned char)(crc >> 24);
-	UDS_TxBuf[2] = (unsigned char)(crc >> 16);
-	UDS_TxBuf[3] = (unsigned char)(crc >> 8);
-	UDS_TxBuf[4] = (unsigned char)crc;
-	*rspLen = 5U;
+	(void)crc;
+	*rspLen = 1U;
 	return 0U;
 }
 
@@ -512,22 +594,44 @@ static unsigned char UDS_DcmTransferExit(const unsigned char *req,
 /* Routine control 0x31                                                      */
 /* ------------------------------------------------------------------------- */
 
-/* 0xFF00: erase [address, address + length). */
+/* 0xFF00: erase [address, address + length), one 8 KB sector per DCM poll.
+ * Returning 0x78 makes the DCM call this routine again on its next poll. */
 static unsigned char UDS_DcmRoutineErase(const unsigned char *req, unsigned int len,
                                          unsigned int *status)
 {
 	unsigned int addr;
 	unsigned int size;
+	unsigned char more = 0U;
+	unsigned char nrc;
 
-	if (len < 12U)
+	if ((len >= 13U) && (0x44U == req[4]))
+	{
+		/* QCC 04.171: 31 01 FF 00 44 <address:4> <size:4> */
+		addr = UDS_DcmGetU32(&req[5]);
+		size = UDS_DcmGetU32(&req[9]);
+	}
+	else if (len >= 12U)
+	{
+		addr = UDS_DcmGetU32(&req[4]);
+		size = UDS_DcmGetU32(&req[8]);
+	}
+	else
 	{
 		return NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
 	}
 
-	addr = UDS_DcmGetU32(&req[4]);
-	size = UDS_DcmGetU32(&req[8]);
+	nrc = BootProg_EraseStep(addr, size, status, &more);
+	if (0U != nrc)
+	{
+		return nrc;
+	}
 
-	return BootProg_Erase(addr, size, status);
+	if (0U != more)
+	{
+		return (unsigned char)NRC_REQUEST_CORRECTLY_RECEIVED_RESPONSE_PENDING;
+	}
+
+	return 0U;
 }
 
 /* 0xFF01: programming dependency check (APP + flash driver). */
@@ -566,8 +670,35 @@ static unsigned char UDS_DcmRoutineCopy(const unsigned char *req, unsigned int l
 	return 0U;
 }
 
+static unsigned char UDS_DcmRoutineIntegrity(const unsigned char *req, unsigned int len,
+                                              unsigned int *status)
+{
+	unsigned int expected;
+
+	if (len < 8U)
+	{
+		return (unsigned char)NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
+	}
+
+	expected = UDS_DcmGetU32(&req[4]);
+	return BootProg_CheckIntegrity(expected, status);
+}
+
+static unsigned char UDS_DcmRoutinePrecondition(const unsigned char *req, unsigned int len,
+                                                unsigned int *status)
+{
+	(void)req;
+	(void)len;
+
+	UDS_DcmPreconditionOk = 1U;
+	*status = 0U;
+	return 0U;
+}
+
 const UDS_DcmRoutineType UDS_DcmRoutines[] =
 {
+	{0x0202U, UDS_DcmRoutineIntegrity, 0, 0},
+	{0x0203U, UDS_DcmRoutinePrecondition, 0, 0},
 	{0xFF00U, UDS_DcmRoutineErase, 0, 0},
 	{0xFF01U, UDS_DcmRoutineDependency, 0, 0},
 	{0xFF02U, UDS_DcmRoutineCopy, 0, 0}
@@ -605,6 +736,17 @@ static unsigned char UDS_DcmRoutineControl(const unsigned char *req, unsigned in
 	if (0 == routine)
 	{
 		return NRC_REQUEST_OUT_OF_RANGE;
+	}
+
+	if (0x0203U != routineId)
+	{
+		unsigned char required = (UDS_DCM_SESSION_PROGRAMMING == UDS_DcmCtx.Session)
+		    ? UDS_DCM_SECURITY_LEVEL2 : UDS_DCM_SECURITY_LEVEL1;
+
+		if (0U == (UDS_DcmCtx.SecurityUnlocked & required))
+		{
+			return (unsigned char)NRC_SECURITY_ACCESS_DENIED;
+		}
 	}
 
 	if (0x01U == subFn)
@@ -689,21 +831,21 @@ const UDS_DcmServiceType UDS_DcmServices[] =
 {
 	/* SID   SubFn  SessionMask                                        SecurityLevel           AddrMask                Handler */
 	{0x10U, 0x01U, UDS_DCM_SESSION_MASK_ALL,                           UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmSessionDefault},
-	{0x10U, 0x02U, UDS_DCM_SESSION_MASK_ALL,                           UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmSessionProgramming},
-	{0x10U, 0x03U, UDS_DCM_SESSION_MASK_ALL,                           UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmSessionExtended},
+	{0x10U, 0x02U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmSessionProgramming},
+	{0x10U, 0x03U, (UDS_DCM_SESSION_MASK_DEFAULT | UDS_DCM_SESSION_MASK_EXTENDED), UDS_DCM_SECURITY_NONE, UDS_DCM_ADDR_MASK_ALL, UDS_DcmSessionExtended},
 
-	{0x11U, 0x01U, UDS_DCM_SESSION_MASK_ALL,                           UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmResetHard},
-	{0x11U, 0x02U, UDS_DCM_SESSION_MASK_ALL,                           UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmResetKeyOffOn},
-	{0x11U, 0x03U, UDS_DCM_SESSION_MASK_ALL,                           UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmResetSoft},
+	{0x11U, 0x01U, (UDS_DCM_SESSION_MASK_EXTENDED | UDS_DCM_SESSION_MASK_PROGRAMMING), UDS_DCM_SECURITY_NONE, UDS_DCM_ADDR_MASK_ALL, UDS_DcmResetHard},
+	{0x11U, 0x02U, (UDS_DCM_SESSION_MASK_EXTENDED | UDS_DCM_SESSION_MASK_PROGRAMMING), UDS_DCM_SECURITY_NONE, UDS_DCM_ADDR_MASK_ALL, UDS_DcmResetKeyOffOn},
+	{0x11U, 0x03U, (UDS_DCM_SESSION_MASK_EXTENDED | UDS_DCM_SESSION_MASK_PROGRAMMING), UDS_DCM_SECURITY_NONE, UDS_DCM_ADDR_MASK_ALL, UDS_DcmResetSoft},
 
 	{0x22U, UDS_DCM_NO_SUBFN, UDS_DCM_SESSION_MASK_ALL,                UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmReadDataByIdentifier},
 
 	{0x2EU, UDS_DCM_NO_SUBFN, (UDS_DCM_SESSION_MASK_EXTENDED |
-	                          UDS_DCM_SESSION_MASK_PROGRAMMING),       UDS_DCM_SECURITY_LEVEL1, UDS_DCM_ADDR_MASK_ALL, UDS_DcmWriteDataByIdentifier},
+	                          UDS_DCM_SESSION_MASK_PROGRAMMING),       UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmWriteDataByIdentifier},
 
-	{0x34U, UDS_DCM_NO_SUBFN, UDS_DCM_SESSION_MASK_PROGRAMMING,        UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmRequestDownload},
-	{0x36U, UDS_DCM_NO_SUBFN, UDS_DCM_SESSION_MASK_PROGRAMMING,        UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmTransferData},
-	{0x37U, UDS_DCM_NO_SUBFN, UDS_DCM_SESSION_MASK_PROGRAMMING,        UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmTransferExit},
+	{0x34U, UDS_DCM_NO_SUBFN, UDS_DCM_SESSION_MASK_PROGRAMMING,        UDS_DCM_SECURITY_LEVEL2, UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmRequestDownload},
+	{0x36U, UDS_DCM_NO_SUBFN, UDS_DCM_SESSION_MASK_PROGRAMMING,        UDS_DCM_SECURITY_LEVEL2, UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmTransferData},
+	{0x37U, UDS_DCM_NO_SUBFN, UDS_DCM_SESSION_MASK_PROGRAMMING,        UDS_DCM_SECURITY_LEVEL2, UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmTransferExit},
 
 	{0x27U, 0x01U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmSeedRequest},
 	{0x27U, 0x02U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmKeyRequest},
@@ -713,9 +855,9 @@ const UDS_DcmServiceType UDS_DcmServices[] =
 	{0x31U, 0x01U, (UDS_DCM_SESSION_MASK_EXTENDED |
 	                UDS_DCM_SESSION_MASK_PROGRAMMING),                 UDS_DCM_SECURITY_NONE, UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmRoutineControl},
 	{0x31U, 0x02U, (UDS_DCM_SESSION_MASK_EXTENDED |
-	                UDS_DCM_SESSION_MASK_PROGRAMMING),                 UDS_DCM_SECURITY_LEVEL1, UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmRoutineControl},
+	                UDS_DCM_SESSION_MASK_PROGRAMMING),                 UDS_DCM_SECURITY_NONE, UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmRoutineControl},
 	{0x31U, 0x03U, (UDS_DCM_SESSION_MASK_EXTENDED |
-	                UDS_DCM_SESSION_MASK_PROGRAMMING),                 UDS_DCM_SECURITY_LEVEL1, UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmRoutineControl},
+	                UDS_DCM_SESSION_MASK_PROGRAMMING),                 UDS_DCM_SECURITY_NONE, UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmRoutineControl},
 
 	{0x3EU, 0x00U, UDS_DCM_SESSION_MASK_ALL,                           UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmKeepSession},
 };
@@ -734,13 +876,15 @@ void UDS_DcmCfgPoll(void)
 	Boot_ProcessJumpRequest();
 }
 
+void UDS_DCM_ResetHook(void);
+
 void UDS_DcmCfgSessionTimeout(void)
 {
 	/* S3 timeout in programming/extended session: return to the APP. */
 	if ((UDS_DCM_SESSION_PROGRAMMING == UDS_DcmCtx.Session) ||
 	    (UDS_DCM_SESSION_EXTENDED == UDS_DcmCtx.Session))
 	{
-		Boot_RequestJumpToApp();
+		UDS_DCM_ResetHook();
 	}
 }
 

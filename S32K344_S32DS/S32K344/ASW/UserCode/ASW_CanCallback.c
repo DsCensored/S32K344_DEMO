@@ -42,3 +42,10 @@ CAN_TXStr CAN_CHN1_TX[CAN_CHN1_TX_COUNT] =
 		.Enable = 1U
 	}
 };
+
+/* QCC 04.172 28h: disable only the normal application frames; the UDS CAN-TP
+ * has its own transmit path and stays available for diagnostics. */
+void ASW_SetNormalCommEnabled(unsigned char enabled)
+{
+	CAN_CHN1_TX[0].Enable = (0U != enabled) ? 1U : 0U;
+}
