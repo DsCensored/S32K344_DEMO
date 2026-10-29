@@ -309,8 +309,14 @@ void UDS_CanTpRxCallback(CAN_FD_MESSAGE *Data)
 	}
 	else if (kFF == frameType)
 	{
-		length = (unsigned char)((Data->Data[0] & 0x0FU) << 8);
-		UDS_RxLen = (unsigned int)length | Data->Data[1];
+		/* ISO 15765-2 first frame: PCI = 0x1LLL, the 12-bit length is
+		 * (Data[0] & 0x0F) << 8 | Data[1].  The intermediate must not be
+		 * truncated to 8 bits, otherwise every multi-frame request longer
+		 * than 255 bytes is seen with its high nibble dropped (e.g. a
+		 * 502-byte request was taken as 246, so only 244 of the 500 data
+		 * bytes of a 0x36 were stored). */
+		UDS_RxLen = (((unsigned int)(Data->Data[0] & 0x0FU)) << 8) |
+		            (unsigned int)Data->Data[1];
 
 		if ((UDS_RxLen < 8U) || (UDS_RxLen > UDS_RX_BUF_LEN))
 		{

@@ -1,7 +1,7 @@
 /*
  * UserCode.c
  *
- *  Created on: 2026年10月20日
+ *  Created on: 2026??0??0??
  *      Author: CENSORED
  */
 #include "UserCode.h"
@@ -26,6 +26,7 @@ static void ASW_userTask5ms(void)
 //	BSW_CANTX_POLL();
 	UDS_CanTpTimerPoll();
 	UDS_CanTpTxPoll();
+	UDS_DCM_Poll();
 }
 static void ASW_userTask10ms(void)
 {
@@ -41,7 +42,7 @@ static void ASW_userTask50ms(void)
 }
 static void ASW_userTask100ms(void)
 {
-	UDS_DCM_Poll();
+	
 	Boot_Poll();
 }
 static void ASW_userTask1000ms(void)

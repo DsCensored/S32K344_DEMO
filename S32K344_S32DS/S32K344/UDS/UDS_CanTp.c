@@ -309,8 +309,11 @@ void UDS_CanTpRxCallback(CAN_FD_MESSAGE *Data)
 	}
 	else if (kFF == frameType)
 	{
-		length = (unsigned char)((Data->Data[0] & 0x0FU) << 8);
-		UDS_RxLen = (unsigned int)length | Data->Data[1];
+		/* 12-bit length of the first frame: (Data[0] & 0x0F) << 8 | Data[1].
+		 * Keep the shift in a 32-bit expression - truncating it to 8 bits
+		 * drops the high nibble for every request longer than 255 bytes. */
+		UDS_RxLen = (((unsigned int)(Data->Data[0] & 0x0FU)) << 8) |
+		            (unsigned int)Data->Data[1];
 
 		if ((UDS_RxLen < 8U) || (UDS_RxLen > UDS_RX_BUF_LEN))
 		{

@@ -12,7 +12,7 @@
 #ifndef BOOT_PROGRAM_H_
 #define BOOT_PROGRAM_H_
 
-#define BOOT_PROG_MAX_BLOCK     250U      /* data bytes per 0x36 request */
+#define BOOT_PROG_MAX_BLOCK     500U      /* data bytes per 0x36 request */
 #define BOOT_PROG_COPY_CHUNK    0x2000U   /* 8 KB per DCM poll */
 
 unsigned char BootProg_RequestDownload(unsigned int addr, unsigned int size,
