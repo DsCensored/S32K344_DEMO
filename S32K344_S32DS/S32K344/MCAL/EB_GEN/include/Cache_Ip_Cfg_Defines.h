@@ -85,16 +85,14 @@ extern "C"
 /*-----------------------------------------------/
 /  CACHE IP SUPPORT                              /
 /-----------------------------------------------*/
-
-#define CACHE_IP_IS_AVAILABLE                  STD_OFF
-
-#define CACHE_IP_ARMCOREMX_IS_AVAILABLE        STD_OFF
+#define CACHE_IP_IS_AVAILABLE                  STD_ON
+#define CACHE_IP_ARMCOREMX_IS_AVAILABLE        STD_ON
 #define CACHE_IP_ARMCORERX_IS_AVAILABLE        STD_OFF
 #define CACHE_IP_LMEM_IS_AVAILABLE             STD_OFF
 
 #define CACHE_IP_ALL_IS_AVAILABLE              STD_OFF
-#define CACHE_IP_INSTRUCTION_IS_AVAILABLE      STD_OFF
-#define CACHE_IP_DATA_IS_AVAILABLE             STD_OFF
+#define CACHE_IP_INSTRUCTION_IS_AVAILABLE      STD_ON
+#define CACHE_IP_DATA_IS_AVAILABLE             STD_ON
 #define CACHE_IP_LMEM_PC_IS_AVAILABLE          STD_OFF
 #define CACHE_IP_LMEM_PS_IS_AVAILABLE          STD_OFF
 

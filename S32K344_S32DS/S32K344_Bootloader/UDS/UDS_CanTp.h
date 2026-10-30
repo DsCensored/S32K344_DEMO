@@ -21,7 +21,7 @@
 #define UDS_N_AR	25
 #define UDS_N_BS	150
 #define UDS_N_BR	10
-#define UDS_N_CS	0
+#define UDS_N_CS	10
 #define UDS_N_CR	150
 
 #define UDS_INVFIL 0xAA

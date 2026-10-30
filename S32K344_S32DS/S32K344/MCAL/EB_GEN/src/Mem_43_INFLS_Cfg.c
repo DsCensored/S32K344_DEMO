@@ -127,7 +127,7 @@ static const Mem_43_INFLS_MemDeviceType Mem_43_INFLS_MemDevices =
 
 
 /* Configuration of MemSectorBatch for MemInstance_0 */
-const Mem_43_INFLS_SectorBatchType Mem_43_INFLS_MemInstance_0_SectorBatch[5U] =
+const Mem_43_INFLS_SectorBatchType Mem_43_INFLS_MemInstance_0_SectorBatch[9U] =
 {
     {
         /* MemSectorBatch_0 */
@@ -183,6 +183,50 @@ const Mem_43_INFLS_SectorBatchType Mem_43_INFLS_MemInstance_0_SectorBatch[5U] =
         8192U,                                             /* EraseBurstSize */
         128U,                                              /* ReadBurstSize  */
         128U                                               /* WriteBurstSize */
+    },
+    {
+        /* MemSectorBatch_5 */
+        268435456U,                                        /* StartAddress   */
+        268443647U,                                        /* EndAddress     */
+        8192U,                                             /* SectorSize     */
+        1U,                                                /* ReadPageSize   */
+        8U,                                                /* WritePageSize  */
+        8192U,                                             /* EraseBurstSize */
+        1U,                                                /* ReadBurstSize  */
+        8U                                                 /* WriteBurstSize */
+    },
+    {
+        /* MemSectorBatch_6 */
+        268443648U,                                        /* StartAddress   */
+        268451839U,                                        /* EndAddress     */
+        8192U,                                             /* SectorSize     */
+        1U,                                                /* ReadPageSize   */
+        8U,                                                /* WritePageSize  */
+        8192U,                                             /* EraseBurstSize */
+        1U,                                                /* ReadBurstSize  */
+        8U                                                 /* WriteBurstSize */
+    },
+    {
+        /* MemSectorBatch_7 */
+        268451840U,                                        /* StartAddress   */
+        268460031U,                                        /* EndAddress     */
+        8192U,                                             /* SectorSize     */
+        1U,                                                /* ReadPageSize   */
+        8U,                                                /* WritePageSize  */
+        8192U,                                             /* EraseBurstSize */
+        1U,                                                /* ReadBurstSize  */
+        8U                                                 /* WriteBurstSize */
+    },
+    {
+        /* MemSectorBatch_8 */
+        268460032U,                                        /* StartAddress   */
+        268468223U,                                        /* EndAddress     */
+        8192U,                                             /* SectorSize     */
+        1U,                                                /* ReadPageSize   */
+        8U,                                                /* WritePageSize  */
+        8192U,                                             /* EraseBurstSize */
+        1U,                                                /* ReadBurstSize  */
+        8U                                                 /* WriteBurstSize */
     }
 };
 
@@ -193,7 +237,7 @@ static const Mem_43_INFLS_MemInstanceType Mem_43_INFLS_MemInstances[MEM_43_INFLS
     {
         /* MemInstance_0 */
         MEM_43_INFLS_INSTANCE_0_ID,                        /* InstanceId       */
-        5U,                                                /* SectorBatchCount */
+        9U,                                                /* SectorBatchCount */
         Mem_43_INFLS_MemInstance_0_SectorBatch,            /* SectorBatches    */
 #if (STD_ON == MEM_43_INFLS_HW_UTESTMODE_SERVICE)
         NULL_PTR,                                          /* UtestConfig      */
@@ -207,15 +251,15 @@ static const Mem_43_INFLS_MemInstanceType Mem_43_INFLS_MemInstances[MEM_43_INFLS
 const Mem_43_INFLS_ConfigType Mem_43_INFLS_Config =
 {
 #if (STD_ON == MEM_43_INFLS_AC_LOAD_ON_JOB_START)
-    (Mem_43_INFLS_AcErasePtrType)0x2042df00U,              /* MemAcErasePtr */
-    (Mem_43_INFLS_AcWritePtrType)0x2042df00U,              /* MemAcWritePtr */
+    (Mem_43_INFLS_AcErasePtrType)0x2042ff00U,              /* MemAcErasePtr */
+    (Mem_43_INFLS_AcWritePtrType)0x2042ff00U,              /* MemAcWritePtr */
 #endif
     NULL_PTR,                                              /* MemAcCallback */
 
     Mem_43_INFLS_MemInstances,                             /* MemInstances  */
     &Mem_43_INFLS_MemDevices,                              /* MemDevices    */
 #if (STD_ON == MEM_43_INFLS_CHECK_CFG_CRC)
-    54467U                                                 /* u16ConfigCrc  */
+    34960U                                                 /* u16ConfigCrc  */
 #endif
 };
 

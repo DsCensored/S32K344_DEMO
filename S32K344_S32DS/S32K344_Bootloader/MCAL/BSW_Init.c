@@ -11,6 +11,7 @@
 #include "MCU.h"
 #include "Can_43_FLEXCAN.h"
 #include "CanIf.h"
+#include "Nvm.h"
 
 static void MCAL_MCU_Init(void)
 {
@@ -50,7 +51,7 @@ static void MCAL_GPT_Init(void)
 {
 	Gpt_Init(&Gpt_Config);
 	Gpt_EnableNotification(GptConf_GptChannelConfiguration_GptChannelConfiguration_PIT0_CH0);
-	Gpt_StartTimer(GptConf_GptChannelConfiguration_GptChannelConfiguration_PIT0_CH0, 40000);
+	Gpt_StartTimer(GptConf_GptChannelConfiguration_GptChannelConfiguration_PIT0_CH0, 39999);
 }
 
 static void MCAL_PORT_Init(void)
@@ -72,6 +73,17 @@ static void MCAL_CAN_Init(void)
     Can_43_FLEXCAN_SetControllerMode(Can_43_FLEXCANConf_CanController_CanController_0, CAN_CS_STARTED);
 }
 
+static void MCAL_NVM_Init(void)
+{
+	/* Shared NVM area in the internal data flash (4 x 256 bytes). */
+	if (E_NOT_OK == Nvm_Init())
+	{
+		/* Blocks stay usable (zero-filled) even if the Fee start-up failed. */
+	}
+
+	(void)Nvm_GetStatus();
+}
+
 static void MCAL_Init(void)
 {
 	MCAL_MCU_Init();
@@ -79,6 +91,7 @@ static void MCAL_Init(void)
 	MCAL_Platform_Init();
 	MCAL_GPT_Init();
 	MCAL_CAN_Init();
+	MCAL_NVM_Init();
 }
 
 void BSW_Init(void)

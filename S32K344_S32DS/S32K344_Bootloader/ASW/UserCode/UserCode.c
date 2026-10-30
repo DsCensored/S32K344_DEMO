@@ -13,6 +13,7 @@
 #include "UDS_CanTp.h"
 #include "UDS_DCM.h"
 #include "Boot.h"
+#include "NvmApp.h"
 
 static void ASW_userTask2ms(void)
 {
@@ -27,6 +28,7 @@ static void ASW_userTask5ms(void)
 	UDS_CanTpTimerPoll();
 	UDS_CanTpTxPoll();
 	UDS_DCM_Poll();
+	(void)Nvm_UserBlock_Polling_10ms();
 }
 static void ASW_userTask10ms(void)
 {

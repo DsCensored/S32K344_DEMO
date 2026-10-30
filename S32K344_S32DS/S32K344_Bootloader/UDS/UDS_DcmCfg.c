@@ -17,6 +17,8 @@
 #include "Boot.h"
 #include "Boot_Shared.h"
 #include "Boot_Program.h"
+#include "Nvm.h"
+#include "NvmApp.h"
 #include <string.h>
 
 UDS_DcmContextType UDS_DcmCtx;
@@ -274,16 +276,12 @@ static unsigned char UDS_DcmKeyRequest(const unsigned char *req, unsigned int le
 /* ------------------------------------------------------------------------- */
 
 /*
- * 0xF190 example.
+ * 0xF190 (VIN-like data, 17 bytes).
  *
- * 22 F190 reads UDS_DcmF190Data.
- * 2E F190 writes UDS_DcmF190Data.
- * The next 22 F190 returns the value written by 2E.
+ * Stored in NVM block 0 with magic + checksum (see NvmApp.h), i.e. the same
+ * DFlash block the application uses: 22 F190 returns the VIN written by the
+ * application (or by the bootloader), 2E F190 stores it once.
  */
-static unsigned char UDS_DcmF190Data[17] =
-{
-	'W', 'O', 'R', 'L', 'D', 'W', 'I', 'D', 'E', 'V', 'I', 'N', '0', '0', '0', '0', '1'
-};
 
 static unsigned char UDS_DcmF184Read(const UDS_DcmDidType *did,
                                      unsigned char *buf,
@@ -328,13 +326,15 @@ static unsigned char UDS_DcmF190Read(const UDS_DcmDidType *did,
 {
 	(void)did;
 
-	if (maxLen < sizeof(UDS_DcmF190Data))
+	if (maxLen < NVM_F190_VIN_LEN)
 	{
 		return NRC_RESPONSE_TOO_LONG;
 	}
 
-	memcpy(buf, UDS_DcmF190Data, sizeof(UDS_DcmF190Data));
-	*outLen = (unsigned int)sizeof(UDS_DcmF190Data);
+	/* Valid VIN written by the application (or by the bootloader);
+	 * no valid record -> 17 x 0x00. */
+	(void)Nvm_F190_Read(buf);
+	*outLen = NVM_F190_VIN_LEN;
 	return 0U;
 }
 
@@ -344,12 +344,17 @@ static unsigned char UDS_DcmF190Write(const UDS_DcmDidType *did,
 {
 	(void)did;
 
-	if (len != sizeof(UDS_DcmF190Data))
+	if (len != NVM_F190_VIN_LEN)
 	{
 		return NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
 	}
 
-	memcpy(UDS_DcmF190Data, buf, sizeof(UDS_DcmF190Data));
+	/* Write once and commit: refused when a valid VIN already exists. */
+	if (E_OK != Nvm_F190_Write(buf))
+	{
+		return NRC_GENERAL_PROGRAMMING_FAILURE;
+	}
+
 	return 0U;
 }
 

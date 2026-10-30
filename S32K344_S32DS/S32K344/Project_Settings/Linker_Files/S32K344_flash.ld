@@ -69,6 +69,36 @@ SECTIONS
     .pflash :
     {
         KEEP(*(.boot_header))
+        /* ------------------------------------------------------------------
+         * Fixed information blocks (16 bytes each), see App_Info.h.
+         * They are part of the application image and must keep their
+         * addresses, so a flasher / the bootloader can find them.
+         *   0x00448100 .app_ver_flash       app version
+         *   0x00448110 .app_boot_ver_flash  bootloader version
+         *   0x00448120 .app_hw_ver_flash    hardware version
+         *   0x00448130 .app_order_flash     order / part number
+         *   0x00448140 .app_supplier_flash  supplier code
+         *   0x00448150 .app_serial_flash    serial number
+         *   0x00448160 .app_prod_date_flash production date
+         *   0x00448170 .app_upd_comp_flash  update component id
+         * ------------------------------------------------------------------ */
+        . = 0x100;
+        KEEP(*(.app_ver_flash))
+        . = 0x110;
+        KEEP(*(.app_boot_ver_flash))
+        . = 0x120;
+        KEEP(*(.app_hw_ver_flash))
+        . = 0x130;
+        KEEP(*(.app_order_flash))
+        . = 0x140;
+        KEEP(*(.app_supplier_flash))
+        . = 0x150;
+        KEEP(*(.app_serial_flash))
+        . = 0x160;
+        KEEP(*(.app_prod_date_flash))
+        . = 0x170;
+        KEEP(*(.app_upd_comp_flash))
+        . = 0x200;
         . = ALIGN(8192);  /* The minimum erase size of C40 Flash IP is 8kb */
         __text_start = .;
         __interrupts_init_start = .;
@@ -87,6 +117,7 @@ SECTIONS
         *(.text*)
         . = ALIGN(4);
         *(.mcal_text)
+        *(.mcal_text.*)
         . = ALIGN(4);
         *(.acmcu_code_rom)
         . = ALIGN(4);
@@ -95,7 +126,8 @@ SECTIONS
         . = ALIGN(4);
         __acfls_code_rom_end = .;
         __acmem_43_infls_code_rom_start = .;
-        *(.acmem_43_infls_code_rom)
+        KEEP(*(.acmem_43_infls_code_rom))
+        KEEP(*(.acmem_43_infls_code_rom.*))
         . = ALIGN(4);
         __acmem_43_infls_code_rom_end = .;
         KEEP(*(.init))
@@ -106,8 +138,10 @@ SECTIONS
         *(.rodata*)
         . = ALIGN(4);
         *(.mcal_const_cfg)
+        *(.mcal_const_cfg.*)
         . = ALIGN(4);
         *(.mcal_const)
+        *(.mcal_const.*)
         . = ALIGN(4);
         __init_table = .;
         KEEP(*(.init_table))
@@ -133,6 +167,7 @@ SECTIONS
         *(.bss*)
         . = ALIGN(16);
         *(.mcal_bss)
+        *(.mcal_bss.*)
         . = ALIGN(4);
         __sram_bss_end = .;
     } > int_sram
@@ -148,6 +183,7 @@ SECTIONS
         *(.data*)
         . = ALIGN(4);
         *(.mcal_data)
+        *(.mcal_data.*)
         . = ALIGN(4);
         __sram_data_end__ = .;
     } > int_sram
@@ -187,8 +223,10 @@ SECTIONS
         . = ALIGN(4);
         __interrupts_ram_end = .;
         *(.mcal_data_no_cacheable)
+        *(.mcal_data_no_cacheable.*)
         . = ALIGN(4);
         *(.mcal_const_no_cacheable)
+        *(.mcal_const_no_cacheable.*)
         . = ALIGN(4);
         HSE_LOOP_ADDR = .;
         LONG(0x0);
@@ -202,6 +240,7 @@ SECTIONS
         . = ALIGN(16);
         __non_cacheable_bss_start = .;
         *(.mcal_bss_no_cacheable)
+        *(.mcal_bss_no_cacheable.*)
         . = ALIGN(4);
         __non_cacheable_bss_end = .;
     } > int_sram_no_cacheable
@@ -220,6 +259,7 @@ SECTIONS
         . = ALIGN(4);
         __shareable_data_start__ = .;
         KEEP(*(.mcal_shared_data))
+        KEEP(*(.mcal_shared_data.*))
         . = ALIGN(4);
         __shareable_data_end__ = .;
     } > int_sram_shareable

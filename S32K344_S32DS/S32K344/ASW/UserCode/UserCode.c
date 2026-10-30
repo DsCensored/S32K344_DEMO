@@ -13,6 +13,35 @@
 #include "SchM_Can_43_FLEXCAN.h"
 #include "UDS_CanTp.h"
 #include "UDS_DCM.h"
+#include "Nvm.h"
+#include "NvmApp.h"
+
+/* -------------------------------------------------------------------------
+ * Simple NVM demo: keep a power-up counter in NVM block 3.
+ * Set to 0 to disable the extra Fee write at start-up.
+ * ---------------------------------------------------------------------- */
+#define ASW_NVM_DEMO_ENABLE     0
+
+#if (ASW_NVM_DEMO_ENABLE == 1)
+static void ASW_NvmBootCounter(void)
+{
+	uint8 bootCount = 0U;
+
+	/* byte access on the enum-selected block */
+	if (E_OK != Nvm_ReadByte(NVM_BLOCK_3, 0U, &bootCount))
+	{
+		bootCount = 0U;
+	}
+
+	bootCount++;
+
+	(void)Nvm_WriteByte(NVM_BLOCK_3, 0U, bootCount);
+	(void)Nvm_WriteByte(NVM_BLOCK_3, 1U, (uint8)(bootCount ^ 0xFFU));
+
+	/* make the RAM changes permanent in the DFlash */
+	(void)Nvm_CommitBlock(NVM_BLOCK_3);
+}
+#endif
 
 static void ASW_userTask2ms(void)
 {
@@ -31,6 +60,7 @@ static void ASW_userTask5ms(void)
 static void ASW_userTask10ms(void)
 {
 	BSW_CANRX_TIMEOUT_POLL();
+	Nvm_UserBlock_Polling_10ms();
 }
 static void ASW_userTask20ms(void)
 {
@@ -64,5 +94,9 @@ void ASW_Init(void)
 	BSW_RegTask(50, 3, ASW_userTask50ms);
 	BSW_RegTask(100, 3, ASW_userTask100ms);
 	BSW_RegTask(1000, 4, ASW_userTask1000ms);
+
+#if (ASW_NVM_DEMO_ENABLE == 1)
+	ASW_NvmBootCounter();
+#endif
 }
 

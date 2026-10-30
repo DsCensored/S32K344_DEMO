@@ -117,7 +117,8 @@ static void UDS_CanSendFC(void)
 
 	buf[0] = 0x30U;
 	buf[1] = 0x00U;
-	buf[2] = UDS_N_CS;
+//	buf[2] = UDS_N_CS;
+	buf[2] = 0x00U;
 	buf[3] = 0x00U;
 	buf[4] = 0x00U;
 	buf[5] = 0x00U;

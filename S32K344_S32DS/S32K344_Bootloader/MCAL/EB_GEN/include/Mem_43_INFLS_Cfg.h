@@ -101,7 +101,7 @@ extern "C"{
 extern const Mem_43_INFLS_ConfigType Mem_43_INFLS_Config;
 
 /* Configuration of MemSectorBatch */
-extern const Mem_43_INFLS_SectorBatchType Mem_43_INFLS_MemInstance_0_SectorBatch[5U];
+extern const Mem_43_INFLS_SectorBatchType Mem_43_INFLS_MemInstance_0_SectorBatch[9U];
 
 
 #define MEM_43_INFLS_STOP_SEC_CONFIG_DATA_UNSPECIFIED

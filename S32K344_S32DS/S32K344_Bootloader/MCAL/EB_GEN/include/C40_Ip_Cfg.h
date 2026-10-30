@@ -111,13 +111,8 @@ extern "C"{
 #define C40_IP_UTEST_MODE_API                  (STD_OFF)
 #define C40_IP_SECTOR_SET_LOCK_API             (STD_ON)
 
-/* The flash driver runs with the caches disabled in the bootloader, and the
- * erase/program verification is done by the UDS layer (CRC) / the tester.
- * Keep the C40 read-back and cache-maintenance paths out of the erase/program
- * sequence: they access flash through the cache while the C40 controller is
- * busy and are not needed by the ITCM driver. */
-#define C40_IP_ERASE_VERIFICATION_ENABLED      (STD_OFF)
-#define C40_IP_PROGRAM_VERIFICATION_ENABLED    (STD_OFF)
+#define C40_IP_ERASE_VERIFICATION_ENABLED      (STD_ON)
+#define C40_IP_PROGRAM_VERIFICATION_ENABLED    (STD_ON)
 
 #define C40_IP_TIMEOUT_SUPERVISION_ENABLED     (STD_OFF)
 #if (STD_ON == C40_IP_TIMEOUT_SUPERVISION_ENABLED)
@@ -139,7 +134,7 @@ extern "C"{
     #endif
 #endif
 
-/* The bootloader runs the driver with the data cache disabled. */
+/* Enable the use of cache invalidate */
 #define C40_IP_SYNCRONIZE_CACHE                (STD_OFF)
 
 #define C40_IP_ECC_DATA_ERROR_SUPPRESSION      (STD_ON)

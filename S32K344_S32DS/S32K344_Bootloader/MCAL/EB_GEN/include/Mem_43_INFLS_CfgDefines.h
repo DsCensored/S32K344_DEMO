@@ -96,11 +96,8 @@ extern "C"{
 /* Number of configured Utest Config */
 #define MEM_43_INFLS_MEM_UTESTCONFIG_COUNT                    (0U)
 #endif
-/* STD_ON: Mem access code loaded on job start / unloaded on job end or error.
- * The flash driver already executes from ITCM, so the access code is not
- * needed and is kept disabled: this avoids copying code to SRAM and keeps the
- * C40 jobs in the asynchronous mode that the ITCM driver polls. */
-#define MEM_43_INFLS_AC_LOAD_ON_JOB_START                     (STD_OFF)
+/* STD_ON: Mem access code loaded on job start / unloaded on job end or error */
+#define MEM_43_INFLS_AC_LOAD_ON_JOB_START                     (STD_ON)
 
 /* Enable Sync mode*/
 #define MEM_43_INFLS_SYNC_MODE_ENABLE                         (STD_OFF)

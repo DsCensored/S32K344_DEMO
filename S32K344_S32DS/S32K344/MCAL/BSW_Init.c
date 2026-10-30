@@ -15,6 +15,7 @@
 #include "Dma_Ip.h"
 #include "Dma_Mux_Ip.h"
 #include "BSW_UART.h"
+#include "Nvm.h"
 
 static void MCAL_MCU_Init(void)
 {
@@ -96,6 +97,19 @@ static void MCAL_UART_Init(void)
 	BSW_UART6_Init();
 }
 
+static void MCAL_NVM_Init(void)
+{
+	/* Fee + MemAcc + Mem_43_INFLS live in the internal data flash.
+	 * Nvm_Init() blocks until Fee has finished its start-up scan and the
+	 * four 256-byte blocks are loaded into RAM. */
+	if (E_NOT_OK == Nvm_Init())
+	{
+		/* The blocks are still usable (zero-filled), but report the issue. */
+	}
+
+	(void)Nvm_GetStatus();
+}
+
 static void MCAL_Init(void)
 {
 	MCAL_MCU_Init();
@@ -104,6 +118,7 @@ static void MCAL_Init(void)
 	MCAL_GPT_Init();
 	MCAL_CAN_Init();
 	MCAL_UART_Init();
+	MCAL_NVM_Init();
 }
 
 void BSW_Init(void)
