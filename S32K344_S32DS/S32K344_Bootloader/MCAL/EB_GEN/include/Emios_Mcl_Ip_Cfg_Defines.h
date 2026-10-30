@@ -48,6 +48,7 @@ extern "C"
 ==================================================================================================*/
 #include "Emios_Mcl_Ip_Cfg_DeviceRegisters.h"
 
+#include "Emios_Gpt_Ip_Cfg_Defines.h"
 
 /*==================================================================================================
 *                               HEADER FILE VERSION INFORMATION
@@ -81,6 +82,11 @@ extern "C"
 #endif
 
 #ifndef DISABLE_MCAL_INTERMODULE_ASR_CHECK
+    /* Check if this header file and Emios_Gpt_Ip_Cfg_Defines.h file are of the same Autosar version */
+    #if ((EMIOS_MCL_IP_CFG_DEFINES_AR_RELEASE_MAJOR_VERSION != EMIOS_GPT_IP_CFG_DEFINES_AR_RELEASE_MAJOR_VERSION) || \
+        (EMIOS_MCL_IP_CFG_DEFINES_AR_RELEASE_MINOR_VERSION != EMIOS_GPT_IP_CFG_DEFINES_AR_RELEASE_MINOR_VERSION))
+        #error "AutoSar Version Numbers of Emios_Mcl_Ip_Cfg_Defines.h and Emios_Gpt_Ip_Cfg_Defines.h are different"
+    #endif
 #endif
 
 /*==================================================================================================

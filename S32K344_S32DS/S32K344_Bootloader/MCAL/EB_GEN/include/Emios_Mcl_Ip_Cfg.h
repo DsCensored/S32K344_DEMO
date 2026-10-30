@@ -47,7 +47,7 @@ extern "C"
 * 3) internal and external interfaces from this unit
 ==================================================================================================*/
 
-#include "Emios_Mcl_Ip_VS_0_PBcfg.h"
+#include "Emios_Mcl_Ip_PBcfg.h"
 
 /*==================================================================================================
 *                               HEADER FILE VERSION INFORMATION
@@ -62,25 +62,25 @@ extern "C"
 /*==================================================================================================
 *                                      FILE VERSION CHECKS
 ==================================================================================================*/
-/* Check if header file and Emios_Mcl_Ip_VS_0_PBcfg.h file are of the same vendor */
-#if (EMIOS_MCL_IP_CFG_VENDOR_ID != EMIOS_MCL_IP_VS_0_PBCFG_VENDOR_ID)
-    #error "Emios_Mcl_Ip_Cfg.h and Emios_Mcl_Ip_VS_0_PBcfg.h have different vendor ids"
+/* Check if header file and Emios_Mcl_Ip_PBcfg.h file are of the same vendor */
+#if (EMIOS_MCL_IP_CFG_VENDOR_ID != EMIOS_MCL_IP_PBCFG_VENDOR_ID)
+    #error "Emios_Mcl_Ip_Cfg.h and Emios_Mcl_Ip_PBcfg.h have different vendor ids"
 #endif
 
-/* Check if header file and Emios_Mcl_Ip_VS_0_PBcfg.h file are of the same Autosar version */
-#if ((EMIOS_MCL_IP_CFG_AR_RELEASE_MAJOR_VERSION != EMIOS_MCL_IP_VS_0_PBCFG_AR_RELEASE_MAJOR_VERSION) || \
-     (EMIOS_MCL_IP_CFG_AR_RELEASE_MINOR_VERSION != EMIOS_MCL_IP_VS_0_PBCFG_AR_RELEASE_MINOR_VERSION) || \
-     (EMIOS_MCL_IP_CFG_AR_RELEASE_REVISION_VERSION != EMIOS_MCL_IP_VS_0_PBCFG_AR_RELEASE_REVISION_VERSION) \
+/* Check if header file and Emios_Mcl_Ip_PBcfg.h file are of the same Autosar version */
+#if ((EMIOS_MCL_IP_CFG_AR_RELEASE_MAJOR_VERSION != EMIOS_MCL_IP_PBCFG_AR_RELEASE_MAJOR_VERSION) || \
+     (EMIOS_MCL_IP_CFG_AR_RELEASE_MINOR_VERSION != EMIOS_MCL_IP_PBCFG_AR_RELEASE_MINOR_VERSION) || \
+     (EMIOS_MCL_IP_CFG_AR_RELEASE_REVISION_VERSION != EMIOS_MCL_IP_PBCFG_AR_RELEASE_REVISION_VERSION) \
     )
-    #error "AutoSar Version Numbers of Emios_Mcl_Ip_Cfg.h and Emios_Mcl_Ip_VS_0_PBcfg.h are different"
+    #error "AutoSar Version Numbers of Emios_Mcl_Ip_Cfg.h and Emios_Mcl_Ip_PBcfg.h are different"
 #endif
 
-/* Check if header file and Emios_Mcl_Ip_VS_0_PBcfg.h file are of the same Software version */
-#if ((EMIOS_MCL_IP_CFG_SW_MAJOR_VERSION != EMIOS_MCL_IP_VS_0_PBCFG_SW_MAJOR_VERSION) || \
-     (EMIOS_MCL_IP_CFG_SW_MINOR_VERSION != EMIOS_MCL_IP_VS_0_PBCFG_SW_MINOR_VERSION) || \
-     (EMIOS_MCL_IP_CFG_SW_PATCH_VERSION != EMIOS_MCL_IP_VS_0_PBCFG_SW_PATCH_VERSION) \
+/* Check if header file and Emios_Mcl_Ip_PBcfg.h file are of the same Software version */
+#if ((EMIOS_MCL_IP_CFG_SW_MAJOR_VERSION != EMIOS_MCL_IP_PBCFG_SW_MAJOR_VERSION) || \
+     (EMIOS_MCL_IP_CFG_SW_MINOR_VERSION != EMIOS_MCL_IP_PBCFG_SW_MINOR_VERSION) || \
+     (EMIOS_MCL_IP_CFG_SW_PATCH_VERSION != EMIOS_MCL_IP_PBCFG_SW_PATCH_VERSION) \
     )
-    #error "Software Version Numbers of Emios_Mcl_Ip_Cfg.h and Emios_Mcl_Ip_VS_0_PBcfg.h are different"
+    #error "Software Version Numbers of Emios_Mcl_Ip_Cfg.h and Emios_Mcl_Ip_PBcfg.h are different"
 #endif
 
 /*==================================================================================================

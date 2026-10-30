@@ -11,6 +11,9 @@
 #include "Gpt.h"
 #include "Can_43_FLEXCAN.h"
 #include "UDS_DCM.h"
+#include "CDD_Mcl.h"
+#include "MemAcc.h"
+#include "Mem_43_INFLS.h"
 
 /* Cortex-M7 system registers, addressed directly to avoid pulling in a
  * specific CMSIS header into the bootloader application code. */
@@ -19,6 +22,20 @@
 #define BOOT_NVIC_ICPR(i)   (*(volatile unsigned int *)(0xE000E280UL + ((i) * 4UL)))
 
 typedef void (*Boot_AppEntryType)(void);
+
+/* Start the application: switch to its stack and branch to its reset vector.
+ *
+ * Must be naked.  The MSP is switched to the APP stack top (0x20020000) here,
+ * so the compiler must not emit any epilogue (ldmia sp!, ... / pop) after it:
+ * reading past the end of the DTCM stack raises a precise bus fault. */
+static void __attribute__((naked, noreturn)) Boot_StartApp(unsigned int stackPointer,
+                                                           unsigned int resetHandler)
+{
+    __asm volatile ("msr msp, r0\n"
+                    "dsb\n"
+                    "isb\n"
+                    "bx  r1\n");
+}
 
 static unsigned char Boot_Stay = 0U;
 static unsigned char Boot_Initialised = 0U;
@@ -255,15 +272,13 @@ void Boot_TryJumpToApp(void)
     __asm volatile ("dsb" ::: "memory");
     __asm volatile ("isb" ::: "memory");
 
-    __asm volatile ("msr msp, %0" : : "r" (sp));
-    ((Boot_AppEntryType)reset)();
+    Boot_StartApp(sp, reset);
 }
 void Boot_JumpToApp(void)
 {
     unsigned int vector = Boot_AppVector();
     unsigned int sp = *(volatile unsigned int *)vector;
     unsigned int reset = *(volatile unsigned int *)(vector + 4UL);
-    Boot_AppEntryType entry = (Boot_AppEntryType)reset;
     unsigned int i;
 
     /* De-initialise everything the bootloader owns before the APP starts. */
@@ -275,6 +290,10 @@ void Boot_JumpToApp(void)
     Gpt_StopTimer(GptConf_GptChannelConfiguration_GptChannelConfiguration_PIT0_CH0);
     Gpt_DeInit();
     Can_43_FLEXCAN_DeInit();
+    Mcl_DeInit();
+    Mem_43_INFLS_DeInit();
+    MemAcc_DeInit();
+
 
     /* Stop SysTick as well. */
     *(volatile unsigned int *)0xE000E010UL = 0U;
@@ -298,8 +317,7 @@ void Boot_JumpToApp(void)
     __asm volatile ("isb" ::: "memory");
 
     /* Switch to the application stack and start its reset vector. */
-    __asm volatile ("msr msp, %0" : : "r" (sp));
-    entry();
+    Boot_StartApp(sp, reset);
 }
 
 unsigned int Boot_Crc32Update(unsigned int crc, const unsigned char *data,

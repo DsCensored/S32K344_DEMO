@@ -4014,6 +4014,2681 @@
                       </d:var>
                     </d:ctr>
                   </d:ctr>
+                  <d:ctr name="McuModeSettingConf_Standby" type="IDENTIFIABLE">
+                    <d:var name="McuMode" type="INTEGER" value="1">
+                      <a:a name="IMPORTER_INFO">
+                        <a:v>@DEF</a:v>
+                        <a:v>@CALC</a:v>
+                      </a:a>
+                    </d:var>
+                    <d:var name="McuPowerMode" type="ENUMERATION" 
+                           value="STANDBY"/>
+                    <d:var name="McuMainCoreSelect" type="ENUMERATION" 
+                           value="CM7_0">
+                      <a:a name="IMPORTER_INFO">
+                        <a:v>@DEF</a:v>
+                        <a:v>@CALC</a:v>
+                      </a:a>
+                    </d:var>
+                    <d:var name="McuCoreLockStepEnable" type="BOOLEAN" 
+                           value="false">
+                      <a:a name="IMPORTER_INFO" value="@DEF"/>
+                    </d:var>
+                    <d:var name="McuEnableSleepOnExit" type="BOOLEAN" 
+                           value="false">
+                      <a:a name="IMPORTER_INFO" value="@DEF"/>
+                    </d:var>
+                    <d:ctr name="McuPartitionConfiguration" type="IDENTIFIABLE">
+                      <d:ctr name="McuPartition0Config" type="IDENTIFIABLE">
+                        <d:var name="McuPartitionUnderMcuControl" 
+                               type="BOOLEAN" value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:var name="McuPartitionPowerUnderMcuControl" 
+                               type="BOOLEAN" value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:var name="McuPrtnCofb0UnderMcuControl" 
+                               type="BOOLEAN" value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:var name="McuPrtnCofb1UnderMcuControl" 
+                               type="BOOLEAN" value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:var name="McuPartitionClockEnable" type="BOOLEAN" 
+                               value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:ctr name="McuCore0Configuration" type="IDENTIFIABLE">
+                          <d:var name="McuCoreUnderMcuControl" type="BOOLEAN" 
+                                 value="true">
+                            <a:a name="IMPORTER_INFO" value="@DEF"/>
+                          </d:var>
+                          <d:var name="McuCoreClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO" value="@DEF"/>
+                          </d:var>
+                          <d:var name="McuCoreBootAddress" type="INTEGER" 
+                                 value="0">
+                            <a:a name="IMPORTER_INFO" value="@DEF"/>
+                          </d:var>
+                          <d:var name="McuCoreBootAddressLinkerSym" 
+                                 type="STRING" value="">
+                            <a:a name="IMPORTER_INFO" value="@DEF"/>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuCore1Configuration" type="IDENTIFIABLE">
+                          <d:var name="McuCoreUnderMcuControl" type="BOOLEAN" 
+                                 value="true">
+                            <a:a name="IMPORTER_INFO" value="@DEF"/>
+                          </d:var>
+                          <d:var name="McuCoreClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO" value="@DEF"/>
+                          </d:var>
+                          <d:var name="McuCoreBootAddress" type="INTEGER" 
+                                 value="0">
+                            <a:a name="IMPORTER_INFO" value="@DEF"/>
+                          </d:var>
+                          <d:var name="McuCoreBootAddressLinkerSym" 
+                                 type="STRING" value="">
+                            <a:a name="IMPORTER_INFO" value="@DEF"/>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuCore4Configuration" type="IDENTIFIABLE">
+                          <d:var name="McuCoreUnderMcuControl" type="BOOLEAN" 
+                                 value="true">
+                            <a:a name="IMPORTER_INFO" value="@DEF"/>
+                          </d:var>
+                          <d:var name="McuCoreClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO" value="@DEF"/>
+                          </d:var>
+                          <d:var name="McuCoreBootAddress" type="INTEGER" 
+                                 value="0">
+                            <a:a name="IMPORTER_INFO" value="@DEF"/>
+                          </d:var>
+                          <d:var name="McuCoreBootAddressLinkerSym" 
+                                 type="STRING" value="">
+                            <a:a name="IMPORTER_INFO" value="@DEF"/>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuCore3Configuration" type="IDENTIFIABLE">
+                          <d:var name="McuCoreUnderMcuControl" type="BOOLEAN" 
+                                 value="true">
+                            <a:a name="IMPORTER_INFO" value="@DEF"/>
+                          </d:var>
+                          <d:var name="McuCoreClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO" value="@DEF"/>
+                          </d:var>
+                          <d:var name="McuCoreBootAddress" type="INTEGER" 
+                                 value="0">
+                            <a:a name="IMPORTER_INFO" value="@DEF"/>
+                          </d:var>
+                          <d:var name="McuCoreBootAddressLinkerSym" 
+                                 type="STRING" value="">
+                            <a:a name="IMPORTER_INFO" value="@DEF"/>
+                          </d:var>
+                        </d:ctr>
+                      </d:ctr>
+                      <d:ctr name="McuPartition1Config" type="IDENTIFIABLE">
+                        <d:var name="McuPartitionUnderMcuControl" 
+                               type="BOOLEAN" value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:var name="McuPartitionPowerUnderMcuControl" 
+                               type="BOOLEAN" value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:var name="McuPrtnCofb0UnderMcuControl" 
+                               type="BOOLEAN" value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:var name="McuPrtnCofb1UnderMcuControl" 
+                               type="BOOLEAN" value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:var name="McuPrtnCofb2UnderMcuControl" 
+                               type="BOOLEAN" value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:var name="McuPrtnCofb3UnderMcuControl" 
+                               type="BOOLEAN" value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:var name="McuPartitionClockEnable" type="BOOLEAN" 
+                               value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                      </d:ctr>
+                      <d:ctr name="McuPartition2Config" type="IDENTIFIABLE">
+                        <d:var name="McuPartitionUnderMcuControl" 
+                               type="BOOLEAN" value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:var name="McuPartitionPowerUnderMcuControl" 
+                               type="BOOLEAN" value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:var name="McuPrtnCofb0UnderMcuControl" 
+                               type="BOOLEAN" value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:var name="McuPrtnCofb1UnderMcuControl" 
+                               type="BOOLEAN" value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:var name="McuPrtnCofb2UnderMcuControl" 
+                               type="BOOLEAN" value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:var name="McuPartitionClockEnable" type="BOOLEAN" 
+                               value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                      </d:ctr>
+                      <d:ctr name="McuPartition3Config" type="IDENTIFIABLE">
+                        <d:var name="McuPartitionUnderMcuControl" 
+                               type="BOOLEAN" value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:var name="McuPartitionPowerUnderMcuControl" 
+                               type="BOOLEAN" value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:var name="McuPrtnCofb0UnderMcuControl" 
+                               type="BOOLEAN" value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:var name="McuPrtnCofb1UnderMcuControl" 
+                               type="BOOLEAN" value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:var name="McuPrtnCofb2UnderMcuControl" 
+                               type="BOOLEAN" value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:var name="McuPartitionClockEnable" type="BOOLEAN" 
+                               value="true">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                      </d:ctr>
+                      <d:lst name="McuPeripheral" type="MAP">
+                        <d:ctr name="McuPeripheral_0" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="TRGMUX">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN0_COFB1_REQ32">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_1" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="BCTU">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN0_COFB1_REQ33">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_2" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EMIOS_0">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN0_COFB1_REQ34">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_3" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EMIOS_1">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN0_COFB1_REQ35">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_4" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EMIOS_2">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN0_COFB1_REQ36">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_5" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LCU_0">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN0_COFB1_REQ38">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_6" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LCU_1">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN0_COFB1_REQ39">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_7" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="ADC_0">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN0_COFB1_REQ40">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_8" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="ADC_1">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN0_COFB1_REQ41">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_9" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="ADC_2">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN0_COFB1_REQ42">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_10" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="PIT_0">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN0_COFB1_REQ44">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="true">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_11" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="PIT_1">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN0_COFB1_REQ45">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_12" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB0_REQ3">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_13" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_0">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB0_REQ4">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_14" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_1">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB0_REQ5">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_15" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_2">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB0_REQ6">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_16" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_3">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB0_REQ7">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_17" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_4">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB0_REQ8">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_18" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_5">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB0_REQ9">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_19" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_6">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB0_REQ10">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_20" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_7">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB0_REQ11">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_21" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_8">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB0_REQ12">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_22" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_9">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB0_REQ13">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_23" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_10">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB0_REQ14">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_24" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_11">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB0_REQ15">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_25" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="SDA_AP">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB0_REQ21">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="true">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_26" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EIM_0">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB0_REQ22">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_27" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="ERM_0">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB0_REQ23">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_28" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="MSCM">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB0_REQ24">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="true">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_29" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="SWT_0">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB0_REQ28">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="true">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_30" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="STM_0">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB0_REQ29">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_31" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="INTM">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB0_REQ31">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_32" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="DMAMUX_0">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB1_REQ32">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_33" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="DMAMUX_1">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB1_REQ33">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_34" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="RTC">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB1_REQ34">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="true">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_35" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="SIUL2_VIRTWRAPPER_PDAC3">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB1_REQ42">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="true">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_36" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="WKPU">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB1_REQ45">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="true">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_37" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="CMUs">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB1_REQ47">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_38" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="TSPC">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB1_REQ49">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="true">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_39" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="SXOSC">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB1_REQ51">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="true">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_40" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="FXOSC">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB1_REQ53">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="true">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_41" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="PLL">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB1_REQ56">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_42" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="PIT_2">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB1_REQ63">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_43" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="FlexCAN_0">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ65">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_44" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="FlexCAN_1">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ66">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_45" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="FlexCAN_2">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ67">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_46" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="FlexCAN_3">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ68">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_47" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="FlexCAN_4">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ69">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_48" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="FlexCAN_5">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ70">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_49" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="FlexIO">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ73">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_50" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPUART_0">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ74">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_51" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPUART_1">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ75">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_52" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPUART_2">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ76">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_53" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPUART_3">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ77">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_54" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPUART_4">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ78">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_55" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPUART_5">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ79">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_56" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPUART_6">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ80">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_57" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPUART_7">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ81">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_58" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPI2C_0">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ84">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_59" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPI2C_1">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ85">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_60" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPSPI_0">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ86">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_61" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPSPI_1">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ87">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_62" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPSPI_2">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ88">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_63" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPSPI_3">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ89">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_64" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="SAI_0">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ91">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_65" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPCMP_0">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ92">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="true">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_66" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPCMP_1">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ93">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false"/>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_67" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="TEMPSENSE">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB2_REQ95">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_68" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="CRC">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB3_REQ96">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_69" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="STCU_2">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN1_COFB3_REQ104">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="true">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_70" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_12">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB0_REQ4">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_71" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_13">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB0_REQ5">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_72" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_14">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB0_REQ6">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_73" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_15">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB0_REQ7">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_74" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_16">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB0_REQ8">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_75" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_17">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB0_REQ9">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_76" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_18">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB0_REQ10">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_77" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_19">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB0_REQ11">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_78" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_20">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB0_REQ12">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_79" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_21">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB0_REQ13">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_80" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_22">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB0_REQ14">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_81" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_23">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB0_REQ15">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_82" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_24">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB0_REQ16">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_83" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_25">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB0_REQ17">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_84" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_26">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB0_REQ18">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_85" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_27">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB0_REQ19">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_86" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_28">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB0_REQ20">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_87" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_29">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB0_REQ21">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_88" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_30">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB0_REQ22">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_89" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EDMA_TCD_31">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB0_REQ23">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_90" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="SEMA_42">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB0_REQ24">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_91" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="STM_1">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB0_REQ29">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_92" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="EMAC">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB1_REQ32">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_93" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPUART_8">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB1_REQ35">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_94" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPUART_9">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB1_REQ36">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_95" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPUART_10">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB1_REQ37">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_96" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPUART_11">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB1_REQ38">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_97" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPUART_12">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB1_REQ39">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_98" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPUART_13">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB1_REQ40">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_99" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPUART_14">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB1_REQ41">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_100" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPUART_15">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB1_REQ42">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_101" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPSPI_4">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB1_REQ47">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_102" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPSPI_5">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB1_REQ48">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_103" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="QuadSPI">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB1_REQ51">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_104" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="SAI_1">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB1_REQ55">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="false">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                        <d:ctr name="McuPeripheral_105" type="IDENTIFIABLE">
+                          <d:var name="McuPeripheralName" type="ENUMERATION" 
+                                 value="LPCMP_2">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuModeEntrySlot" type="ENUMERATION" 
+                                 value="PRTN2_COFB1_REQ58">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                          <d:var name="McuPeripheralClockEnable" type="BOOLEAN" 
+                                 value="true">
+                            <a:a name="IMPORTER_INFO">
+                              <a:v>@DEF</a:v>
+                              <a:v>@CALC</a:v>
+                            </a:a>
+                          </d:var>
+                        </d:ctr>
+                      </d:lst>
+                    </d:ctr>
+                    <d:ctr name="McuDcmGprConfiguration" type="IDENTIFIABLE">
+                      <d:var name="McuDcmGprUnderMcuControl" type="BOOLEAN" 
+                             value="false">
+                        <a:a name="IMPORTER_INFO" value="@DEF"/>
+                      </d:var>
+                      <d:var name="McuBootBaseAddress" type="INTEGER" value="0">
+                        <a:a name="IMPORTER_INFO" value="@DEF"/>
+                      </d:var>
+                      <d:var name="McuPGOOD_POLARITYControl" type="ENUMERATION" 
+                             value="DO_NOT_BYPASS_PMIC_HANDSHAKE">
+                        <a:a name="IMPORTER_INFO" value="@DEF"/>
+                      </d:var>
+                      <d:var name="McuSIRC_TRIM_BYP_STDBY_EXTControl" 
+                             type="BOOLEAN" value="false">
+                        <a:a name="IMPORTER_INFO" value="@DEF"/>
+                      </d:var>
+                      <d:var name="McuPMC_TRIM_RGM_DCF_BYP_STDBY_EXTControl" 
+                             type="BOOLEAN" value="false">
+                        <a:a name="IMPORTER_INFO" value="@DEF"/>
+                      </d:var>
+                      <d:var name="McuFIRC_TRIM_BYP_STDBY_EXTControl" 
+                             type="BOOLEAN" value="false">
+                        <a:a name="IMPORTER_INFO" value="@DEF"/>
+                      </d:var>
+                      <d:var name="McuDCM_SCAN_BYP_STDBY_EXTControl" 
+                             type="BOOLEAN" value="false">
+                        <a:a name="IMPORTER_INFO" value="@DEF"/>
+                      </d:var>
+                      <d:var name="McuPLL1_LOL_RST_ENControl" type="BOOLEAN" 
+                             value="false">
+                        <a:a name="IMPORTER_INFO" value="@DEF"/>
+                      </d:var>
+                      <d:var name="McuGlobalPadkeepingEnable" type="BOOLEAN" 
+                             value="false">
+                        <a:a name="IMPORTER_INFO" value="@DEF"/>
+                      </d:var>
+                    </d:ctr>
+                  </d:ctr>
                 </d:lst>
                 <d:lst name="McuRamSectorSettingConf" type="MAP"/>
                 <d:ctr name="McuResetConfig" type="IDENTIFIABLE">

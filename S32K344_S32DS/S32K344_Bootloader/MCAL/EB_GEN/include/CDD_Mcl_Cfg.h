@@ -48,9 +48,7 @@ extern "C"{
 #include "Emios_Mcl_Ip_Cfg.h"
 
 
-
-#include "CDD_Mcl_VS_0_PBcfg.h"
-
+#include "CDD_Mcl_PBcfg.h"
 
 
 /*==================================================================================================
@@ -200,25 +198,25 @@ extern "C"{
     #error "Software Version Numbers of CDD_Mcl_Cfg.h and Emios_Mcl_Ip_Cfg.h are different"
 #endif
 
-/* Check if header file and CDD_Mcl_VS_0_PBcfg.h file are of the same vendor */
-#if (CDD_MCL_CFG_VENDOR_ID != CDD_MCL_VS_0_PBCFG_VENDOR_ID)
-    #error "CDD_Mcl_Cfg.h and CDD_Mcl_VS_0_PBcfg.h have different vendor ids"
+/* Check if header file and CDD_Mcl_PBcfg.h file are of the same vendor */
+#if (CDD_MCL_CFG_VENDOR_ID != CDD_MCL_PBCFG_VENDOR_ID)
+    #error "CDD_Mcl_Cfg.h and CDD_Mcl_PBcfg.h have different vendor ids"
 #endif
 
-/* Check if header file and CDD_Mcl_VS_0_PBcfg.h file are of the same Autosar version */
-#if ((CDD_MCL_CFG_AR_RELEASE_MAJOR_VERSION != CDD_MCL_VS_0_PBCFG_AR_RELEASE_MAJOR_VERSION) || \
-     (CDD_MCL_CFG_AR_RELEASE_MINOR_VERSION != CDD_MCL_VS_0_PBCFG_AR_RELEASE_MINOR_VERSION) || \
-     (CDD_MCL_CFG_AR_RELEASE_REVISION_VERSION != CDD_MCL_VS_0_PBCFG_AR_RELEASE_REVISION_VERSION) \
+/* Check if header file and CDD_Mcl_PBcfg.h file are of the same Autosar version */
+#if ((CDD_MCL_CFG_AR_RELEASE_MAJOR_VERSION != CDD_MCL_PBCFG_AR_RELEASE_MAJOR_VERSION) || \
+     (CDD_MCL_CFG_AR_RELEASE_MINOR_VERSION != CDD_MCL_PBCFG_AR_RELEASE_MINOR_VERSION) || \
+     (CDD_MCL_CFG_AR_RELEASE_REVISION_VERSION != CDD_MCL_PBCFG_AR_RELEASE_REVISION_VERSION) \
     )
-    #error "AutoSar Version Numbers of CDD_Mcl_Cfg.h and CDD_Mcl_VS_0_PBcfg.h are different"
+    #error "AutoSar Version Numbers of CDD_Mcl_Cfg.h and CDD_Mcl_PBcfg.h are different"
 #endif
 
-/* Check if header file and CDD_Mcl_VS_0_PBcfg.h file are of the same Software version */
-#if ((CDD_MCL_CFG_SW_MAJOR_VERSION != CDD_MCL_VS_0_PBCFG_SW_MAJOR_VERSION) || \
-     (CDD_MCL_CFG_SW_MINOR_VERSION != CDD_MCL_VS_0_PBCFG_SW_MINOR_VERSION) || \
-     (CDD_MCL_CFG_SW_PATCH_VERSION != CDD_MCL_VS_0_PBCFG_SW_PATCH_VERSION) \
+/* Check if header file and CDD_Mcl_PBcfg.h file are of the same Software version */
+#if ((CDD_MCL_CFG_SW_MAJOR_VERSION != CDD_MCL_PBCFG_SW_MAJOR_VERSION) || \
+     (CDD_MCL_CFG_SW_MINOR_VERSION != CDD_MCL_PBCFG_SW_MINOR_VERSION) || \
+     (CDD_MCL_CFG_SW_PATCH_VERSION != CDD_MCL_PBCFG_SW_PATCH_VERSION) \
     )
-    #error "Software Version Numbers of CDD_Mcl_Cfg.h and CDD_Mcl_VS_0_PBcfg.h are different"
+    #error "Software Version Numbers of CDD_Mcl_Cfg.h and CDD_Mcl_PBcfg.h are different"
 #endif
 
 /*==================================================================================================

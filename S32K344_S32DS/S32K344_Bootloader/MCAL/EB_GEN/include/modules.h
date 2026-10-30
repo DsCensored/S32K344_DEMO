@@ -297,7 +297,7 @@ extern "C" {
 /** 
 * @brief This constant used for other modules to check if Mem_InFls is present in the project.   
 */
-#define USE_MEM_43_INFLS_MODULE      (STD_OFF)  
+#define USE_MEM_43_INFLS_MODULE      (STD_ON)  
 
 /** 
 * @brief This constant used for other modules to check if OCU is present in the project. 
@@ -367,7 +367,7 @@ extern "C" {
 /** 
 * @brief This constant used for other modules to check if UART is present in the project.   
 */
-#define USE_UART_MODULE              (STD_OFF) 
+#define USE_UART_MODULE              (STD_ON) 
 
 /** 
 * @brief This constant used for other modules to check if WDG is present in the project.   

@@ -1560,7 +1560,7 @@ void Mem_43_INFLS_Init(const Mem_43_INFLS_ConfigType *ConfigPtr)
     Std_ReturnType Status;
     uint32 InstanceIndex;
 
-    if (NULL_PTR == ConfigPtr)
+    if (NULL_PTR != ConfigPtr)
     {
         /* The ConfigPtr argument is not a NULL pointer */
         Mem_43_INFLS_ReportDevError(0U, MEM_43_INFLS_INIT_ID, MEM_43_INFLS_E_PARAM_POINTER);

@@ -37,7 +37,7 @@ extern "C"
  3) internal and external interfaces from this unit
 ==================================================================================================*/
 #include "Dma_Ip_Types.h"
-#include "Dma_Ip_VS_0_PBcfg.h"
+#include "Dma_Ip_PBcfg.h"
 
 /*==================================================================================================
                                SOURCE FILE VERSION INFORMATION
@@ -74,26 +74,119 @@ extern "C"
     #error "Software Version Numbers of Dma_Ip_Cfg.h and Dma_Ip_Types.h are different"
 #endif
 
-/* Check if header file and Dma_Ip_VS_0_PBcfg.h file are of the same vendor */
-#if (DMA_IP_CFG_VENDOR_ID != DMA_IP_VS_0_PBCFG_VENDOR_ID)
-    #error "Dma_Ip_Cfg.h and Dma_Ip_VS_0_PBcfg.h have different vendor ids"
+/* Check if header file and Dma_Ip_PBcfg.h file are of the same vendor */
+#if (DMA_IP_CFG_VENDOR_ID != DMA_IP_PBCFG_VENDOR_ID)
+    #error "Dma_Ip_Cfg.h and Dma_Ip_PBcfg.h have different vendor ids"
 #endif
 
-/* Check if header file and Dma_Ip_VS_0_PBcfg.h file are of the same Autosar version */
-#if ((DMA_IP_CFG_AR_RELEASE_MAJOR_VERSION != DMA_IP_VS_0_PBCFG_AR_RELEASE_MAJOR_VERSION) || \
-     (DMA_IP_CFG_AR_RELEASE_MINOR_VERSION != DMA_IP_VS_0_PBCFG_AR_RELEASE_MINOR_VERSION) || \
-     (DMA_IP_CFG_AR_RELEASE_REVISION_VERSION != DMA_IP_VS_0_PBCFG_AR_RELEASE_REVISION_VERSION) \
+/* Check if header file and Dma_Ip_PBcfg.h file are of the same Autosar version */
+#if ((DMA_IP_CFG_AR_RELEASE_MAJOR_VERSION != DMA_IP_PBCFG_AR_RELEASE_MAJOR_VERSION) || \
+     (DMA_IP_CFG_AR_RELEASE_MINOR_VERSION != DMA_IP_PBCFG_AR_RELEASE_MINOR_VERSION) || \
+     (DMA_IP_CFG_AR_RELEASE_REVISION_VERSION != DMA_IP_PBCFG_AR_RELEASE_REVISION_VERSION) \
     )
-    #error "AutoSar Version Numbers of Dma_Ip_Cfg.h and Dma_Ip_VS_0_PBcfg.h are different"
+    #error "AutoSar Version Numbers of Dma_Ip_Cfg.h and Dma_Ip_PBcfg.h are different"
 #endif
 
-/* Check if header file and Dma_Ip_VS_0_PBcfg.h file are of the same Software version */
-#if ((DMA_IP_CFG_SW_MAJOR_VERSION != DMA_IP_VS_0_PBCFG_SW_MAJOR_VERSION) || \
-     (DMA_IP_CFG_SW_MINOR_VERSION != DMA_IP_VS_0_PBCFG_SW_MINOR_VERSION) || \
-     (DMA_IP_CFG_SW_PATCH_VERSION != DMA_IP_VS_0_PBCFG_SW_PATCH_VERSION) \
+/* Check if header file and Dma_Ip_PBcfg.h file are of the same Software version */
+#if ((DMA_IP_CFG_SW_MAJOR_VERSION != DMA_IP_PBCFG_SW_MAJOR_VERSION) || \
+     (DMA_IP_CFG_SW_MINOR_VERSION != DMA_IP_PBCFG_SW_MINOR_VERSION) || \
+     (DMA_IP_CFG_SW_PATCH_VERSION != DMA_IP_PBCFG_SW_PATCH_VERSION) \
     )
-    #error "Software Version Numbers of Dma_Ip_Cfg.h and Dma_Ip_VS_0_PBcfg.h are different"
+    #error "Software Version Numbers of Dma_Ip_Cfg.h and Dma_Ip_PBcfg.h are different"
 #endif
+
+
+
+
+/*******************************************************************************
+ * Definitions
+ ******************************************************************************/
+/* Number Of Configured Logic Instances */
+#define MCL_ENABLE_USER_MODE_SUPPORT    STD_OFF
+
+#if (STD_ON == MCL_ENABLE_USER_MODE_SUPPORT)
+#define MCL_DMA_REG_PROT_AVAILABLE
+#endif
+
+#define DMA_IP_NOF_CFG_LOGIC_INSTANCES   ((uint32)1U)
+
+
+/* Logic Instance 0 */
+#define DMA_LOGIC_INST_0    ((uint32)0U)
+
+/* Number Of Configured Logic Channels */
+#define DMA_IP_NOF_CFG_LOGIC_CHANNELS   ((uint32)2U)
+
+/* Logic Channel 0 */
+#define DMA_LOGIC_CH_0      ((uint8)0U)
+
+
+/* Logic Channel 1 */
+#define DMA_LOGIC_CH_1      ((uint8)1U)
+
+
+
+#define MCL_START_SEC_CONFIG_DATA_UNSPECIFIED
+
+#include "Mcl_MemMap.h"
+
+/* DMA Initialization Structure */
+extern const Dma_Ip_InitType Dma_Ip_xDmaInitPB;
+
+extern const Dma_Ip_LogicChannelConfigType Dma_Ip_xLogicChannelResetConfig;
+
+extern const Dma_Ip_LogicInstanceConfigType Dma_Ip_xLogicInstanceResetConfig;
+
+#define MCL_STOP_SEC_CONFIG_DATA_UNSPECIFIED
+
+#include "Mcl_MemMap.h"
+
+#define MCL_START_SEC_CODE
+
+#include "Mcl_MemMap.h"
+
+    
+
+
+/* DMA IRQ Handlers */
+ISR(Dma0_Ch0_IRQHandler);
+ISR(Dma0_Ch1_IRQHandler);
+ISR(Dma0_Ch2_IRQHandler);
+ISR(Dma0_Ch3_IRQHandler);
+ISR(Dma0_Ch4_IRQHandler);
+ISR(Dma0_Ch5_IRQHandler);
+ISR(Dma0_Ch6_IRQHandler);
+ISR(Dma0_Ch7_IRQHandler);
+ISR(Dma0_Ch8_IRQHandler);
+ISR(Dma0_Ch9_IRQHandler);
+ISR(Dma0_Ch10_IRQHandler);
+ISR(Dma0_Ch11_IRQHandler);
+ISR(Dma0_Ch12_IRQHandler);
+ISR(Dma0_Ch13_IRQHandler);
+ISR(Dma0_Ch14_IRQHandler);
+ISR(Dma0_Ch15_IRQHandler);
+ISR(Dma0_Ch16_IRQHandler);
+ISR(Dma0_Ch17_IRQHandler);
+ISR(Dma0_Ch18_IRQHandler);
+ISR(Dma0_Ch19_IRQHandler);
+ISR(Dma0_Ch20_IRQHandler);
+ISR(Dma0_Ch21_IRQHandler);
+ISR(Dma0_Ch22_IRQHandler);
+ISR(Dma0_Ch23_IRQHandler);
+ISR(Dma0_Ch24_IRQHandler);
+ISR(Dma0_Ch25_IRQHandler);
+ISR(Dma0_Ch26_IRQHandler);
+ISR(Dma0_Ch27_IRQHandler);
+ISR(Dma0_Ch28_IRQHandler);
+ISR(Dma0_Ch29_IRQHandler);
+ISR(Dma0_Ch30_IRQHandler);
+ISR(Dma0_Ch31_IRQHandler);
+
+
+
+#define MCL_STOP_SEC_CODE
+
+#include "Mcl_MemMap.h"
 
 
 #ifdef __cplusplus

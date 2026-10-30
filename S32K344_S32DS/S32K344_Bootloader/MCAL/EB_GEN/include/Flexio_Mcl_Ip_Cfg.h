@@ -37,8 +37,7 @@ extern "C"
 * 3) internal and external interfaces from this unit
 ==================================================================================================*/
 /* Include all variants header files. */
-#include "Flexio_Mcl_Ip_VS_0_PBcfg.h"
-
+#include "Flexio_Mcl_Ip_PBcfg.h"
 #include "Flexio_Mcl_Ip_Cfg_Defines.h"
 
 
@@ -78,25 +77,25 @@ extern "C"
     #error "Software Version Numbers of Flexio_Mcl_Ip_Cfg.h and Flexio_Mcl_Ip_Cfg_Defines.h are different"
 #endif
 
-/* Check if header file and Flexio_Mcl_Ip_VS_0_PBcfg.h file are of the same vendor */
-#if (FLEXIO_MCL_IP_CFG_VENDOR_ID != FLEXIO_MCL_IP_VS_0_PBCFG_VENDOR_ID)
-    #error "Flexio_Mcl_Ip_Cfg.h and Flexio_Mcl_Ip_VS_0_PBcfg.h have different vendor ids"
+/* Check if header file and Flexio_Mcl_Ip_PBcfg.h file are of the same vendor */
+#if (FLEXIO_MCL_IP_CFG_VENDOR_ID != FLEXIO_MCL_IP_PBCFG_VENDOR_ID)
+    #error "Flexio_Mcl_Ip_Cfg.h and Flexio_Mcl_Ip_PBcfg.h have different vendor ids"
 #endif
 
-/* Check if header file and Flexio_Mcl_Ip_VS_0_PBcfg.h file are of the same Autosar version */
-#if ((FLEXIO_MCL_IP_CFG_AR_RELEASE_MAJOR_VERSION != FLEXIO_MCL_IP_VS_0_PBCFG_AR_RELEASE_MAJOR_VERSION) || \
-     (FLEXIO_MCL_IP_CFG_AR_RELEASE_MINOR_VERSION != FLEXIO_MCL_IP_VS_0_PBCFG_AR_RELEASE_MINOR_VERSION) || \
-     (FLEXIO_MCL_IP_CFG_AR_RELEASE_REVISION_VERSION != FLEXIO_MCL_IP_VS_0_PBCFG_AR_RELEASE_REVISION_VERSION) \
+/* Check if header file and Flexio_Mcl_Ip_PBcfg.h file are of the same Autosar version */
+#if ((FLEXIO_MCL_IP_CFG_AR_RELEASE_MAJOR_VERSION != FLEXIO_MCL_IP_PBCFG_AR_RELEASE_MAJOR_VERSION) || \
+     (FLEXIO_MCL_IP_CFG_AR_RELEASE_MINOR_VERSION != FLEXIO_MCL_IP_PBCFG_AR_RELEASE_MINOR_VERSION) || \
+     (FLEXIO_MCL_IP_CFG_AR_RELEASE_REVISION_VERSION != FLEXIO_MCL_IP_PBCFG_AR_RELEASE_REVISION_VERSION) \
     )
-    #error "AutoSar Version Numbers of Flexio_Mcl_Ip_Cfg.h and Flexio_Mcl_Ip_VS_0_PBcfg.h are different"
+    #error "AutoSar Version Numbers of Flexio_Mcl_Ip_Cfg.h and Flexio_Mcl_Ip_PBcfg.h are different"
 #endif
 
-/* Check if header file and Flexio_Mcl_Ip_VS_0_PBcfg.h file are of the same Software version */
-#if ((FLEXIO_MCL_IP_CFG_SW_MAJOR_VERSION != FLEXIO_MCL_IP_VS_0_PBCFG_SW_MAJOR_VERSION) || \
-     (FLEXIO_MCL_IP_CFG_SW_MINOR_VERSION != FLEXIO_MCL_IP_VS_0_PBCFG_SW_MINOR_VERSION) || \
-     (FLEXIO_MCL_IP_CFG_SW_PATCH_VERSION != FLEXIO_MCL_IP_VS_0_PBCFG_SW_PATCH_VERSION) \
+/* Check if header file and Flexio_Mcl_Ip_PBcfg.h file are of the same Software version */
+#if ((FLEXIO_MCL_IP_CFG_SW_MAJOR_VERSION != FLEXIO_MCL_IP_PBCFG_SW_MAJOR_VERSION) || \
+     (FLEXIO_MCL_IP_CFG_SW_MINOR_VERSION != FLEXIO_MCL_IP_PBCFG_SW_MINOR_VERSION) || \
+     (FLEXIO_MCL_IP_CFG_SW_PATCH_VERSION != FLEXIO_MCL_IP_PBCFG_SW_PATCH_VERSION) \
     )
-    #error "Software Version Numbers of Flexio_Mcl_Ip_Cfg.h and Flexio_Mcl_Ip_VS_0_PBcfg.h are different"
+    #error "Software Version Numbers of Flexio_Mcl_Ip_Cfg.h and Flexio_Mcl_Ip_PBcfg.h are different"
 #endif
 
 /*==================================================================================================

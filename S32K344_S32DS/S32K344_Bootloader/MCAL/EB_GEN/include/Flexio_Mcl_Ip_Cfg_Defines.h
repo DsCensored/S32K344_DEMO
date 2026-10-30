@@ -39,6 +39,10 @@ extern "C"
 #include "Std_Types.h"
 
 
+#include "Flexio_Uart_Ip_CfgDefines.h"
+#if defined(UART_CHANNEL_0_USED) || defined(UART_CHANNEL_1_USED) || defined(UART_CHANNEL_2_USED) || defined(UART_CHANNEL_3_USED)|| defined(UART_CHANNEL_4_USED) || defined(UART_CHANNEL_5_USED) || defined(UART_CHANNEL_6_USED) || defined(UART_CHANNEL_7_USED)
+    #define USE_UART_MODULE
+#endif
 
 /*==================================================================================================
 *                                 SOURCE FILE VERSION INFORMATION

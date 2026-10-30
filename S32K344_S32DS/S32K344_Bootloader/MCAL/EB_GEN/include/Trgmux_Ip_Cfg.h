@@ -38,7 +38,7 @@ extern "C"
 * 3) internal and external interfaces from this unit
 ==================================================================================================*/
 #include "Trgmux_Ip_Types.h"
-#include "Trgmux_Ip_VS_0_PBcfg.h"
+#include "Trgmux_Ip_PBcfg.h"
 
 /*==================================================================================================
 *                                 SOURCE FILE VERSION INFORMATION
@@ -75,25 +75,25 @@ extern "C"
     )
     #error "Software Version Numbers of Trgmux_Ip_Cfg.h and Trgmux_Ip_Types.h are different"
 #endif
-/* Check if header file and Trgmux_Ip_VS_0_PBcfg.h file are of the same vendor */
-#if (TRGMUX_IP_CFG_VENDOR_ID != TRGMUX_IP_VS_0_PBCFG_VENDOR_ID)
-    #error "Trgmux_Ip_Cfg.h and Trgmux_Ip_VS_0_PBcfg.h have different vendor ids"
+/* Check if header file and Trgmux_Ip_PBcfg.h file are of the same vendor */
+#if (TRGMUX_IP_CFG_VENDOR_ID != TRGMUX_IP_PBCFG_VENDOR_ID)
+    #error "Trgmux_Ip_Cfg.h and Trgmux_Ip_PBcfg.h have different vendor ids"
 #endif
 
-/* Check if header file and Trgmux_Ip_VS_0_PBcfg.h file are of the same Autosar version */
-#if ((TRGMUX_IP_CFG_AR_RELEASE_MAJOR_VERSION != TRGMUX_IP_VS_0_PBCFG_AR_RELEASE_MAJOR_VERSION) || \
-     (TRGMUX_IP_CFG_AR_RELEASE_MINOR_VERSION != TRGMUX_IP_VS_0_PBCFG_AR_RELEASE_MINOR_VERSION) || \
-     (TRGMUX_IP_CFG_AR_RELEASE_REVISION_VERSION != TRGMUX_IP_VS_0_PBCFG_AR_RELEASE_REVISION_VERSION) \
+/* Check if header file and Trgmux_Ip_PBcfg.h file are of the same Autosar version */
+#if ((TRGMUX_IP_CFG_AR_RELEASE_MAJOR_VERSION != TRGMUX_IP_PBCFG_AR_RELEASE_MAJOR_VERSION) || \
+     (TRGMUX_IP_CFG_AR_RELEASE_MINOR_VERSION != TRGMUX_IP_PBCFG_AR_RELEASE_MINOR_VERSION) || \
+     (TRGMUX_IP_CFG_AR_RELEASE_REVISION_VERSION != TRGMUX_IP_PBCFG_AR_RELEASE_REVISION_VERSION) \
     )
-    #error "AutoSar Version Numbers of Trgmux_Ip_Cfg.h and Trgmux_Ip_VS_0_PBcfg.h are different"
+    #error "AutoSar Version Numbers of Trgmux_Ip_Cfg.h and Trgmux_Ip_PBcfg.h are different"
 #endif
 
-/* Check if header file and Trgmux_Ip_VS_0_PBcfg.h file are of the same Software version */
-#if ((TRGMUX_IP_CFG_SW_MAJOR_VERSION != TRGMUX_IP_VS_0_PBCFG_SW_MAJOR_VERSION) || \
-     (TRGMUX_IP_CFG_SW_MINOR_VERSION != TRGMUX_IP_VS_0_PBCFG_SW_MINOR_VERSION) || \
-     (TRGMUX_IP_CFG_SW_PATCH_VERSION != TRGMUX_IP_VS_0_PBCFG_SW_PATCH_VERSION) \
+/* Check if header file and Trgmux_Ip_PBcfg.h file are of the same Software version */
+#if ((TRGMUX_IP_CFG_SW_MAJOR_VERSION != TRGMUX_IP_PBCFG_SW_MAJOR_VERSION) || \
+     (TRGMUX_IP_CFG_SW_MINOR_VERSION != TRGMUX_IP_PBCFG_SW_MINOR_VERSION) || \
+     (TRGMUX_IP_CFG_SW_PATCH_VERSION != TRGMUX_IP_PBCFG_SW_PATCH_VERSION) \
     )
-    #error "Software Version Numbers of Trgmux_Ip_Cfg.h and Trgmux_Ip_VS_0_PBcfg.h are different"
+    #error "Software Version Numbers of Trgmux_Ip_Cfg.h and Trgmux_Ip_PBcfg.h are different"
 #endif
 
 

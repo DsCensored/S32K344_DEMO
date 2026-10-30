@@ -34,7 +34,7 @@ extern "C"
 /*******************************************************************************
  * Included files
  ******************************************************************************/
-#include "Lcu_Ip_VS_0_PBcfg.h"
+#include "Lcu_Ip_PBcfg.h"
 
 /*==================================================================================================
                                SOURCE FILE VERSION INFORMATION
@@ -51,25 +51,25 @@ extern "C"
                                       FILE VERSION CHECKS
 ==================================================================================================*/
 
-/* Check if header file and Lcu_Ip_VS_0_PBcfg.h file are of the same vendor */
-#if (LCU_IP_CFG_VENDOR_ID != LCU_IP_VS_0_PBCFG_VENDOR_ID)
-    #error "Lcu_Ip_Cfg.h and Lcu_Ip_VS_0_PBcfg.h have different vendor ids"
+/* Check if header file and Lcu_Ip_PBcfg.h file are of the same vendor */
+#if (LCU_IP_CFG_VENDOR_ID != LCU_IP_PBCFG_VENDOR_ID)
+    #error "Lcu_Ip_Cfg.h and Lcu_Ip_PBcfg.h have different vendor ids"
 #endif
 
-/* Check if header file and Lcu_Ip_VS_0_PBcfg.h file are of the same Autosar version */
-#if ((LCU_IP_CFG_AR_RELEASE_MAJOR_VERSION != LCU_IP_VS_0_PBCFG_AR_RELEASE_MAJOR_VERSION) || \
-     (LCU_IP_CFG_AR_RELEASE_MINOR_VERSION != LCU_IP_VS_0_PBCFG_AR_RELEASE_MINOR_VERSION) || \
-     (LCU_IP_CFG_AR_RELEASE_REVISION_VERSION != LCU_IP_VS_0_PBCFG_AR_RELEASE_REVISION_VERSION) \
+/* Check if header file and Lcu_Ip_PBcfg.h file are of the same Autosar version */
+#if ((LCU_IP_CFG_AR_RELEASE_MAJOR_VERSION != LCU_IP_PBCFG_AR_RELEASE_MAJOR_VERSION) || \
+     (LCU_IP_CFG_AR_RELEASE_MINOR_VERSION != LCU_IP_PBCFG_AR_RELEASE_MINOR_VERSION) || \
+     (LCU_IP_CFG_AR_RELEASE_REVISION_VERSION != LCU_IP_PBCFG_AR_RELEASE_REVISION_VERSION) \
     )
-    #error "AutoSar Version Numbers of Lcu_Ip_Cfg.h and Lcu_Ip_VS_0_PBcfg.h are different"
+    #error "AutoSar Version Numbers of Lcu_Ip_Cfg.h and Lcu_Ip_PBcfg.h are different"
 #endif
 
-/* Check if header file and Lcu_Ip_VS_0_PBcfg.h file are of the same Software version */
-#if ((LCU_IP_CFG_SW_MAJOR_VERSION != LCU_IP_VS_0_PBCFG_SW_MAJOR_VERSION) || \
-     (LCU_IP_CFG_SW_MINOR_VERSION != LCU_IP_VS_0_PBCFG_SW_MINOR_VERSION) || \
-     (LCU_IP_CFG_SW_PATCH_VERSION != LCU_IP_VS_0_PBCFG_SW_PATCH_VERSION) \
+/* Check if header file and Lcu_Ip_PBcfg.h file are of the same Software version */
+#if ((LCU_IP_CFG_SW_MAJOR_VERSION != LCU_IP_PBCFG_SW_MAJOR_VERSION) || \
+     (LCU_IP_CFG_SW_MINOR_VERSION != LCU_IP_PBCFG_SW_MINOR_VERSION) || \
+     (LCU_IP_CFG_SW_PATCH_VERSION != LCU_IP_PBCFG_SW_PATCH_VERSION) \
     )
-    #error "Software Version Numbers of Lcu_Ip_Cfg.h and Lcu_Ip_VS_0_PBcfg.h are different"
+    #error "Software Version Numbers of Lcu_Ip_Cfg.h and Lcu_Ip_PBcfg.h are different"
 #endif
 
 #ifdef __cplusplus
