@@ -48,6 +48,7 @@ extern "C"
 ==================================================================================================*/
 #include "Emios_Mcl_Ip_Cfg_DeviceRegisters.h"
 
+#include "Emios_Icu_Ip_Cfg.h"
 #include "Emios_Gpt_Ip_Cfg_Defines.h"
 
 /*==================================================================================================
@@ -86,6 +87,11 @@ extern "C"
     #if ((EMIOS_MCL_IP_CFG_DEFINES_AR_RELEASE_MAJOR_VERSION != EMIOS_GPT_IP_CFG_DEFINES_AR_RELEASE_MAJOR_VERSION) || \
         (EMIOS_MCL_IP_CFG_DEFINES_AR_RELEASE_MINOR_VERSION != EMIOS_GPT_IP_CFG_DEFINES_AR_RELEASE_MINOR_VERSION))
         #error "AutoSar Version Numbers of Emios_Mcl_Ip_Cfg_Defines.h and Emios_Gpt_Ip_Cfg_Defines.h are different"
+    #endif
+    /* Check if this header file and Emios_Icu_Ip_Cfg.h file are of the same Autosar version */
+    #if ((EMIOS_MCL_IP_CFG_DEFINES_AR_RELEASE_MAJOR_VERSION != EMIOS_ICU_IP_CFG_AR_RELEASE_MAJOR_VERSION) || \
+        (EMIOS_MCL_IP_CFG_DEFINES_AR_RELEASE_MINOR_VERSION != EMIOS_ICU_IP_CFG_AR_RELEASE_MINOR_VERSION))
+        #error "AutoSar Version Numbers of Emios_Mcl_Ip_Cfg_Defines.h and Emios_Icu_Ip_Cfg.h are different"
     #endif
 #endif
 

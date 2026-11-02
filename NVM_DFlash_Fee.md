@@ -428,4 +428,66 @@ J-Link 看 `PC` 在 APP 的 `BSW_OsStart` 主循环、`CFSR/HFSR = 0`。
 | `22 F184` | `62 F1 84` + `FF` × 9 | `62 F1 84` + `00` × 9 |
 | `22 F190` | NVM 里的 VIN | 同一份 NVM 里的 VIN（修好 9.3 后） |
 
+### 9.6 BOOT 的 0x37（RequestTransferExit）HardFault
+
+**现象**：刷写 flash driver 时，`34`/`36` 正常，`37` 直接 HardFault；栈回溯
+`Boot_FlashDriverValid()` ← `BootProg_TransferExit()` ← `UDS_DcmTransferExit()`；
+`CFSR = 0x00010000`（UNDEFINSTR）。
+
+**原因**：BOOT 用 `-O3` 编译，而驱动的基地址是 0：
+
+```c
+#define BOOT_DRIVER_BASE 0x00000000UL       /* ITCM */
+return (const Boot_FlashDriverType *)BOOT_DRIVER_BASE;
+...
+drv->Magic
+```
+
+`drv` 是常量 0，C 语言里解引用 NULL 指针是未定义行为，GCC 直接把这段代码变成
+陷阱指令（反汇编）：
+
+```
+402e6e: ldr  r3, [r3, #0]      ; r3 = *(0x0)
+402e70: udf  #255              ; ← 未定义指令 → UNDEFINSTR
+```
+
+**修复**：
+
+1. `Boot_Flash.c` 把基地址放在 volatile 变量里，编译器无法证明它是 0：
+
+```c
+static volatile unsigned int BootFlash_Base = BOOT_DRIVER_BASE;
+
+const void *Boot_FlashRamBase(void)
+{
+    return (const void *)(unsigned int)BootFlash_Base;
+}
+
+static const Boot_FlashDriverType *BootFlashHeader(void)
+{
+    return (const Boot_FlashDriverType *)(unsigned int)BootFlash_Base;
+}
+```
+
+2. `Boot_Program.c` 的 RAM 下载目标改成 `(unsigned int)Boot_FlashRamBase()`，
+   避免 `memcpy((void *)0, ...)` 同样被当成未定义行为优化。
+3. `37` 的响应原来是 `*rspLen = 1`（只回 `77`），而 DCM 会把小于 2 字节的响应补到
+   2 字节，多出一个旧字节；现改为 `77 + CRC32(4 字节)`，与上位机/测试脚本一致。
+
+**验证（USBCAN-2E-U 实测）**：
+
+```
+10 03 → 50 03
+31 01 02 03 → 71 01 02 03 00
+10 02 → 50 02
+27 03 → 67 03 12 36 56 64
+27 04 → 67 04                        (key = seed ^ 0xA5A5A5A5)
+34 00 44 00000000 000017E8 → 74 20 01 F4
+36 × 25 → 76 xx
+37 → 77 18 4F 2D 2A                  (= CRC32 of S32K344_FlashDriver.bin)
+```
+
+之后等 5 s 超时，APP 正常接管（`22 F184` 返回 `FF FF...`）。
+
+
 

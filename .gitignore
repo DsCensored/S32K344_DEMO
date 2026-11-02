@@ -8,3 +8,14 @@
 /S32K344_S32DS/S32K344/Debug_RAM
 /S32K344_S32DS/S32K344/Release_FLASH
 /S32K344_S32DS/S32K344/Release_RAM
+/S43K344_EB_Mem
+/tools
+/刷写流程与安全算法
+
+# Simulink local build/cache output (the .slx/.sldd/.dbc sources are tracked)
+/AutoSarNm/AutoSarNm.slxc
+/AutoSarNm/slprj/
+/AutoSarNm/AutoSarNm_ert_rtw/
+/AutoSarNm/NMmain.asv
+/AutoSarNm/NMmain.c
+/AutoSarNm/NMmain.h

@@ -152,7 +152,7 @@ extern "C" {
 /** 
 * @brief This constant used for other modules to check if DIO is present in the project.   
 */
-#define USE_DIO_MODULE              (STD_OFF) 
+#define USE_DIO_MODULE              (STD_ON) 
 
 /** 
 * @brief This constant used for other modules to check if DPGA is present in the project.   

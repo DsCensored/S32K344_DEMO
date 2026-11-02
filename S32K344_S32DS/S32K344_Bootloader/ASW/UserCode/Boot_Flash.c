@@ -30,9 +30,21 @@ typedef struct
 
 int Boot_FlashLastError;
 
+/* Address 0 is the ITCM on this device, not a NULL pointer.  The base is read
+ * through a volatile variable on purpose: when the compiler sees the constant
+ * 0 it applies the C rule that dereferencing a NULL pointer is undefined
+ * behaviour and replaces the header read with a trap instruction (udf), which
+ * is exactly what made the 0x37 service hard-fault. */
+static volatile unsigned int BootFlash_Base = BOOT_DRIVER_BASE;
+
+const void *Boot_FlashRamBase(void)
+{
+    return (const void *)(unsigned int)BootFlash_Base;
+}
+
 static const Boot_FlashDriverType *BootFlashHeader(void)
 {
-    return (const Boot_FlashDriverType *)BOOT_DRIVER_BASE;
+    return (const Boot_FlashDriverType *)(unsigned int)BootFlash_Base;
 }
 
 /* Make sure the ITCM is enabled before reading the downloaded header. */

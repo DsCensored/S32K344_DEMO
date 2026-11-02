@@ -6,6 +6,8 @@
  */
 
 #include "ASW_CanCallback.h"
+#include "AutoSarNm.h"
+#include "NMmain.h"
 #include "MCAL.h"
 #include "UDS_CanTp.h"
 
@@ -25,11 +27,16 @@ CAN_FD_MESSAGE TX_DATA1 =
 	.Data = {0U}
 };
 
+
+/* Storage for the received NM frame (only the CBV byte is evaluated). */
+CAN_FD_MESSAGE CAN_msgAutoSarNmFrameRx = {0U};
+
 CAN_RXStr CAN_CHN1_RX[CAN_CHN1_RX_COUNT] =
 {
 	{UDS_FUNREQ_ADDR, &UDS_FunReq, 0U, 0U, UDS_CanTpRxCallback, NULL_PTR},
 	{UDS_PHYREQ_ADDR, &UDS_PhyReq, 0U, 0U, UDS_CanTpRxCallback, NULL_PTR},
 	{UDS_RESP_ADDR,   &UDS_Resp,   0U, 0U, UDS_CanTpRxCallback, NULL_PTR},
+	{CAN_ID_VEH_RX_NM, &CAN_msgAutoSarNmFrameRx, 0U, 0U, NM_CanNmRecvCallBack, NULL_PTR}
 };
 
 CAN_TXStr CAN_CHN1_TX[CAN_CHN1_TX_COUNT] =
@@ -40,6 +47,13 @@ CAN_TXStr CAN_CHN1_TX[CAN_CHN1_TX_COUNT] =
 		.last_send_tick = 0U,
 		.Callback = NULL_PTR,
 		.Enable = 1U
+	},
+	{
+		.Data = &CAN_msgAutoSarNmFrame,
+		.send_period = CANNM_MSG_CYCLE_TIME,
+		.last_send_tick = 0U,
+		.Callback = NM_CanNmSendCallBack,
+		.Enable = 0U
 	}
 };
 

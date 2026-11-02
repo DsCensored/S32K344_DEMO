@@ -20,6 +20,7 @@ $srcs = @(
 ) | ForEach-Object { "$d\src\$_" }
 $common = @("-mcpu=cortex-m7", "-mthumb", "-mfloat-abi=hard", "-mfpu=fpv5-d16",
             "-O2", "-g3", "-Wall", "-ffunction-sections", "-fdata-sections") + $defs + $inc
+New-Item -ItemType Directory -Force -Path "$d\Debug_FLASH" | Out-Null
 $objs = @()
 foreach ($s in $srcs) {
   $o = "$d\Debug_FLASH\obj_" + [System.IO.Path]::GetFileNameWithoutExtension($s) + ".o"
@@ -33,3 +34,4 @@ if ($LASTEXITCODE -ne 0) { throw "link failed" }
 & arm-none-eabi-objcopy -O binary "$d\Debug_FLASH\S32K344_FlashDriver.elf" "$d\Debug_FLASH\S32K344_FlashDriver.bin"
 & arm-none-eabi-size "$d\Debug_FLASH\S32K344_FlashDriver.elf"
 Get-ChildItem "$d\Debug_FLASH\S32K344_FlashDriver.bin" | Select-Object Name, Length
+

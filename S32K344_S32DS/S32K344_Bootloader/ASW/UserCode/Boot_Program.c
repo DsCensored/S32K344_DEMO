@@ -127,7 +127,7 @@ unsigned char BootProg_RequestDownload(unsigned int addr, unsigned int size,
             return (unsigned char)NRC_REQUEST_OUT_OF_RANGE;
         }
         g_prog.Mode = BOOT_PROG_MODE_RAM;
-        g_prog.Target = BOOT_DRIVER_BASE;
+        g_prog.Target = (unsigned int)Boot_FlashRamBase();
 
         /* The ITCM image is about to be replaced: run INIT again before the
          * next flash job. */

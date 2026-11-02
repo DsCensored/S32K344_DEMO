@@ -69,6 +69,9 @@ extern "C" {
 #include "Platform_MemMap.h"
 
     
+/* WKPU wake-up handler (defined in AutoSarNM/NMmain.c). */
+extern void WKPU_IRQHandler(void);
+
 /* List of configurations for interrupts */
 static const IntCtrl_Ip_IrqConfigType aIrqConfiguration[] = {
     {INT0_IRQn, (boolean)FALSE, 0U, &undefined_handler},
@@ -141,7 +144,7 @@ static const IntCtrl_Ip_IrqConfigType aIrqConfiguration[] = {
     {EMIOS2_3_IRQn, (boolean)FALSE, 0U, &undefined_handler},
     {EMIOS2_4_IRQn, (boolean)FALSE, 0U, &undefined_handler},
     {EMIOS2_5_IRQn, (boolean)FALSE, 0U, &undefined_handler},
-    {WKPU_IRQn, (boolean)FALSE, 0U, &undefined_handler},
+    {WKPU_IRQn, (boolean)FALSE, 14U, &WKPU_IRQHandler},
     {CMU0_IRQn, (boolean)FALSE, 0U, &undefined_handler},
     {CMU1_IRQn, (boolean)FALSE, 0U, &undefined_handler},
     {CMU2_IRQn, (boolean)FALSE, 0U, &undefined_handler},

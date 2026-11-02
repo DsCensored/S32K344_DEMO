@@ -16,6 +16,9 @@
 #include "Dma_Mux_Ip.h"
 #include "BSW_UART.h"
 #include "Nvm.h"
+#include "AutoSarNm.h"
+#include "Icu.h"
+#include "Icu_PBcfg.h"
 
 static void MCAL_MCU_Init(void)
 {
@@ -40,6 +43,12 @@ static void MCAL_MCU_Init(void)
 
     /* Apply a mode configuration */
     Mcu_SetMode(McuModeSettingConf_0);
+
+    /* Read and clear MC_RGM.RDSS.  On a normal (non-fast) standby exit the
+     * device resumes from WFI; if the standby-reset flags are left set the
+     * next standby sequence can be affected.  This call also lets upper layers
+     * distinguish a wake-up reset from a cold start. */
+    (void)Mcu_GetResetReason();
 #else
     #error "The Mcu Init Clock API should be enabled from the Mcu driver"
 #endif
@@ -110,6 +119,11 @@ static void MCAL_NVM_Init(void)
 	(void)Nvm_GetStatus();
 }
 
+static void MCAL_ICU_Init(void)
+{
+	Icu_Init(&Icu_Config);
+}
+
 static void MCAL_Init(void)
 {
 	MCAL_MCU_Init();
@@ -119,6 +133,8 @@ static void MCAL_Init(void)
 	MCAL_CAN_Init();
 	MCAL_UART_Init();
 	MCAL_NVM_Init();
+	AutoSarNm_initialize();//获取ICU唤醒原因需要在ICU初始化之前执行
+	MCAL_ICU_Init();
 }
 
 void BSW_Init(void)

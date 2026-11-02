@@ -15,6 +15,10 @@
 #include "UDS_DCM.h"
 #include "Nvm.h"
 #include "NvmApp.h"
+#include "RTE.h"
+#include "AutoSarNm.h"
+#include "Dio.h"
+#include "Dio_Cfg.h"
 
 /* -------------------------------------------------------------------------
  * Simple NVM demo: keep a power-up counter in NVM block 3.
@@ -59,6 +63,10 @@ static void ASW_userTask5ms(void)
 }
 static void ASW_userTask10ms(void)
 {
+	RTE_POLLING();
+	/* AUTOSAR NM uses 10 ms ticks (AUROSAR_NM_MODEL_RUN_STEP).  Run it after
+	 * RTE_POLLING() so BSW_stKL15 reflects the current ignition state. */
+	AutoSarNm_step();
 	BSW_CANRX_TIMEOUT_POLL();
 	Nvm_UserBlock_Polling_10ms();
 }
@@ -79,6 +87,11 @@ static void ASW_userTask1000ms(void)
 //	TX_DATA1.Data[0] = BSW_GetCpuLoad();
 	unsigned char data[] = "Hallo world";
 	BSW_UART6_Send(data,sizeof(data));
+
+//	static Dio_LevelType sts = 1;
+	Dio_WriteChannel(DioConf_DioChannel_DioChannel_PA29,!BSW_stKL15);
+
+//	sts = (sts == 1)?0:1;
 }
 
 void ASW_Init(void)

@@ -590,8 +590,12 @@ static unsigned char UDS_DcmTransferExit(const unsigned char *req,
 		return nrc;
 	}
 
-	(void)crc;
-	*rspLen = 1U;
+	/* 77 <CRC32:4>: the tester compares it with the CRC of the image it sent. */
+	UDS_TxBuf[1] = (unsigned char)(crc >> 24);
+	UDS_TxBuf[2] = (unsigned char)(crc >> 16);
+	UDS_TxBuf[3] = (unsigned char)(crc >> 8);
+	UDS_TxBuf[4] = (unsigned char)(crc);
+	*rspLen = 5U;
 	return 0U;
 }
 

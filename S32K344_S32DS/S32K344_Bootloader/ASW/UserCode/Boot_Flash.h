@@ -15,6 +15,10 @@
 /* Last error returned by the driver (for debugging); 0 = OK. */
 extern int Boot_FlashLastError;
 
+/* Base of the downloaded driver (ITCM, address 0).  Kept in a variable so the
+ * compiler does not treat the accesses as NULL-pointer dereferences. */
+const void *Boot_FlashRamBase(void);
+
 unsigned char Boot_FlashDriverValid(void);
 unsigned char Boot_FlashInit(void);
 unsigned char Boot_FlashDeInit(void);

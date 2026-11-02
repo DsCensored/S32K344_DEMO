@@ -9,6 +9,7 @@
 #include "UDS_DCM.h"
 #include "Can_43_FLEXCAN.h"
 #include "UserOS.h"
+#include "NMmain.h"
 #include <string.h>
 
 CAN_FD_MESSAGE UDS_FunReq, UDS_PhyReq, UDS_Resp;
@@ -259,6 +260,10 @@ void UDS_CanTpRxCallback(CAN_FD_MESSAGE *Data)
 	{
 		return;
 	}
+
+	/* Any valid diagnostic frame keeps the NM state machine awake for
+	 * AUROSAR_NM_UDS_OVERTIME (5 s). */
+	NM_NotifyUdsActivity();
 
 	frameType = (UDS_FrameType)(Data->Data[0] & (unsigned char)kMask);
 

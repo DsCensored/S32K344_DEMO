@@ -10,6 +10,8 @@
 #ifndef __CANFDMESSAGE__HEADER__
 #define __CANFDMESSAGE__HEADER__
 
+#define DEFINED_TYPEDEF_FOR_CAN_FD_MESSAGE_BUS_
+
 #if defined(RTWTYPES_H)
 /* rtwtypes.h has already been included by the application. */
 #elif defined(__has_include)
@@ -83,6 +85,8 @@ typedef struct
 }  CAN_FD_MESSAGE;
 
 typedef CAN_FD_MESSAGE CAN_FD_DATATYPE;
+
+typedef CAN_FD_MESSAGE CAN_FD_MESSAGE_BUS;
 
 /**
 * Initialize a CAN FD message.
