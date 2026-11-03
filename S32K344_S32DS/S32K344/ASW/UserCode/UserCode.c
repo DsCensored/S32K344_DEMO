@@ -17,6 +17,7 @@
 #include "NvmApp.h"
 #include "RTE.h"
 #include "AutoSarNm.h"
+#include "S32K344_SWT.h"
 #include "Dio.h"
 #include "Dio_Cfg.h"
 
@@ -84,6 +85,8 @@ static void ASW_userTask100ms(void)
 }
 static void ASW_userTask1000ms(void)
 {
+	Wdg_43_Instance0_Service();//feed dog
+
 //	TX_DATA1.Data[0] = BSW_GetCpuLoad();
 	unsigned char data[] = "Hallo world";
 	BSW_UART6_Send(data,sizeof(data));

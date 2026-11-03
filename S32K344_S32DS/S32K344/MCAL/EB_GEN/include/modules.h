@@ -372,7 +372,7 @@ extern "C" {
 /** 
 * @brief This constant used for other modules to check if WDG is present in the project.   
 */
-#define USE_WDG_MODULE    (STD_OFF)
+#define USE_WDG_MODULE    (STD_ON)
 
  /**
  * @brief This constant used for other modules to check if WDG Instance 1 is present in the project.
@@ -482,7 +482,7 @@ extern "C" {
 /**
  * @brief This constant used for other modules to check if any WDG Instance is present in the project.
  */
-#define USE_WDG_INSTANCE_ANY     (STD_OFF)
+#define USE_WDG_INSTANCE_ANY     (STD_ON)
 
 /** 
 * @brief This constant used for other modules to check if WDG for chip vr5510 is present in the project.   

@@ -35,7 +35,6 @@ CAN_RXStr CAN_CHN1_RX[CAN_CHN1_RX_COUNT] =
 {
 	{UDS_FUNREQ_ADDR, &UDS_FunReq, 0U, 0U, UDS_CanTpRxCallback, NULL_PTR},
 	{UDS_PHYREQ_ADDR, &UDS_PhyReq, 0U, 0U, UDS_CanTpRxCallback, NULL_PTR},
-	{UDS_RESP_ADDR,   &UDS_Resp,   0U, 0U, UDS_CanTpRxCallback, NULL_PTR},
 	{CAN_ID_VEH_RX_NM, &CAN_msgAutoSarNmFrameRx, 0U, 0U, NM_CanNmRecvCallBack, NULL_PTR}
 };
 

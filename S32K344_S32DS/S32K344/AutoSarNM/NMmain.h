@@ -21,7 +21,7 @@
 #define NM_WKPU_CH_CAN0_RX						(19U)
 #define NM_WKPU_CH_KL15							(42U)
 
-#define CAN_ID_VEH_RX_NM                        (0x18EEFF01)        	//整车CAN网络管理的接收报文ID(低8位掩码屏蔽不关心) 或 两者皆可(CAN_TYPE_STD_FD)
+#define CAN_ID_VEH_RX_NM                        (402784010)        	//整车CAN网络管理的接收报文ID(低8位掩码屏蔽不关心) 或 两者皆可(CAN_TYPE_STD_FD)
 
 #define CAN_ID_VEH_TX_NM                        (0x18EEFF02)       			//整车CAN网络管理的发送报文ID
 

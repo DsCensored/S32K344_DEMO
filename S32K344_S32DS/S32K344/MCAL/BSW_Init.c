@@ -14,11 +14,17 @@
 #include "CDD_Uart.h"
 #include "Dma_Ip.h"
 #include "Dma_Mux_Ip.h"
+#include "S32K344_SWT.h"
 #include "BSW_UART.h"
 #include "Nvm.h"
 #include "AutoSarNm.h"
 #include "Icu.h"
 #include "Icu_PBcfg.h"
+#include "Wdg_CfgExt.h"
+#include "WdgIf_Types.h"
+#include "Wdg_43_Instance0.h"
+#include "Wdg_ChannelTypes.h"
+#include "Wdg_Channel.h"
 
 static void MCAL_MCU_Init(void)
 {
@@ -71,6 +77,12 @@ static void MCAL_GPT_Init(void)
 static void MCAL_PORT_Init(void)
 {
 	Port_Init(&Port_Config);
+}
+
+static void MCAL_WDG_Init(void)
+{
+	Wdg_43_Instance0_Init(&Wdg_Config_0);
+	Wdg_43_Instance0_SetMode(WDGIF_SLOW_MODE);
 }
 
 static void MCAL_CAN_Init(void)
@@ -140,5 +152,8 @@ static void MCAL_Init(void)
 void BSW_Init(void)
 {
 	MCAL_Init();
+	/* Start the watchdog only after all blocking MCAL/NVM initialization is
+	 * complete, so a long startup cannot trip the 10 s timeout. */
+	MCAL_WDG_Init();
 }
 

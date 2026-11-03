@@ -10,7 +10,7 @@
 
 #include "BSW_CanCallback.h"
 
-#define CAN_CHN1_RX_COUNT 4U
+#define CAN_CHN1_RX_COUNT 3U
 #define CAN_CHN1_TX_COUNT 2U
 
 extern CAN_FD_MESSAGE TX_DATA1;

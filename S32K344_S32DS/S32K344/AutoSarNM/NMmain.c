@@ -24,6 +24,11 @@
 #include "IntCtrl_Ip.h"
 #include "Dio.h"
 #include "Dio_Cfg.h"
+#include "Wdg_CfgExt.h"
+#include "WdgIf_Types.h"
+#include "Wdg_43_Instance0.h"
+#include "Wdg_ChannelTypes.h"
+#include "Wdg_Channel.h"
 
 unsigned int CANNM_cntAuroSarNMFrameRecvCnt = 0;
 unsigned int CANNM_cntAuroSarNMFrameSendCnt = 0;
@@ -177,6 +182,9 @@ void NM_EnterSleepMode(void)
 
 	NM_SetAppMsgEnable(0U);
 	NM_SetNmMsgEnable(0U);
+
+	Wdg_43_Instance0_SetMode(WDGIF_OFF_MODE);
+	Wdg_43_Instance0_ClearResetRequest();
 
 	(void)Mcu_InitClock(McuClockSettingConfig_FIRC);
 

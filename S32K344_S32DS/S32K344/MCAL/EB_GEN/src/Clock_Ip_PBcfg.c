@@ -190,7 +190,7 @@ static const Clock_Ip_IrcoscConfigType Clock_Ip_IrcoscConfigurations_0[CLOCK_IP_
 
     {
         SIRC_STANDBY_CLK,
-        0U,
+        1U,
         0U,
         0U,
         0U,

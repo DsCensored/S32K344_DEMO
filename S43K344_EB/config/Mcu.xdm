@@ -642,9 +642,7 @@
                         </a:a>
                       </d:var>
                       <d:var name="McuSircStandbyEnable" type="BOOLEAN" 
-                             value="false">
-                        <a:a name="IMPORTER_INFO" value="@DEF"/>
-                      </d:var>
+                             value="true"/>
                     </d:ctr>
                     <d:ctr name="McuFXOSC" type="IDENTIFIABLE">
                       <d:var name="McuFxoscUnderMcuControl" type="BOOLEAN" 
@@ -1771,6 +1769,18 @@
                                type="FLOAT" value="4.0E7"/>
                         <d:var name="McuClockFrequencySelect" 
                                type="ENUMERATION" value="AIPS_SLOW_CLK"/>
+                      </d:ctr>
+                      <d:ctr name="McuClockReferencePoint_WDGClock" 
+                             type="IDENTIFIABLE">
+                        <d:var name="McuClockReferencePointFrequency" 
+                               type="FLOAT" value="32000.0">
+                          <a:a name="IMPORTER_INFO">
+                            <a:v>@CALC</a:v>
+                            <a:v>@DEF</a:v>
+                          </a:a>
+                        </d:var>
+                        <d:var name="McuClockFrequencySelect" 
+                               type="ENUMERATION" value="SIRC_CLK"/>
                       </d:ctr>
                     </d:lst>
                   </d:ctr>
