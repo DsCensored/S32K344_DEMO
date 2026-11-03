@@ -20,6 +20,7 @@
 #include "S32K344_SWT.h"
 #include "Dio.h"
 #include "Dio_Cfg.h"
+#include "Wdg_43_Instance0.h"
 
 /* -------------------------------------------------------------------------
  * Simple NVM demo: keep a power-up counter in NVM block 3.
