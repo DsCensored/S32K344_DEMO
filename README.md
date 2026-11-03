@@ -58,6 +58,10 @@ AUTOSAR 网络管理模块实现，包含 CAN 网络管理功能。
 #### AutoSarNM
 AUTOSAR 网络管理实现模块。
 
+#### UDS
+UDS 诊断协议栈
+- 具有完整的DCM协议栈功能，能够实现UDS刷写的功能
+
 #### BSW (基础软件层)
 - **include** - 头文件目录
   - `App_Info.h` - 应用信息定义
@@ -90,6 +94,7 @@ AUTOSAR 网络管理实现模块。
 - CAN 回调处理
 - 网络管理集成
 - 接收/发送通道管理
+- UDS诊断协议栈
 
 ### 网络管理 (AutoSarNM)
 - BSM (Bus Sleep Mode)
