@@ -69,9 +69,6 @@ extern "C" {
 #include "Platform_MemMap.h"
 
     
-/* WDG/SWT0 timeout interrupt handler (defined by Swt_Ip_Irq.c). */
-extern void Swt_Ip_Swt0_Isr(void);
-
 /* List of configurations for interrupts */
 static const IntCtrl_Ip_IrqConfigType aIrqConfiguration[] = {
     {INT0_IRQn, (boolean)FALSE, 0U, &undefined_handler},

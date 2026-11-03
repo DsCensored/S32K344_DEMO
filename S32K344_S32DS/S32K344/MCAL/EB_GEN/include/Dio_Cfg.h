@@ -271,6 +271,22 @@ extern "C"{
 */
 #define  DioConf_DioChannel_DioChannel_PA29 ((uint16)0x001dU)
 
+
+
+/**
+* @brief          Symbolic name for the channel DioChannel_PA30.
+*
+*/
+#define  DioConf_DioChannel_DioChannel_PA30 ((uint16)0x001eU)
+
+
+
+/**
+* @brief          Symbolic name for the channel DioChannel_PA31.
+*
+*/
+#define  DioConf_DioChannel_DioChannel_PA31 ((uint16)0x001fU)
+
 /* ---------- DioPort_BH ---------- */
 
 /**
@@ -286,6 +302,14 @@ extern "C"{
 *
 */
 #define  DioConf_DioChannel_DioChannel_PB19 ((uint16)0x0033U)
+
+
+
+/**
+* @brief          Symbolic name for the channel DioChannel_PB18.
+*
+*/
+#define  DioConf_DioChannel_DioChannel_PB18 ((uint16)0x0032U)
 
 
 /*=================================================================================================

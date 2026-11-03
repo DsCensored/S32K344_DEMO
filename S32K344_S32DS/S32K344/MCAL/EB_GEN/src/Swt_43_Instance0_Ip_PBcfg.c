@@ -140,7 +140,7 @@ const Swt_Ip_ConfigType Swt_Ip_OffModeSettings_0=
 #endif
     (boolean)         FALSE,        /* bEnRunInDebugMode */
     (boolean)         FALSE,        /* bEnWindow */
-    (boolean)         TRUE,         /* bEnInterrupt */
+    (boolean)         FALSE,        /* bEnInterrupt */
     (Swt_Ip_ServiceModeType)     SWT_IP_FS_SEQ_MODE,        /* eServiceMode */
     (uint32)          0x100,    /* u32TimeoutValue */
     (uint32)          0x0,        /* u32WindowValue */
@@ -158,7 +158,7 @@ const Swt_Ip_ConfigType Swt_Ip_SlowModeSettings_0=
 #endif
     (boolean)         FALSE,         /* bEnRunInDebugMode */
     (boolean)         FALSE,        /* bEnWindow */
-    (boolean)         TRUE,         /* bEnInterrupt */
+    (boolean)         TRUE,        /* bEnInterrupt */
     
     (Swt_Ip_ServiceModeType)         SWT_IP_FS_SEQ_MODE,        /* eServiceMode */
     
@@ -178,7 +178,7 @@ const Swt_Ip_ConfigType Swt_Ip_FastModeSettings_0=
 #endif
     (boolean)         FALSE,         /* bEnRunInDebugMode */
     (boolean)         FALSE,        /* bEnWindow */
-    (boolean)         TRUE,         /* bEnInterrupt */
+    (boolean)         TRUE,        /* bEnInterrupt */
     
     (Swt_Ip_ServiceModeType)         SWT_IP_FS_SEQ_MODE,        /* eServiceMode */
     

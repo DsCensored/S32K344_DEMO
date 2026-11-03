@@ -88,14 +88,14 @@ static void ASW_userTask1000ms(void)
 {
 	Wdg_43_Instance0_Service();//feed dog
 
-//	TX_DATA1.Data[0] = BSW_GetCpuLoad();
 	unsigned char data[] = "Hallo world";
 	BSW_UART6_Send(data,sizeof(data));
 
-//	static Dio_LevelType sts = 1;
-	Dio_WriteChannel(DioConf_DioChannel_DioChannel_PA29,!BSW_stKL15);
+	ASW_stLEDR1Ctrl = !ASW_stLEDR1Ctrl;
+	ASW_stLEDG1Ctrl = !ASW_stLEDG1Ctrl;
+	ASW_stLEDB1Ctrl = !ASW_stLEDB1Ctrl;
+	ASW_stLEDY1Ctrl = !ASW_stLEDY1Ctrl;
 
-//	sts = (sts == 1)?0:1;
 }
 
 void ASW_Init(void)

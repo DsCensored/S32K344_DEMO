@@ -84,6 +84,7 @@ extern const IntCtrl_Ip_CtrlConfigType intCtrlConfig;
 extern void undefined_handler(void);
 extern void Dma0_Ch16_IRQHandler(void);
 extern void Dma0_Ch17_IRQHandler(void);
+extern void Swt_Ip_Swt0_Isr(void);
 extern void PIT_0_ISR(void);
 
 #ifdef  PLATFORM_IP_ENABLE_INT_CTRL

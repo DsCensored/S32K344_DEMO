@@ -38,6 +38,22 @@
                         </d:var>
                         <d:lst name="DioChannelEcucPartitionRef"/>
                       </d:ctr>
+                      <d:ctr name="DioChannel_PA30" type="IDENTIFIABLE">
+                        <d:var name="DioChannelId" type="INTEGER" value="14"/>
+                        <d:var name="PDACSlot" type="ENUMERATION" 
+                               value="VIRTUAL_WRAPPER_PDAC0">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:lst name="DioChannelEcucPartitionRef"/>
+                      </d:ctr>
+                      <d:ctr name="DioChannel_PA31" type="IDENTIFIABLE">
+                        <d:var name="DioChannelId" type="INTEGER" value="15"/>
+                        <d:var name="PDACSlot" type="ENUMERATION" 
+                               value="VIRTUAL_WRAPPER_PDAC0">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:lst name="DioChannelEcucPartitionRef"/>
+                      </d:ctr>
                     </d:lst>
                     <d:lst name="DioChannelGroup" type="MAP"/>
                     <d:lst name="DioPortEcucPartitionRef"/>
@@ -47,6 +63,14 @@
                     <d:lst name="DioChannel" type="MAP">
                       <d:ctr name="DioChannel_PB19" type="IDENTIFIABLE">
                         <d:var name="DioChannelId" type="INTEGER" value="3"/>
+                        <d:var name="PDACSlot" type="ENUMERATION" 
+                               value="VIRTUAL_WRAPPER_PDAC0">
+                          <a:a name="IMPORTER_INFO" value="@DEF"/>
+                        </d:var>
+                        <d:lst name="DioChannelEcucPartitionRef"/>
+                      </d:ctr>
+                      <d:ctr name="DioChannel_PB18" type="IDENTIFIABLE">
+                        <d:var name="DioChannelId" type="INTEGER" value="2"/>
                         <d:var name="PDACSlot" type="ENUMERATION" 
                                value="VIRTUAL_WRAPPER_PDAC0">
                           <a:a name="IMPORTER_INFO" value="@DEF"/>
