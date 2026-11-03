@@ -99,6 +99,7 @@ void ASW_Init(void)
 	BSW_CANRX_INIT(CAN_CHN1_RX, (unsigned char)CAN_CHN1_RX_COUNT);
 	UDS_CanTpInit();
 	UDS_DCM_Init();
+	ASW_CanInit();
 
 	BSW_RegTask(2, 0, ASW_userTask2ms);
 	BSW_RegTask(5, 1, ASW_userTask5ms);

@@ -3,9 +3,9 @@
  *
  * Code generated for Simulink model 'AutoSarNm'.
  *
- * Model version                  : 14.367
+ * Model version                  : 14.376
  * Simulink Coder version         : 9.8 (R2022b) 13-May-2022
- * C/C++ source code generated on : Mon Nov  2 15:00:43 2026
+ * C/C++ source code generated on : Tue Nov  3 08:36:09 2026
  *
  * Target selection: ert.tlc
  * Embedded hardware selection: ARM Compatible->ARM 7
@@ -14,8 +14,8 @@
  */
 
 #include "AutoSarNm.h"
-#include "rtwtypes.h"
 #include "AutoSarNm_types.h"
+#include "rtwtypes.h"
 #include "AutoSarNm_private.h"
 #include "NMmain.h"
 
@@ -32,7 +32,7 @@
 #define AutoSarNm_IN_end               ((uint8_T)1U)
 #define AutoSarNm_IN_wait              ((uint8_T)1U)
 #define AutoSarNm_IN_wait1             ((uint8_T)2U)
-#define AutoSarNm_IN_wait_             ((uint8_T)2U)
+#define AutoSarNm_IN_wait_d            ((uint8_T)2U)
 
 /* Exported block signals */
 AutoSarNm_Sts_Enum AutoSarNM_sts;      /* '<Root>/Data Type Conversion1' */
@@ -48,10 +48,14 @@ B_AutoSarNm_T AutoSarNm_B;
 DW_AutoSarNm_T AutoSarNm_DW;
 
 /* Forward declaration for local functions */
-static void AutoSarNm_enter_internal_RMS(const uint8_T *FixPtRelationalOperator);
+static void AutoSarNm_enter_internal_RMS(const uint8_T
+  *FixPtRelationalOperator_p);
+static void AutoSarNm_exit_internal_ALL(void);
+static void AutoSarNm_enter_internal_RSS(void);
 
 /* Function for Chart: '<Root>/Chart' */
-static void AutoSarNm_enter_internal_RMS(const uint8_T *FixPtRelationalOperator)
+static void AutoSarNm_enter_internal_RMS(const uint8_T
+  *FixPtRelationalOperator_p)
 {
   /* :  sf_internal_predicateOutput = App_SendFlg == 0; */
   if (AutoSarNm_DW.App_SendFlg == 0) {
@@ -68,7 +72,7 @@ static void AutoSarNm_enter_internal_RMS(const uint8_T *FixPtRelationalOperator)
 
   /* Inport: '<Root>/AutoSarNM_stWKUPMode' */
   /* :  sf_internal_predicateOutput = AutoSarNM_stWKUPMode == 0 || CANNM_stRMSReq ~= 0; */
-  if ((AutoSarNM_stWKUPMode == 0) || (*FixPtRelationalOperator != 0)) {
+  if ((AutoSarNM_stWKUPMode == 0) || (*FixPtRelationalOperator_p != 0)) {
     AutoSarNm_DW.is_Set_NmSendMode = AutoSarNm_IN_Fast;
 
     /* :  NM_SetNmMsgCycle(CANNM_IMMEDIATE_CYCLE_TIME); */
@@ -96,6 +100,41 @@ static void AutoSarNm_enter_internal_RMS(const uint8_T *FixPtRelationalOperator)
   /* End of Inport: '<Root>/AutoSarNM_stWKUPMode' */
 }
 
+/* Function for Chart: '<Root>/Chart' */
+static void AutoSarNm_exit_internal_ALL(void)
+{
+  AutoSarNm_DW.is_Set_NmSendMode = AutoSarNm_IN_NO_ACTIVE_CHILD;
+  AutoSarNm_DW.is_Set_AppSendMode = AutoSarNm_IN_NO_ACTIVE_CHILD;
+  AutoSarNm_DW.is_SendLastFrame = AutoSarNm_IN_NO_ACTIVE_CHILD;
+  AutoSarNm_DW.is_ALL = AutoSarNm_IN_NO_ACTIVE_CHILD;
+}
+
+/* Function for Chart: '<Root>/Chart' */
+static void AutoSarNm_enter_internal_RSS(void)
+{
+  /* :  sf_internal_predicateOutput = AUROSAR_NM_RDY2SLP_ENABLE ~= 0; */
+  if (AUROSAR_NM_RDY2SLP_ENABLE != 0U) {
+    AutoSarNm_DW.is_SendLastFrame = AutoSarNm_IN_wait_d;
+
+    /* :  NmRdy2Slp = 1; */
+    AutoSarNm_B.NmRdy2Slp = 1U;
+
+    /* Inport: '<Root>/CANNM_cntAuroSarNMFrameSendCnt' */
+    /* :  RMSSendFrameCntDelay = CANNM_cntAuroSarNMFrameSendCnt; */
+    AutoSarNm_DW.RMSSendFrameCntDelay = CANNM_cntAuroSarNMFrameSendCnt;
+  } else {
+    AutoSarNm_DW.is_SendLastFrame = AutoSarNm_IN_end;
+
+    /* :  NmRdy2Slp = 0; */
+    AutoSarNm_B.NmRdy2Slp = 0U;
+
+    /* :  NM_SetNmMsgEnable(uint8(0)); */
+    NM_SetNmMsgEnable(0U);
+  }
+
+  AutoSarNm_DW.temporalCounter_i1 = 0U;
+}
+
 /* Model step function */
 void AutoSarNm_step(void)
 {
@@ -105,12 +144,24 @@ void AutoSarNm_step(void)
   uint16_T BitwiseOR;
   uint8_T AutoSarNM_sts_a;
   uint8_T FixPtRelationalOperator;
+  uint8_T FixPtRelationalOperator_p;
 
   /* RelationalOperator: '<S3>/Compare' incorporates:
    *  Constant: '<S3>/Constant'
    *  Inport: '<Root>/AutoSarNM_stWKUPMode'
    */
   AutoSarNm_B.Compare = (uint8_T)(AutoSarNM_stWKUPMode == 1);
+
+  /* RelationalOperator: '<S7>/FixPt Relational Operator' incorporates:
+   *  Inport: '<Root>/CANNM_cntAuroSarNMFrameSendCnt'
+   *  UnitDelay: '<S7>/Delay Input1'
+   *
+   * Block description for '<S7>/Delay Input1':
+   *
+   *  Store in Global RAM
+   */
+  FixPtRelationalOperator = (uint8_T)(CANNM_cntAuroSarNMFrameSendCnt !=
+    AutoSarNm_DW.DelayInput1_DSTATE);
 
   /* Switch: '<Root>/Switch' incorporates:
    *  Constant: '<Root>/Constant4'
@@ -123,7 +174,7 @@ void AutoSarNm_step(void)
    *
    *  Store in Global RAM
    */
-  if (AutoSarNM_cntUDSMsgRxCnt != AutoSarNm_DW.DelayInput1_DSTATE) {
+  if (AutoSarNM_cntUDSMsgRxCnt != AutoSarNm_DW.DelayInput1_DSTATE_h) {
     rtb_Switch = AUROSAR_NM_UDS_OVERTIME;
   } else {
     qY = AUROSAR_NM_MODEL_RUN_STEP;
@@ -183,7 +234,7 @@ void AutoSarNm_step(void)
    *
    *  Store in Global RAM
    */
-  FixPtRelationalOperator = (uint8_T)(CANNM_stRMSReq !=
+  FixPtRelationalOperator_p = (uint8_T)(CANNM_stRMSReq !=
     AutoSarNm_DW.DelayInput1_DSTATE_d);
 
   /* Chart: '<Root>/Chart' incorporates:
@@ -224,9 +275,8 @@ void AutoSarNm_step(void)
     switch (AutoSarNm_DW.is_c3_AutoSarNm) {
      case AutoSarNm_IN_ALL:
       /* :  sf_internal_predicateOutput = CANNM_stRMSReq ~= 0; */
-      if (FixPtRelationalOperator != 0) {
-        AutoSarNm_DW.is_Set_NmSendMode = AutoSarNm_IN_NO_ACTIVE_CHILD;
-        AutoSarNm_DW.is_RSS = AutoSarNm_IN_NO_ACTIVE_CHILD;
+      if (FixPtRelationalOperator_p != 0) {
+        AutoSarNm_exit_internal_ALL();
         AutoSarNm_DW.is_c3_AutoSarNm = AutoSarNm_IN_ALL;
         AutoSarNm_DW.is_ALL = AutoSarNm_IN_RMS;
         AutoSarNm_DW.temporalCounter_i1 = 0U;
@@ -270,17 +320,10 @@ void AutoSarNm_step(void)
           /* :  sf_internal_predicateOutput = AutoSarNmKeepSrc == 0; */
           if (BitwiseOR == 0) {
             AutoSarNm_DW.is_ALL = AutoSarNm_IN_RSS;
-            AutoSarNm_DW.temporalCounter_i1 = 0U;
 
             /* :  AutoSarNM_sts = uint8(4); */
             AutoSarNM_sts_a = 4U;
-            AutoSarNm_DW.is_RSS = AutoSarNm_IN_wait_;
-
-            /* :  NmRdy2Slp = 1; */
-            AutoSarNm_B.NmRdy2Slp = 1U;
-
-            /* :  RMSSendFrameCntDelay = CANNM_cntAuroSarNMFrameSendCnt; */
-            AutoSarNm_DW.RMSSendFrameCntDelay = CANNM_cntAuroSarNMFrameSendCnt;
+            AutoSarNm_enter_internal_RSS();
           }
           break;
 
@@ -302,17 +345,10 @@ void AutoSarNm_step(void)
               AutoSarNm_DW.is_Set_NmSendMode = AutoSarNm_IN_NO_ACTIVE_CHILD;
               AutoSarNm_DW.is_Set_AppSendMode = AutoSarNm_IN_NO_ACTIVE_CHILD;
               AutoSarNm_DW.is_ALL = AutoSarNm_IN_RSS;
-              AutoSarNm_DW.temporalCounter_i1 = 0U;
 
               /* :  AutoSarNM_sts = uint8(4); */
               AutoSarNM_sts_a = 4U;
-              AutoSarNm_DW.is_RSS = AutoSarNm_IN_wait_;
-
-              /* :  NmRdy2Slp = 1; */
-              AutoSarNm_B.NmRdy2Slp = 1U;
-
-              /* :  RMSSendFrameCntDelay = CANNM_cntAuroSarNMFrameSendCnt; */
-              AutoSarNm_DW.RMSSendFrameCntDelay = CANNM_cntAuroSarNMFrameSendCnt;
+              AutoSarNm_enter_internal_RSS();
             }
           } else {
             if ((AutoSarNm_DW.is_Set_AppSendMode == AutoSarNm_IN_Fast) &&
@@ -360,58 +396,57 @@ void AutoSarNm_step(void)
           if (BitwiseOR != 0) {
             /* :  NM_SetNmMsgEnable(uint8(1)); */
             NM_SetNmMsgEnable(1U);
-            AutoSarNm_DW.is_RSS = AutoSarNm_IN_NO_ACTIVE_CHILD;
+            AutoSarNm_DW.is_SendLastFrame = AutoSarNm_IN_NO_ACTIVE_CHILD;
             AutoSarNm_DW.is_ALL = AutoSarNm_IN_NOS;
 
             /* :  AutoSarNM_sts = uint8(3); */
             AutoSarNM_sts_a = 3U;
+          } else {
+            if (AutoSarNm_DW.is_SendLastFrame == AutoSarNm_IN_end) {
+              AutoSarNm_B.NmRdy2Slp = 0U;
+            } else {
+              /* case IN_wait: */
+              AutoSarNm_B.NmRdy2Slp = 1U;
+
+              /* :  sf_internal_predicateOutput = RMSSendFrameCntDelay ~= CANNM_cntAuroSarNMFrameSendCnt; */
+              if (AutoSarNm_DW.RMSSendFrameCntDelay !=
+                  CANNM_cntAuroSarNMFrameSendCnt) {
+                AutoSarNm_DW.is_SendLastFrame = AutoSarNm_IN_end;
+
+                /* :  NmRdy2Slp = 0; */
+                AutoSarNm_B.NmRdy2Slp = 0U;
+
+                /* :  NM_SetNmMsgEnable(uint8(0)); */
+                NM_SetNmMsgEnable(0U);
+              }
+            }
 
             /* :  sf_internal_predicateOutput = after(CANNM_NM_TIMEOUT_TIME,msec); */
-          } else if ((uint32_T)((int32_T)AutoSarNm_DW.temporalCounter_i1 * 10) >=
-                     CANNM_NM_TIMEOUT_TIME) {
-            AutoSarNm_DW.is_RSS = AutoSarNm_IN_NO_ACTIVE_CHILD;
-            AutoSarNm_DW.is_ALL = AutoSarNm_IN_NO_ACTIVE_CHILD;
-            AutoSarNm_DW.is_c3_AutoSarNm = AutoSarNm_IN_PBSM;
-            AutoSarNm_DW.temporalCounter_i1 = 0U;
+            if ((uint32_T)((int32_T)AutoSarNm_DW.temporalCounter_i1 * 10) >=
+                CANNM_NM_TIMEOUT_TIME) {
+              AutoSarNm_exit_internal_ALL();
+              AutoSarNm_DW.is_c3_AutoSarNm = AutoSarNm_IN_PBSM;
+              AutoSarNm_DW.temporalCounter_i1 = 0U;
 
-            /* :  AutoSarNM_sts = uint8(1); */
-            AutoSarNM_sts_a = 1U;
+              /* :  AutoSarNM_sts = uint8(1); */
+              AutoSarNM_sts_a = 1U;
 
-            /* :  NM_SetAppMsgEnable(uint8(0)); */
-            NM_SetAppMsgEnable(0U);
+              /* :  NM_SetAppMsgEnable(uint8(0)); */
+              NM_SetAppMsgEnable(0U);
 
-            /* :  NM_ResetCanNmSendCnt(); */
-            NM_ResetCanNmSendCnt();
+              /* :  NM_ResetCanNmSendCnt(); */
+              NM_ResetCanNmSendCnt();
 
-            /* :  App_SendFlg = 0; */
-            AutoSarNm_DW.App_SendFlg = 0U;
+              /* :  App_SendFlg = 0; */
+              AutoSarNm_DW.App_SendFlg = 0U;
 
-            /* :  NM_PbsmGetWkupMode(uint8(1)); */
-            NM_PbsmGetWkupMode(1U);
-          } else if (AutoSarNm_DW.is_RSS == AutoSarNm_IN_end) {
-            /* :  NmRdy2Slp = 0; */
-            AutoSarNm_B.NmRdy2Slp = 0U;
+              /* :  NM_PbsmGetWkupMode(uint8(1)); */
+              NM_PbsmGetWkupMode(1U);
 
-            /* :  NM_SetNmMsgEnable(uint8(0)); */
-            NM_SetNmMsgEnable(0U);
-
-            /* case IN_wait_: */
-            /* :  sf_internal_predicateOutput = RMSSendFrameCntDelay ~= CANNM_cntAuroSarNMFrameSendCnt; */
-          } else if (AutoSarNm_DW.RMSSendFrameCntDelay !=
-                     CANNM_cntAuroSarNMFrameSendCnt) {
-            AutoSarNm_DW.is_RSS = AutoSarNm_IN_end;
-
-            /* :  NmRdy2Slp = 0; */
-            AutoSarNm_B.NmRdy2Slp = 0U;
-
-            /* :  NM_SetNmMsgEnable(uint8(0)); */
-            NM_SetNmMsgEnable(0U);
-          } else {
-            /* :  NmRdy2Slp = 1; */
-            AutoSarNm_B.NmRdy2Slp = 1U;
-
-            /* :  RMSSendFrameCntDelay = CANNM_cntAuroSarNMFrameSendCnt; */
-            AutoSarNm_DW.RMSSendFrameCntDelay = CANNM_cntAuroSarNMFrameSendCnt;
+              /* :  sf_internal_predicateOutput = CANNM_cntAuroSarNMFrameSendCnt_Step ~= 0; */
+            } else if (FixPtRelationalOperator != 0) {
+              AutoSarNm_DW.temporalCounter_i1 = 0U;
+            }
           }
           break;
         }
@@ -420,6 +455,7 @@ void AutoSarNm_step(void)
 
      case AutoSarNm_IN_BSM:
       AutoSarNM_sts_a = 0U;
+      AutoSarNm_B.NmRdy2Slp = 0U;
 
       /* :  sf_internal_predicateOutput = AutoSarNM_stWKUPMode ~= hex2dec('0xFF'); */
       if (AutoSarNM_stWKUPMode != 255) {
@@ -433,7 +469,7 @@ void AutoSarNm_step(void)
 
         /* 1、上电后首帧必须是网管管理帧 */
         /* 2、被动唤醒不进入快发模式 */
-        AutoSarNm_enter_internal_RMS(&FixPtRelationalOperator);
+        AutoSarNm_enter_internal_RMS(&FixPtRelationalOperator_p);
       } else {
         /* :  NM_PbsmGetWkupMode(uint8(0)); */
         NM_PbsmGetWkupMode(0U);
@@ -466,7 +502,7 @@ void AutoSarNm_step(void)
 
         /* 1、上电后首帧必须是网管管理帧 */
         /* 2、被动唤醒不进入快发模式 */
-        AutoSarNm_enter_internal_RMS(&FixPtRelationalOperator);
+        AutoSarNm_enter_internal_RMS(&FixPtRelationalOperator_p);
 
         /* :  sf_internal_predicateOutput = after(CANNM_WAIT_BUS_SLEEP_TIME,msec); */
       } else if ((uint32_T)((int32_T)AutoSarNm_DW.temporalCounter_i1 * 10) >=
@@ -506,6 +542,24 @@ void AutoSarNm_step(void)
   }
 
   /* End of Chart: '<Root>/Chart' */
+
+  /* SignalConversion generated from: '<Root>/Variant Source1' */
+#if AUROSAR_NM_RDY2SLP_ENABLE == 1
+
+  /* VariantMerge generated from: '<Root>/Variant Source1' */
+  AutoSarNm_B.VariantMerge_For_Variant_Source = AutoSarNm_B.NmRdy2Slp;
+
+#else
+
+  /* VariantMerge generated from: '<Root>/Variant Source1' incorporates:
+   *  Constant: '<Root>/Constant29'
+   *  SignalConversion generated from: '<Root>/Variant Source1'
+   */
+  AutoSarNm_B.VariantMerge_For_Variant_Source = 0U;
+
+#endif
+
+  /* End of SignalConversion generated from: '<Root>/Variant Source1' */
 
   /* DataTypeConversion: '<Root>/Data Type Conversion6' incorporates:
    *  Constant: '<Root>/Constant8'
@@ -689,7 +743,8 @@ void AutoSarNm_step(void)
       uint32_T packingValue = 0;
 
       {
-        uint32_T result = (uint32_T) (AutoSarNm_B.NmRdy2Slp);
+        uint32_T result = (uint32_T)
+          (AutoSarNm_B.VariantMerge_For_Variant_Source);
 
         /* no scaling required */
         packingValue = result;
@@ -1112,6 +1167,15 @@ void AutoSarNm_step(void)
   /* DataTypeConversion: '<Root>/Data Type Conversion1' */
   AutoSarNM_sts = (AutoSarNm_Sts_Enum)AutoSarNM_sts_a;
 
+  /* Update for UnitDelay: '<S7>/Delay Input1' incorporates:
+   *  Inport: '<Root>/CANNM_cntAuroSarNMFrameSendCnt'
+   *
+   * Block description for '<S7>/Delay Input1':
+   *
+   *  Store in Global RAM
+   */
+  AutoSarNm_DW.DelayInput1_DSTATE = CANNM_cntAuroSarNMFrameSendCnt;
+
   /* Update for UnitDelay: '<S5>/Delay Input1' incorporates:
    *  Inport: '<Root>/AutoSarNM_cntUDSMsgRxCnt'
    *
@@ -1119,7 +1183,7 @@ void AutoSarNm_step(void)
    *
    *  Store in Global RAM
    */
-  AutoSarNm_DW.DelayInput1_DSTATE = AutoSarNM_cntUDSMsgRxCnt;
+  AutoSarNm_DW.DelayInput1_DSTATE_h = AutoSarNM_cntUDSMsgRxCnt;
 
   /* Update for UnitDelay: '<Root>/Unit Delay' */
   AutoSarNm_DW.UnitDelay_DSTATE = rtb_Switch;
@@ -1138,11 +1202,11 @@ void AutoSarNm_step(void)
 void AutoSarNm_initialize(void)
 {
   /* Outputs for Atomic SubSystem: '<Root>/Initialize Function' */
-  /* Outputs for Atomic SubSystem: '<S7>/Atomic Subsystem' */
-  /* S-Function (scanfdpack): '<S8>/CAN FD Pack' incorporates:
-   *  Constant: '<S8>/Constant1'
+  /* Outputs for Atomic SubSystem: '<S8>/Atomic Subsystem' */
+  /* S-Function (scanfdpack): '<S9>/CAN FD Pack' incorporates:
+   *  Constant: '<S9>/Constant1'
    */
-  /* S-Function (scanfdpack): '<S8>/CAN FD Pack' */
+  /* S-Function (scanfdpack): '<S9>/CAN FD Pack' */
   AutoSarNm_B.CANFDPack.ID = CAN_ID_VEH_TX_NM;
   AutoSarNm_B.CANFDPack.Length = 8U;
   AutoSarNm_B.CANFDPack.Extended = 1U;
@@ -1311,31 +1375,31 @@ void AutoSarNm_initialize(void)
     }
   }
 
-  /* DataStoreWrite: '<S8>/Data Store Write' incorporates:
-   *  S-Function (scanfdpack): '<S8>/CAN FD Pack'
+  /* DataStoreWrite: '<S9>/Data Store Write' incorporates:
+   *  S-Function (scanfdpack): '<S9>/CAN FD Pack'
    */
   CAN_msgAutoSarNmFrame = AutoSarNm_B.CANFDPack;
 
-  /* End of Outputs for SubSystem: '<S7>/Atomic Subsystem' */
+  /* End of Outputs for SubSystem: '<S8>/Atomic Subsystem' */
 
-  /* Outputs for Atomic SubSystem: '<S7>/Atomic Subsystem1' */
-  /* CCaller: '<S9>/C Caller' incorporates:
-   *  Constant: '<S9>/Constant'
+  /* Outputs for Atomic SubSystem: '<S8>/Atomic Subsystem1' */
+  /* CCaller: '<S10>/C Caller' incorporates:
+   *  Constant: '<S10>/Constant'
    */
   NM_SetAppMsgEnable(0U);
 
-  /* CCaller: '<S9>/C Caller1' incorporates:
-   *  Constant: '<S9>/Constant'
+  /* CCaller: '<S10>/C Caller1' incorporates:
+   *  Constant: '<S10>/Constant'
    */
   NM_SetNmMsgEnable(0U);
 
-  /* End of Outputs for SubSystem: '<S7>/Atomic Subsystem1' */
+  /* End of Outputs for SubSystem: '<S8>/Atomic Subsystem1' */
 
-  /* Outputs for Atomic SubSystem: '<S7>/Atomic Subsystem2' */
-  /* CCaller: '<S10>/C Caller' */
+  /* Outputs for Atomic SubSystem: '<S8>/Atomic Subsystem2' */
+  /* CCaller: '<S11>/C Caller' */
   NM_BsmGetWkupMode();
 
-  /* End of Outputs for SubSystem: '<S7>/Atomic Subsystem2' */
+  /* End of Outputs for SubSystem: '<S8>/Atomic Subsystem2' */
   /* End of Outputs for SubSystem: '<Root>/Initialize Function' */
 }
 

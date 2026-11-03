@@ -3,9 +3,9 @@
  *
  * Code generated for Simulink model 'AutoSarNm'.
  *
- * Model version                  : 14.367
+ * Model version                  : 14.376
  * Simulink Coder version         : 9.8 (R2022b) 13-May-2022
- * C/C++ source code generated on : Mon Nov  2 15:00:43 2026
+ * C/C++ source code generated on : Tue Nov  3 08:36:09 2026
  *
  * Target selection: ert.tlc
  * Embedded hardware selection: ARM Compatible->ARM 7
@@ -24,6 +24,14 @@
 
 #include "AutoSarNm_types.h"
 
+/* Definition for custom storage class: Define */
+#define AUROSAR_NM_RDY2SLP_ENABLE      0U                        /* Referenced by:
+                                                                  * '<Root>/From15'
+                                                                  * '<Root>/Goto8'
+                                                                  * '<Root>/Chart'
+                                                                  * '<Root>/Constant29'
+                                                                  */
+
 /* Includes for objects with custom storage classes */
 #include "NMmain.h"
 
@@ -38,27 +46,29 @@
 /* Block signals (default storage) */
 typedef struct {
   CAN_FD_MESSAGE_BUS CAN_msgAutoSarNmFrame_i;/* '<Root>/CAN FD Pack' */
-  CAN_FD_MESSAGE_BUS CANFDPack;        /* '<S8>/CAN FD Pack' */
+  CAN_FD_MESSAGE_BUS CANFDPack;        /* '<S9>/CAN FD Pack' */
   uint8_T Compare;                     /* '<S3>/Compare' */
+  uint8_T VariantMerge_For_Variant_Source;
   uint8_T DataTypeConversion6;         /* '<Root>/Data Type Conversion6' */
   uint8_T NmRdy2Slp;                   /* '<Root>/Chart' */
 } B_AutoSarNm_T;
 
 /* Block states (default storage) for system '<Root>' */
 typedef struct {
+  uint32_T DelayInput1_DSTATE;         /* '<S7>/Delay Input1' */
   uint32_T UnitDelay_DSTATE;           /* '<Root>/Unit Delay' */
   uint32_T RMSSendFrameCntDelay;       /* '<Root>/Chart' */
   uint32_T temporalCounter_i1;         /* '<Root>/Chart' */
   int_T CANFDPack_ModeSignalID;        /* '<Root>/CAN FD Pack' */
-  int_T CANFDPack_ModeSignalID_a;      /* '<S8>/CAN FD Pack' */
-  uint8_T DelayInput1_DSTATE;          /* '<S5>/Delay Input1' */
+  int_T CANFDPack_ModeSignalID_a;      /* '<S9>/CAN FD Pack' */
+  uint8_T DelayInput1_DSTATE_h;        /* '<S5>/Delay Input1' */
   uint8_T DelayInput1_DSTATE_d;        /* '<S6>/Delay Input1' */
   uint8_T is_c3_AutoSarNm;             /* '<Root>/Chart' */
   uint8_T is_BSM;                      /* '<Root>/Chart' */
   uint8_T is_ALL;                      /* '<Root>/Chart' */
   uint8_T is_Set_AppSendMode;          /* '<Root>/Chart' */
   uint8_T is_Set_NmSendMode;           /* '<Root>/Chart' */
-  uint8_T is_RSS;                      /* '<Root>/Chart' */
+  uint8_T is_SendLastFrame;            /* '<Root>/Chart' */
   uint8_T App_SendFlg;                 /* '<Root>/Chart' */
   uint8_T is_active_c3_AutoSarNm;      /* '<Root>/Chart' */
 } DW_AutoSarNm_T;
@@ -95,11 +105,12 @@ typedef struct {
    *   '<Root>/Constant18'
    *   '<Root>/Constant19'
    *   '<Root>/Constant20'
+   *   '<Root>/Constant29'
    *   '<Root>/Constant9'
    *   '<S5>/Delay Input1'
    *   '<S6>/Delay Input1'
-   *   '<S8>/Constant1'
-   *   '<S9>/Constant'
+   *   '<S9>/Constant1'
+   *   '<S10>/Constant'
    */
   uint8_T pooled2;
 } ConstP_AutoSarNm_T;
@@ -144,6 +155,7 @@ extern void AutoSarNm_step(void);
  *
  * Block '<Root>/Constant' : Unused code path elimination
  * Block '<Root>/Constant1' : Unused code path elimination
+ * Block '<Root>/Constant13' : Unused code path elimination
  * Block '<Root>/Constant2' : Unused code path elimination
  * Block '<Root>/Constant21' : Unused code path elimination
  * Block '<Root>/Constant22' : Unused code path elimination
@@ -182,10 +194,11 @@ extern void AutoSarNm_step(void);
  * '<S4>'   : 'AutoSarNm/Detect Change'
  * '<S5>'   : 'AutoSarNm/Detect Change1'
  * '<S6>'   : 'AutoSarNm/Detect Change2'
- * '<S7>'   : 'AutoSarNm/Initialize Function'
- * '<S8>'   : 'AutoSarNm/Initialize Function/Atomic Subsystem'
- * '<S9>'   : 'AutoSarNm/Initialize Function/Atomic Subsystem1'
- * '<S10>'  : 'AutoSarNm/Initialize Function/Atomic Subsystem2'
+ * '<S7>'   : 'AutoSarNm/Detect Change3'
+ * '<S8>'   : 'AutoSarNm/Initialize Function'
+ * '<S9>'   : 'AutoSarNm/Initialize Function/Atomic Subsystem'
+ * '<S10>'  : 'AutoSarNm/Initialize Function/Atomic Subsystem1'
+ * '<S11>'  : 'AutoSarNm/Initialize Function/Atomic Subsystem2'
  */
 #endif                                 /* RTW_HEADER_AutoSarNm_h_ */
 

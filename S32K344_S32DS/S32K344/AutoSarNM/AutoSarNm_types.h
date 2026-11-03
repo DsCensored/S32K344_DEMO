@@ -3,9 +3,9 @@
  *
  * Code generated for Simulink model 'AutoSarNm'.
  *
- * Model version                  : 14.367
+ * Model version                  : 14.376
  * Simulink Coder version         : 9.8 (R2022b) 13-May-2022
- * C/C++ source code generated on : Mon Nov  2 15:00:43 2026
+ * C/C++ source code generated on : Tue Nov  3 08:36:09 2026
  *
  * Target selection: ert.tlc
  * Embedded hardware selection: ARM Compatible->ARM 7
@@ -19,6 +19,9 @@
 
 /* Includes for objects with custom storage classes */
 #include "NMmain.h"
+
+/* Includes for objects with custom storage classes */
+#include "AutoSarNm.h"
 #ifndef DEFINED_TYPEDEF_FOR_CAN_FD_MESSAGE_BUS_
 #define DEFINED_TYPEDEF_FOR_CAN_FD_MESSAGE_BUS_
 

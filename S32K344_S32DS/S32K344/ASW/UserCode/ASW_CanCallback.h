@@ -18,4 +18,6 @@ extern CAN_FD_MESSAGE CAN_msgAutoSarNmFrameRx;
 extern CAN_RXStr CAN_CHN1_RX[CAN_CHN1_RX_COUNT];
 extern CAN_TXStr CAN_CHN1_TX[CAN_CHN1_TX_COUNT];
 
+void ASW_CanInit(void);
+
 #endif /* USERCODE_ASW_CANCALLBACK_H_ */

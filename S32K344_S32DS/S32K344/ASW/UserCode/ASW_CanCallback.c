@@ -63,3 +63,11 @@ void ASW_SetNormalCommEnabled(unsigned char enabled)
 {
 	CAN_CHN1_TX[0].Enable = (0U != enabled) ? 1U : 0U;
 }
+
+void ASW_CanInit(void)
+{
+	for(uint16 i = 0; i < CAN_CHN1_TX_COUNT; i++)
+	{
+		CAN_CHN1_TX[i].last_send_tick = 0xFFFF0000;
+	}
+}
