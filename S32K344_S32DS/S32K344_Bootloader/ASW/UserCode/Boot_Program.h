@@ -37,4 +37,8 @@ unsigned char BootProg_CheckIntegrity(unsigned int expected, unsigned int *statu
 unsigned char BootProg_WriteFingerprint(const unsigned char *data);
 unsigned char BootProg_ReadFingerprint(unsigned char *data);
 
+/* Destroy the downloaded ITCM driver (DEINIT + ITCM wipe).  Safe to call
+ * repeatedly; the next programming event must download the driver again. */
+void BootProg_DestroyFlash(void);
+
 #endif /* BOOT_PROGRAM_H_ */

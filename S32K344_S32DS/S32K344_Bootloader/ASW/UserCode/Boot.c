@@ -7,6 +7,8 @@
 
 #include "Boot.h"
 #include "Boot_Shared.h"
+#include "Boot_Flash.h"
+#include "Boot_Program.h"
 #include "UserOS.h"
 #include "Gpt.h"
 #include "Can_43_FLEXCAN.h"
@@ -48,6 +50,9 @@ static unsigned int Boot_StartTick = 0U;
  * announces 0x50 0x02 on its own and keeps the programming session active. */
 static void Boot_EnterProgramming(void)
 {
+    /* A previous session may have left a driver image in ITCM. */
+    BootProg_DestroyFlash();
+
     UDS_DcmCtx.Session = UDS_DCM_SESSION_PROGRAMMING;
     UDS_DcmCtx.SessionTick = BSW_GetSystemTick();
 
@@ -255,7 +260,11 @@ void Boot_TryJumpToApp(void)
 
     __asm volatile ("cpsid i" ::: "memory");
 
-    /* No MCAL driver has been initialised: no cache maintenance needed. */
+    /* No driver may stay executable after the bootloader leaves.  The APP
+     * startup copies its own ITCM text over 0x00000000 afterwards. */
+    Boot_FlashWipe();
+
+    /* No MCAL driver has been initialised. */
 
     for (i = 0U; i < 8U; i++)
     {
@@ -283,6 +292,9 @@ void Boot_JumpToApp(void)
 
     /* De-initialise everything the bootloader owns before the APP starts. */
     __asm volatile ("cpsid i" ::: "memory");
+
+    /* QCC 04.171: the RAM/ITCM driver must not remain executable. */
+    BootProg_DestroyFlash();
 
     /* Stop the boot loader time base and clear its pending flag: a stale PIT
      * interrupt would otherwise hit the APP before it installs its own

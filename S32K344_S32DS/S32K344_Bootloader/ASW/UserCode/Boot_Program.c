@@ -530,6 +530,12 @@ unsigned char BootProg_ReadFingerprint(unsigned char *data)
     return 0U;
 }
 
+void BootProg_DestroyFlash(void)
+{
+    Boot_FlashDestroy();
+    g_flashReady = 0U;
+}
+
 
 
 

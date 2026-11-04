@@ -66,6 +66,9 @@ static unsigned char UDS_DcmSessionProgramming(const unsigned char *req, unsigne
 	(void)req;
 	(void)len;
 
+	/* Drop any driver image from a previous session before a new one. */
+	BootProg_DestroyFlash();
+
 	/* QCC 04.171: 10 02 is only accepted after 31 01 02 03. */
 	if (0U == UDS_DcmPreconditionOk)
 	{
@@ -676,6 +679,8 @@ static unsigned char UDS_DcmRoutineCopy(const unsigned char *req, unsigned int l
 		return (unsigned char)NRC_REQUEST_CORRECTLY_RECEIVED_RESPONSE_PENDING;
 	}
 
+	/* Programming complete: do not leave the ITCM driver executable. */
+	BootProg_DestroyFlash();
 	return 0U;
 }
 
@@ -903,6 +908,7 @@ void UDS_DcmCfgSessionTimeout(void)
  */
 __attribute__((weak)) void UDS_DCM_ResetHook(void)
 {
+	BootProg_DestroyFlash();
 	Mcu_PerformReset();
 }
 

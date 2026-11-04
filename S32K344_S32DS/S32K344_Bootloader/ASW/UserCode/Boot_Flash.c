@@ -30,6 +30,10 @@ typedef struct
 
 int Boot_FlashLastError;
 
+/* Set only after the downloaded driver accepted INIT.  This lets the destroy
+ * path avoid reading an uninitialised ITCM header (which may have bad ECC). */
+static unsigned char g_driverLoaded;
+
 /* Address 0 is the ITCM on this device, not a NULL pointer.  The base is read
  * through a volatile variable on purpose: when the compiler sees the constant
  * 0 it applies the C rule that dereferencing a NULL pointer is undefined
@@ -138,12 +142,50 @@ unsigned char Boot_FlashInit(void)
     /* A new image may have been downloaded since the previous INIT. */
     BootFlash_SyncCaches();
 
-    return (0 == BootFlashCall(BOOT_DRIVER_CMD_INIT, 0U, 0U, 0)) ? 0U : 1U;
+    if (0 == BootFlashCall(BOOT_DRIVER_CMD_INIT, 0U, 0U, 0))
+    {
+        g_driverLoaded = 1U;
+        return 0U;
+    }
+
+    return 1U;
 }
 
 unsigned char Boot_FlashDeInit(void)
 {
     return (0 == BootFlashCall(BOOT_DRIVER_CMD_DEINIT, 0U, 0U, 0)) ? 0U : 1U;
+}
+
+void Boot_FlashWipe(void)
+{
+    volatile unsigned int *p =
+        (volatile unsigned int *)(unsigned int)BootFlash_Base;
+    unsigned int i;
+
+    BootFlash_EnableItcm();
+
+    for (i = 0U; i < (BOOT_DRIVER_MAX_SIZE / 4U); i++)
+    {
+        p[i] = 0U;
+    }
+
+    /* The driver may still be in the I-cache: invalidate it before any jump. */
+    *(volatile unsigned int *)0xE000EF50UL = 0U;   /* ICIALLU */
+    __asm volatile ("dsb" ::: "memory");
+    __asm volatile ("isb" ::: "memory");
+
+    g_driverLoaded = 0U;
+}
+
+void Boot_FlashDestroy(void)
+{
+    if (0U != g_driverLoaded)
+    {
+        (void)Boot_FlashDeInit();
+        g_driverLoaded = 0U;
+    }
+
+    Boot_FlashWipe();
 }
 
 unsigned char Boot_FlashErase(unsigned int addr, unsigned int len)

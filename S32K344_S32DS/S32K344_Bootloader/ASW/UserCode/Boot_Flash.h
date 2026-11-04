@@ -28,4 +28,9 @@ unsigned char Boot_FlashWrite(unsigned int addr, const unsigned char *buf,
 unsigned char Boot_FlashVerify(unsigned int addr, const unsigned char *buf,
                                unsigned int len);
 
+/* Clear the downloaded driver image from ITCM (no driver call). */
+void Boot_FlashWipe(void);
+/* Ask the driver to de-initialise, then wipe the complete ITCM window. */
+void Boot_FlashDestroy(void);
+
 #endif /* BOOT_FLASH_H_ */
