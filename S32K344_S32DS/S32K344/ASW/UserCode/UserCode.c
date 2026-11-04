@@ -21,6 +21,7 @@
 #include "Dio.h"
 #include "Dio_Cfg.h"
 #include "Wdg_43_Instance0.h"
+#include "ASP.h"
 
 /* -------------------------------------------------------------------------
  * Simple NVM demo: keep a power-up counter in NVM block 3.
@@ -74,7 +75,7 @@ static void ASW_userTask10ms(void)
 }
 static void ASW_userTask20ms(void)
 {
-
+	ASP_step();
 }
 static void ASW_userTask50ms(void)
 {
