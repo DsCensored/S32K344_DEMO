@@ -1,0 +1,16 @@
+﻿04 Nov 2026 15:20:03 - Saving file AdminDataTemplates.xml (D:\Order_Git\S32K344_DEMO\S32K344_DaVinCi\Config\Developer\AdminDataTemplates.xml)
+04 Nov 2026 15:20:04 - Saving file S32K344.dcf (D:\Order_Git\S32K344_DEMO\S32K344_DaVinCi\Config\Developer\S32K344.dcf)
+04 Nov 2026 15:20:04 - Start import
+04 Nov 2026 15:20:04 - Importing file (D:\Davinci\Bin\Predefines\StandardPackages_AR4.arxml).
+04 Nov 2026 15:20:04 - Importing file (D:\Davinci\Bin\Predefines\ServicePortInterfaces_4.7.0.arxml).
+04 Nov 2026 15:20:04 - Importing file (D:\Davinci\Bin\Predefines\ApplicationPortInterfaces_4.7.0.arxml).
+04 Nov 2026 15:20:04 - Importing file (D:\Order_Git\S32K344_DEMO\S32K344_DaVinCi\Config\AUTOSAR\MemMap_SwAddrMethods.arxml).
+04 Nov 2026 15:20:04 - Importing file (D:\Order_Git\S32K344_DEMO\S32K344_DaVinCi\Config\AUTOSAR\PlatformTypes_AR4.arxml).
+04 Nov 2026 15:20:04 - Merging imported data
+04 Nov 2026 15:20:06 - Finished import
+04 Nov 2026 15:20:06 - Saving file ProfileSettings.xml (D:\Order_Git\S32K344_DEMO\S32K344_DaVinCi\Config\Developer\ProfileSettings.xml)
+04 Nov 2026 15:20:06 - Saving file Packages.arxml (D:\Order_Git\S32K344_DEMO\S32K344_DaVinCi\Config\Developer\Packages.arxml)
+04 Nov 2026 15:20:06 - Saving file DataTypes.arxml (D:\Order_Git\S32K344_DEMO\S32K344_DaVinCi\Config\Developer\DataTypes.arxml)
+04 Nov 2026 15:20:06 - Saving file PortInterfaces.arxml (D:\Order_Git\S32K344_DEMO\S32K344_DaVinCi\Config\Developer\PortInterfaces.arxml)
+04 Nov 2026 15:20:06 - Saving file S32K344.arxml (D:\Order_Git\S32K344_DEMO\S32K344_DaVinCi\Config\Developer\ECUProjects\S32K344.arxml)
+04 Nov 2026 15:20:06 - Saving file S32K344.dcf (D:\Order_Git\S32K344_DEMO\S32K344_DaVinCi\Config\Developer\S32K344.dcf)

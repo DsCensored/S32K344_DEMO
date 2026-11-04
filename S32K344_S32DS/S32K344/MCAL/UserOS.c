@@ -119,6 +119,16 @@ static volatile unsigned int OS_tiResetMark = 0;   /* 上次复位时的系统 t
 */
 void BSW_IsrPit0Ch0(void)
 {
+#if BSW_CRYSTAL_COMPENSATION_ENABLE
+	static unsigned int COC_Cnt = BSW_CRYSTAL_COMPENSATION_CNT;
+
+	if(--COC_Cnt == 0)
+	{
+		COC_Cnt = BSW_CRYSTAL_COMPENSATION_CNT;
+		OS_tiSystemTick++;
+	}
+#endif
+
 	OS_tiSystemTick++;
 
 	for (unsigned char i = 0; i < OS_numTolTaskNum; i++)

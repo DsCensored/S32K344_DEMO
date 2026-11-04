@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Settings>
+    <Settings Name="CFG5_GUI_SETTING">
+        <Settings Name="com.vector.cfg.gui.app.dvcfg.views.validation.validationview.hideack">
+            <Setting Value="false" Name="buttonStateAck"/>
+        </Settings>
+        <Settings Name="com.vector.cfg.gui.app.dvcfg.views.validation.validationview.hideerror">
+            <Setting Value="false" Name="buttonStateError"/>
+        </Settings>
+        <Settings Name="com.vector.cfg.gui.app.dvcfg.views.validation.validationview.hideinfo">
+            <Setting Value="false" Name="buttonStateInfo"/>
+        </Settings>
+        <Settings Name="com.vector.cfg.gui.app.dvcfg.views.validation.validationview.hidewarn">
+            <Setting Value="false" Name="buttonStateWarn"/>
+        </Settings>
+        <Settings Name="com.vector.cfg.gui.app.views.validation.table.ValidationViewTable">
+            <Setting Value="0,1,2," Name="nattable.BODY.columnIndexOrder"/>
+            <Setting Value="0" Name="nattable.BODY.columnWidth.defaultMinSize"/>
+            <Setting Value="false" Name="nattable.BODY.columnWidth.distributeRemainingSpace"/>
+            <Setting Value="0:250,1:500,2:250," Name="nattable.BODY.columnWidth.sizes"/>
+            <Setting Value="0" Name="nattable.COLUMN_HEADER.columnWidth.defaultMinSize"/>
+            <Setting Value="false" Name="nattable.COLUMN_HEADER.columnWidth.distributeRemainingSpace"/>
+            <Setting Value="0" Name="nattable.CORNER.columnWidth.defaultMinSize"/>
+            <Setting Value="false" Name="nattable.CORNER.columnWidth.distributeRemainingSpace"/>
+            <Setting Value="0" Name="nattable.ROW_HEADER.columnWidth.defaultMinSize"/>
+            <Setting Value="false" Name="nattable.ROW_HEADER.columnWidth.distributeRemainingSpace"/>
+        </Settings>
+        <Settings Name="com.vector.cfg.gui.danglingreference.view.DanglingReferencesView"/>
+        <Settings Name="com.vector.cfg.gui.gce.internal.GCETable.TS_T40D34M50I0R0.Fee.FeeBlockConfiguration">
+            <Setting Value="0,1,2,3,4,5,6,7,8," Name="nattable.BODY.columnIndexOrder"/>
+            <Setting Value="0" Name="nattable.BODY.columnWidth.defaultMinSize"/>
+            <Setting Value="false" Name="nattable.BODY.columnWidth.distributeRemainingSpace"/>
+            <Setting Value="0:20,1:213,2:170,3:144,4:113,5:236,6:156,7:450,8:216," Name="nattable.BODY.columnWidth.sizes"/>
+            <Setting Value="0" Name="nattable.COLUMN_HEADER.columnWidth.defaultMinSize"/>
+            <Setting Value="false" Name="nattable.COLUMN_HEADER.columnWidth.distributeRemainingSpace"/>
+            <Setting Value="0" Name="nattable.CORNER.columnWidth.defaultMinSize"/>
+            <Setting Value="false" Name="nattable.CORNER.columnWidth.distributeRemainingSpace"/>
+            <Setting Value="0" Name="nattable.ROW_HEADER.columnWidth.defaultMinSize"/>
+            <Setting Value="false" Name="nattable.ROW_HEADER.columnWidth.distributeRemainingSpace"/>
+            <Setting Value="ASC" Name="nattable.sortDirections"/>
+            <Setting Value="1" Name="nattable.sortIndexes"/>
+        </Settings>
+    </Settings>
+    <Settings Name="com.vector.cfg.consistency.internal.executer.BackgroundValidationExecuter">
+        <Setting Value="425" Name="InitialBackgroundValidationExecutionTimeMs"/>
+        <Setting Value="rO0ABXNyABFqYXZhLnV0aWwuSGFzaE1hcAUH2sHDFmDRAwACRgAKbG9hZEZhY3RvckkACXRocmVz&#xA;aG9sZHhwP0AAAAAAAAx3CAAAABAAAAADdAAzY29tLnZlY3Rvci5jZmcudmFsaWRhdGlvbi5iYXNp&#xA;Y3J1bGVzLmltcGwuU2hvcnRuYW1lc3IADmphdmEubGFuZy5Mb25nO4vkkMyPI98CAAFKAAV2YWx1&#xA;ZXhyABBqYXZhLmxhbmcuTnVtYmVyhqyVHQuU4IsCAAB4cAAAAAAEAAAAdABOY29tLnZlY3Rvci5j&#xA;ZmcubW9kZWwuc2VydmljZXMuaW50ZXJuYWwuYnN3aW50YmVoYXZpb3IudmFsaWRhdGlvbi5Cc3dW&#xA;YWxpZGF0aW9uc3EAfgADAAAAACQAAAB0AENjb20udmVjdG9yLmNmZy5tb2RlbC5zd2N0ZW1wbGF0&#xA;ZXMuaW50ZXJuYWwudmFsaWRhdGlvbi5Td2NWYWxpZGF0aW9uc3EAfgADAAAAAFwAAAB4" Name="ValidationRuleExecutionTimes"/>
+    </Settings>
+    <Settings Name="com.vector.cfg.gui.moduleimport.history">
+        <Settings Name="1793778057472">
+            <Settings Name="0">
+                <Settings Name="0">
+                    <Setting Value="true" Name="active"/>
+                    <Setting Value="/BaseNXP/BaseNXP" Name="ecucPath"/>
+                    <Setting Value="Add" Name="importMode"/>
+                </Settings>
+                <Settings Name="1">
+                    <Setting Value="true" Name="active"/>
+                    <Setting Value="/Can_43_FLEXCAN/Can" Name="ecucPath"/>
+                    <Setting Value="Add" Name="importMode"/>
+                </Settings>
+                <Settings Name="10">
+                    <Setting Value="true" Name="active"/>
+                    <Setting Value="/Mcu/Mcu" Name="ecucPath"/>
+                    <Setting Value="Add" Name="importMode"/>
+                </Settings>
+                <Settings Name="11">
+                    <Setting Value="true" Name="active"/>
+                    <Setting Value="/Mem_43_INFLS/Mem" Name="ecucPath"/>
+                    <Setting Value="Add" Name="importMode"/>
+                </Settings>
+                <Settings Name="12">
+                    <Setting Value="true" Name="active"/>
+                    <Setting Value="/MemAcc/MemAcc" Name="ecucPath"/>
+                    <Setting Value="Add" Name="importMode"/>
+                </Settings>
+                <Settings Name="13">
+                    <Setting Value="true" Name="active"/>
+                    <Setting Value="/Os/Os" Name="ecucPath"/>
+                    <Setting Value="Add" Name="importMode"/>
+                </Settings>
+                <Settings Name="14">
+                    <Setting Value="true" Name="active"/>
+                    <Setting Value="/Platform/Platform" Name="ecucPath"/>
+                    <Setting Value="Add" Name="importMode"/>
+                </Settings>
+                <Settings Name="15">
+                    <Setting Value="true" Name="active"/>
+                    <Setting Value="/Port/Port" Name="ecucPath"/>
+                    <Setting Value="Add" Name="importMode"/>
+                </Settings>
+                <Settings Name="16">
+                    <Setting Value="true" Name="active"/>
+                    <Setting Value="/Resource/Resource" Name="ecucPath"/>
+                    <Setting Value="Add" Name="importMode"/>
+                </Settings>
+                <Settings Name="17">
+                    <Setting Value="true" Name="active"/>
+                    <Setting Value="/Rm/Rm" Name="ecucPath"/>
+                    <Setting Value="Add" Name="importMode"/>
+                </Settings>
+                <Settings Name="18">
+                    <Setting Value="true" Name="active"/>
+                    <Setting Value="/Uart/Uart" Name="ecucPath"/>
+                    <Setting Value="Add" Name="importMode"/>
+                </Settings>
+                <Settings Name="19">
+                    <Setting Value="true" Name="active"/>
+                    <Setting Value="/Wdg/Wdg" Name="ecucPath"/>
+                    <Setting Value="Add" Name="importMode"/>
+                </Settings>
+                <Settings Name="2">
+                    <Setting Value="true" Name="active"/>
+                    <Setting Value="/CanIf/CanIf" Name="ecucPath"/>
+                    <Setting Value="Add" Name="importMode"/>
+                </Settings>
+                <Settings Name="3">
+                    <Setting Value="true" Name="active"/>
+                    <Setting Value="/Dem/Dem" Name="ecucPath"/>
+                    <Setting Value="Add" Name="importMode"/>
+                </Settings>
+                <Settings Name="4">
+                    <Setting Value="true" Name="active"/>
+                    <Setting Value="/Dio/Dio" Name="ecucPath"/>
+                    <Setting Value="Add" Name="importMode"/>
+                </Settings>
+                <Settings Name="5">
+                    <Setting Value="true" Name="active"/>
+                    <Setting Value="/EcuM/EcuM" Name="ecucPath"/>
+                    <Setting Value="Add" Name="importMode"/>
+                </Settings>
+                <Settings Name="6">
+                    <Setting Value="true" Name="active"/>
+                    <Setting Value="/Fee/Fee" Name="ecucPath"/>
+                    <Setting Value="Add" Name="importMode"/>
+                </Settings>
+                <Settings Name="7">
+                    <Setting Value="true" Name="active"/>
+                    <Setting Value="/Gpt/Gpt" Name="ecucPath"/>
+                    <Setting Value="Add" Name="importMode"/>
+                </Settings>
+                <Settings Name="8">
+                    <Setting Value="true" Name="active"/>
+                    <Setting Value="/Icu/Icu" Name="ecucPath"/>
+                    <Setting Value="Add" Name="importMode"/>
+                </Settings>
+                <Settings Name="9">
+                    <Setting Value="true" Name="active"/>
+                    <Setting Value="/Mcl/Mcl" Name="ecucPath"/>
+                    <Setting Value="Add" Name="importMode"/>
+                </Settings>
+                <Setting Value="D:\Order_Git\S32K344_DEMO\S43K344_EB\output\S32K344.arxml" Name="filePath"/>
+            </Settings>
+        </Settings>
+    </Settings>
+</Settings>

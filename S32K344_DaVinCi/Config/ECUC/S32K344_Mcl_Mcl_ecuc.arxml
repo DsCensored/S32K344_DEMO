@@ -1,0 +1,686 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<AUTOSAR xmlns="http://autosar.org/schema/r4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://autosar.org/schema/r4.0 AUTOSAR_00050.xsd">
+  <AR-PACKAGES>
+    <AR-PACKAGE UUID="c33745a7-eb31-4fba-81f8-c308135a9b2c">
+      <SHORT-NAME>Mcl</SHORT-NAME>
+      <ELEMENTS>
+        <ECUC-MODULE-CONFIGURATION-VALUES>
+          <SHORT-NAME>Mcl</SHORT-NAME>
+          <DEFINITION-REF DEST="ECUC-MODULE-DEF">/TS_T40D34M50I0R0/Mcl</DEFINITION-REF>
+          <IMPLEMENTATION-CONFIG-VARIANT>VARIANT-POST-BUILD</IMPLEMENTATION-CONFIG-VARIANT>
+          <CONTAINERS>
+            <ECUC-CONTAINER-VALUE UUID="c7df16e3-ca33-4bbe-a924-d68f47a56874">
+              <SHORT-NAME>CommonPublishedInformation</SHORT-NAME>
+              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/CommonPublishedInformation</DEFINITION-REF>
+              <PARAMETER-VALUES>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/CommonPublishedInformation/ArReleaseMajorVersion</DEFINITION-REF>
+                  <VALUE>4</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/CommonPublishedInformation/ArReleaseMinorVersion</DEFINITION-REF>
+                  <VALUE>7</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/CommonPublishedInformation/ArReleaseRevisionVersion</DEFINITION-REF>
+                  <VALUE>0</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/CommonPublishedInformation/ModuleId</DEFINITION-REF>
+                  <VALUE>255</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/CommonPublishedInformation/SwMajorVersion</DEFINITION-REF>
+                  <VALUE>5</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/CommonPublishedInformation/SwMinorVersion</DEFINITION-REF>
+                  <VALUE>0</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/CommonPublishedInformation/SwPatchVersion</DEFINITION-REF>
+                  <VALUE>0</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/CommonPublishedInformation/VendorId</DEFINITION-REF>
+                  <VALUE>43</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+              </PARAMETER-VALUES>
+            </ECUC-CONTAINER-VALUE>
+            <ECUC-CONTAINER-VALUE UUID="93fe2bee-a285-45be-89c5-4232fc18062d">
+              <SHORT-NAME>MclConfig</SHORT-NAME>
+              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig</DEFINITION-REF>
+              <SUB-CONTAINERS>
+                <ECUC-CONTAINER-VALUE UUID="1db17050-52c7-4b8b-9bf7-d872471ec0f6">
+                  <SHORT-NAME>dmaLogicChannel_Type_UART6_TX</SHORT-NAME>
+                  <INDEX>0</INDEX>
+                  <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type</DEFINITION-REF>
+                  <PARAMETER-VALUES>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_EnableGlobalConfig</DEFINITION-REF>
+                      <VALUE>false</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_EnableScatterGather</DEFINITION-REF>
+                      <VALUE>false</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_EnableTransferConfig</DEFINITION-REF>
+                      <VALUE>false</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-TEXTUAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-FUNCTION-NAME-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ErrorInterruptCallback</DEFINITION-REF>
+                      <VALUE>NULL_PTR</VALUE>
+                    </ECUC-TEXTUAL-PARAM-VALUE>
+                    <ECUC-TEXTUAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_HwChId</DEFINITION-REF>
+                      <VALUE>DMA_IP_HW_CH_16</VALUE>
+                    </ECUC-TEXTUAL-PARAM-VALUE>
+                    <ECUC-TEXTUAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_HwInstId</DEFINITION-REF>
+                      <VALUE>DMA_IP_HW_INST_0</VALUE>
+                    </ECUC-TEXTUAL-PARAM-VALUE>
+                    <ECUC-TEXTUAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-FUNCTION-NAME-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_InterruptCallback</DEFINITION-REF>
+                      <VALUE>Lpuart_6_Uart_Ip_DmaTxCompleteCallback</VALUE>
+                    </ECUC-TEXTUAL-PARAM-VALUE>
+                    <ECUC-TEXTUAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-STRING-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_LogicName</DEFINITION-REF>
+                      <VALUE>DMA_LOGIC_CH_0</VALUE>
+                    </ECUC-TEXTUAL-PARAM-VALUE>
+                  </PARAMETER-VALUES>
+                  <SUB-CONTAINERS>
+                    <ECUC-CONTAINER-VALUE UUID="0d028049-1cc0-43d7-a81c-9ef3e66f233c">
+                      <SHORT-NAME>dmaLogicChannel_ConfigType</SHORT-NAME>
+                      <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType</DEFINITION-REF>
+                      <SUB-CONTAINERS>
+                        <ECUC-CONTAINER-VALUE UUID="05a4cf86-017d-4665-8d70-2645c116c3bd">
+                          <SHORT-NAME>dmaLogicChannel_GlobalConfigType</SHORT-NAME>
+                          <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType</DEFINITION-REF>
+                          <SUB-CONTAINERS>
+                            <ECUC-CONTAINER-VALUE UUID="27b15c2d-e381-4440-a15b-322cbe3b38a1">
+                              <SHORT-NAME>dmaLogicChannelConfig_GlobalControlType</SHORT-NAME>
+                              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalControlType</DEFINITION-REF>
+                              <PARAMETER-VALUES>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalControlType/dmaGlobalControl_enBufferedWrites</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalControlType/dmaGlobalControl_enMasterIdReplication</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                              </PARAMETER-VALUES>
+                            </ECUC-CONTAINER-VALUE>
+                            <ECUC-CONTAINER-VALUE UUID="1236c2ac-f978-495b-b5df-ce3ba6a08c17">
+                              <SHORT-NAME>dmaLogicChannelConfig_GlobalInterruptType</SHORT-NAME>
+                              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalInterruptType</DEFINITION-REF>
+                              <PARAMETER-VALUES>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalInterruptType/dmaGlobalInterrupt_enDmaErrorInterrupt</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                              </PARAMETER-VALUES>
+                            </ECUC-CONTAINER-VALUE>
+                            <ECUC-CONTAINER-VALUE UUID="dda14d4c-04af-4a17-8265-74b4da75a76f">
+                              <SHORT-NAME>dmaLogicChannelConfig_GlobalPriorityType</SHORT-NAME>
+                              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalPriorityType</DEFINITION-REF>
+                              <PARAMETER-VALUES>
+                                <ECUC-TEXTUAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalPriorityType/dmaGlobalPriority_GroupPriority</DEFINITION-REF>
+                                  <VALUE>DMA_IP_GROUP_PRIO0</VALUE>
+                                </ECUC-TEXTUAL-PARAM-VALUE>
+                                <ECUC-TEXTUAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalPriorityType/dmaGlobalPriority_LevelPriority</DEFINITION-REF>
+                                  <VALUE>DMA_IP_LEVEL_PRIO0</VALUE>
+                                </ECUC-TEXTUAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalPriorityType/dmaGlobalPriority_disPreempt</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalPriorityType/dmaGlobalPriority_enPreemption</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                              </PARAMETER-VALUES>
+                            </ECUC-CONTAINER-VALUE>
+                            <ECUC-CONTAINER-VALUE UUID="27e96141-e2e0-43ce-a5ae-c9b3b0f4fc06">
+                              <SHORT-NAME>dmaLogicChannelConfig_GlobalRequestType</SHORT-NAME>
+                              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalRequestType</DEFINITION-REF>
+                              <PARAMETER-VALUES>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalRequestType/dmaGlobalRequest_enDmaRequest</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                              </PARAMETER-VALUES>
+                            </ECUC-CONTAINER-VALUE>
+                          </SUB-CONTAINERS>
+                        </ECUC-CONTAINER-VALUE>
+                        <ECUC-CONTAINER-VALUE UUID="cd6849cb-8786-4135-a30a-59c783d9e3c4">
+                          <SHORT-NAME>dmaLogicChannel_ScatterGatherConfigType</SHORT-NAME>
+                          <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_ScatterGatherConfigType</DEFINITION-REF>
+                        </ECUC-CONTAINER-VALUE>
+                        <ECUC-CONTAINER-VALUE UUID="04cda021-7304-49cb-8c7b-f823fc13bfc9">
+                          <SHORT-NAME>dmaLogicChannel_TransferConfigType</SHORT-NAME>
+                          <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType</DEFINITION-REF>
+                          <SUB-CONTAINERS>
+                            <ECUC-CONTAINER-VALUE UUID="8ceabfe5-8c37-4e79-b65b-7e922a88d40e">
+                              <SHORT-NAME>dmaLogicChannelConfig_TransferControlType</SHORT-NAME>
+                              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferControlType</DEFINITION-REF>
+                              <PARAMETER-VALUES>
+                                <ECUC-TEXTUAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-STRING-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferControlType/dmaLogicChannelConfig_DestinationStoreAddressType</DEFINITION-REF>
+                                  <VALUE>0U</VALUE>
+                                </ECUC-TEXTUAL-PARAM-VALUE>
+                                <ECUC-TEXTUAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-STRING-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferControlType/dmaLogicChannelConfig_ScatterGatherAddressType</DEFINITION-REF>
+                                  <VALUE>0U</VALUE>
+                                </ECUC-TEXTUAL-PARAM-VALUE>
+                                <ECUC-TEXTUAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferControlType/dmaLogicChannelConfig_bandwidthControl</DEFINITION-REF>
+                                  <VALUE>DMA_IP_BWC_ENGINE_NO_STALL</VALUE>
+                                </ECUC-TEXTUAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferControlType/dmaLogicChannelConfig_disDmaAutoHwReq</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferControlType/dmaLogicChannelConfig_enDmaHalfMajorInterrupt</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferControlType/dmaLogicChannelConfig_enDmaMajorInterrupt</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferControlType/dmaLogicChannelConfig_enEndOfPacketSignal</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                              </PARAMETER-VALUES>
+                            </ECUC-CONTAINER-VALUE>
+                            <ECUC-CONTAINER-VALUE UUID="a5600af1-3022-42e8-9e87-82c60c0c789f">
+                              <SHORT-NAME>dmaLogicChannelConfig_TransferDestinationType</SHORT-NAME>
+                              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferDestinationType</DEFINITION-REF>
+                              <PARAMETER-VALUES>
+                                <ECUC-TEXTUAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-STRING-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferDestinationType/dmaLogicChannelConfig_DestinationAddressType</DEFINITION-REF>
+                                  <VALUE>0</VALUE>
+                                </ECUC-TEXTUAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferDestinationType/dmaLogicChannelConfig_DestinationLastAddressAdjustmentType</DEFINITION-REF>
+                                  <VALUE>0</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferDestinationType/dmaLogicChannelConfig_DestinationModuloType</DEFINITION-REF>
+                                  <VALUE>0</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferDestinationType/dmaLogicChannelConfig_DestinationSignedOffsetType</DEFINITION-REF>
+                                  <VALUE>0</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-TEXTUAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferDestinationType/dmaTransferConfig_TransferSizeType</DEFINITION-REF>
+                                  <VALUE>DMA_IP_TRANSFER_SIZE_1_BYTE</VALUE>
+                                </ECUC-TEXTUAL-PARAM-VALUE>
+                              </PARAMETER-VALUES>
+                            </ECUC-CONTAINER-VALUE>
+                            <ECUC-CONTAINER-VALUE UUID="ec8f955e-fa09-4aa3-a6c6-ab3147fadbc9">
+                              <SHORT-NAME>dmaLogicChannelConfig_TransferMajorLoopType</SHORT-NAME>
+                              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferMajorLoopType</DEFINITION-REF>
+                              <PARAMETER-VALUES>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferMajorLoopType/dmaLogicChannelConfig_MajorLoopCountType</DEFINITION-REF>
+                                  <VALUE>1</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferMajorLoopType/dmaLogicChannelConfig_enMajorLoopLinkCh</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                              </PARAMETER-VALUES>
+                            </ECUC-CONTAINER-VALUE>
+                            <ECUC-CONTAINER-VALUE UUID="b418117f-cb18-4831-aeb2-fdc03109c4d7">
+                              <SHORT-NAME>dmaLogicChannelConfig_TransferMinorLoopType</SHORT-NAME>
+                              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferMinorLoopType</DEFINITION-REF>
+                              <PARAMETER-VALUES>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferMinorLoopType/dmaLogicChannelConfig_MinorLoopSizeType</DEFINITION-REF>
+                                  <VALUE>0</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferMinorLoopType/dmaLogicChannelConfig_OffsetValueType</DEFINITION-REF>
+                                  <VALUE>0</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferMinorLoopType/dmaLogicChannelConfig_enDestinationOffset</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferMinorLoopType/dmaLogicChannelConfig_enMinorLoopLinkCh</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferMinorLoopType/dmaLogicChannelConfig_enSourceOffset</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                              </PARAMETER-VALUES>
+                            </ECUC-CONTAINER-VALUE>
+                            <ECUC-CONTAINER-VALUE UUID="80053281-82e6-4392-86ab-7b4a2d59915f">
+                              <SHORT-NAME>dmaLogicChannelConfig_TransferSourceType</SHORT-NAME>
+                              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferSourceType</DEFINITION-REF>
+                              <PARAMETER-VALUES>
+                                <ECUC-TEXTUAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-STRING-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferSourceType/dmaLogicChannelConfig_SourceAddressType</DEFINITION-REF>
+                                  <VALUE>0</VALUE>
+                                </ECUC-TEXTUAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferSourceType/dmaLogicChannelConfig_SourceLastAddressAdjustmentType</DEFINITION-REF>
+                                  <VALUE>0</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferSourceType/dmaLogicChannelConfig_SourceModuloType</DEFINITION-REF>
+                                  <VALUE>0</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferSourceType/dmaLogicChannelConfig_SourceSignedOffsetType</DEFINITION-REF>
+                                  <VALUE>0</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-TEXTUAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferSourceType/dmaTransferConfig_TransferSizeType</DEFINITION-REF>
+                                  <VALUE>DMA_IP_TRANSFER_SIZE_1_BYTE</VALUE>
+                                </ECUC-TEXTUAL-PARAM-VALUE>
+                              </PARAMETER-VALUES>
+                            </ECUC-CONTAINER-VALUE>
+                          </SUB-CONTAINERS>
+                        </ECUC-CONTAINER-VALUE>
+                      </SUB-CONTAINERS>
+                    </ECUC-CONTAINER-VALUE>
+                  </SUB-CONTAINERS>
+                </ECUC-CONTAINER-VALUE>
+                <ECUC-CONTAINER-VALUE UUID="24c345b7-c911-479b-844c-2803ae5c677f">
+                  <SHORT-NAME>dmaLogicChannel_Type_UART6_RX</SHORT-NAME>
+                  <INDEX>1</INDEX>
+                  <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type</DEFINITION-REF>
+                  <PARAMETER-VALUES>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_EnableGlobalConfig</DEFINITION-REF>
+                      <VALUE>false</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_EnableScatterGather</DEFINITION-REF>
+                      <VALUE>false</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_EnableTransferConfig</DEFINITION-REF>
+                      <VALUE>false</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-TEXTUAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-FUNCTION-NAME-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ErrorInterruptCallback</DEFINITION-REF>
+                      <VALUE>NULL_PTR</VALUE>
+                    </ECUC-TEXTUAL-PARAM-VALUE>
+                    <ECUC-TEXTUAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_HwChId</DEFINITION-REF>
+                      <VALUE>DMA_IP_HW_CH_17</VALUE>
+                    </ECUC-TEXTUAL-PARAM-VALUE>
+                    <ECUC-TEXTUAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_HwInstId</DEFINITION-REF>
+                      <VALUE>DMA_IP_HW_INST_0</VALUE>
+                    </ECUC-TEXTUAL-PARAM-VALUE>
+                    <ECUC-TEXTUAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-FUNCTION-NAME-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_InterruptCallback</DEFINITION-REF>
+                      <VALUE>Lpuart_6_Uart_Ip_DmaRxCompleteCallback</VALUE>
+                    </ECUC-TEXTUAL-PARAM-VALUE>
+                    <ECUC-TEXTUAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-STRING-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_LogicName</DEFINITION-REF>
+                      <VALUE>DMA_LOGIC_CH_1</VALUE>
+                    </ECUC-TEXTUAL-PARAM-VALUE>
+                  </PARAMETER-VALUES>
+                  <SUB-CONTAINERS>
+                    <ECUC-CONTAINER-VALUE UUID="974a3ff3-0ea2-4e66-8c18-dc82f5a8d09c">
+                      <SHORT-NAME>dmaLogicChannel_ConfigType</SHORT-NAME>
+                      <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType</DEFINITION-REF>
+                      <SUB-CONTAINERS>
+                        <ECUC-CONTAINER-VALUE UUID="e2ea033e-5afd-425f-a2d1-646b59c03a24">
+                          <SHORT-NAME>dmaLogicChannel_GlobalConfigType</SHORT-NAME>
+                          <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType</DEFINITION-REF>
+                          <SUB-CONTAINERS>
+                            <ECUC-CONTAINER-VALUE UUID="bd65d34c-bbf6-4f7a-884d-cc3b4d35fcfd">
+                              <SHORT-NAME>dmaLogicChannelConfig_GlobalControlType</SHORT-NAME>
+                              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalControlType</DEFINITION-REF>
+                              <PARAMETER-VALUES>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalControlType/dmaGlobalControl_enBufferedWrites</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalControlType/dmaGlobalControl_enMasterIdReplication</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                              </PARAMETER-VALUES>
+                            </ECUC-CONTAINER-VALUE>
+                            <ECUC-CONTAINER-VALUE UUID="e1fbb797-9627-4f88-b5bb-98cb99ea77a2">
+                              <SHORT-NAME>dmaLogicChannelConfig_GlobalInterruptType</SHORT-NAME>
+                              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalInterruptType</DEFINITION-REF>
+                              <PARAMETER-VALUES>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalInterruptType/dmaGlobalInterrupt_enDmaErrorInterrupt</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                              </PARAMETER-VALUES>
+                            </ECUC-CONTAINER-VALUE>
+                            <ECUC-CONTAINER-VALUE UUID="6b9e6edf-32b9-445a-a98d-9786e580d75e">
+                              <SHORT-NAME>dmaLogicChannelConfig_GlobalPriorityType</SHORT-NAME>
+                              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalPriorityType</DEFINITION-REF>
+                              <PARAMETER-VALUES>
+                                <ECUC-TEXTUAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalPriorityType/dmaGlobalPriority_GroupPriority</DEFINITION-REF>
+                                  <VALUE>DMA_IP_GROUP_PRIO0</VALUE>
+                                </ECUC-TEXTUAL-PARAM-VALUE>
+                                <ECUC-TEXTUAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalPriorityType/dmaGlobalPriority_LevelPriority</DEFINITION-REF>
+                                  <VALUE>DMA_IP_LEVEL_PRIO0</VALUE>
+                                </ECUC-TEXTUAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalPriorityType/dmaGlobalPriority_disPreempt</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalPriorityType/dmaGlobalPriority_enPreemption</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                              </PARAMETER-VALUES>
+                            </ECUC-CONTAINER-VALUE>
+                            <ECUC-CONTAINER-VALUE UUID="9638da8a-914f-49b4-9748-bc2247389d63">
+                              <SHORT-NAME>dmaLogicChannelConfig_GlobalRequestType</SHORT-NAME>
+                              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalRequestType</DEFINITION-REF>
+                              <PARAMETER-VALUES>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_GlobalConfigType/dmaLogicChannelConfig_GlobalRequestType/dmaGlobalRequest_enDmaRequest</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                              </PARAMETER-VALUES>
+                            </ECUC-CONTAINER-VALUE>
+                          </SUB-CONTAINERS>
+                        </ECUC-CONTAINER-VALUE>
+                        <ECUC-CONTAINER-VALUE UUID="f996c85d-1f62-4338-afb2-f86037c3f9d7">
+                          <SHORT-NAME>dmaLogicChannel_ScatterGatherConfigType</SHORT-NAME>
+                          <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_ScatterGatherConfigType</DEFINITION-REF>
+                        </ECUC-CONTAINER-VALUE>
+                        <ECUC-CONTAINER-VALUE UUID="85020bc6-422d-4680-a545-e72a81a45b63">
+                          <SHORT-NAME>dmaLogicChannel_TransferConfigType</SHORT-NAME>
+                          <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType</DEFINITION-REF>
+                          <SUB-CONTAINERS>
+                            <ECUC-CONTAINER-VALUE UUID="cccbffe7-15c7-48a6-9b9d-3359a2d6ccb5">
+                              <SHORT-NAME>dmaLogicChannelConfig_TransferControlType</SHORT-NAME>
+                              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferControlType</DEFINITION-REF>
+                              <PARAMETER-VALUES>
+                                <ECUC-TEXTUAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-STRING-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferControlType/dmaLogicChannelConfig_DestinationStoreAddressType</DEFINITION-REF>
+                                  <VALUE>0U</VALUE>
+                                </ECUC-TEXTUAL-PARAM-VALUE>
+                                <ECUC-TEXTUAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-STRING-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferControlType/dmaLogicChannelConfig_ScatterGatherAddressType</DEFINITION-REF>
+                                  <VALUE>0U</VALUE>
+                                </ECUC-TEXTUAL-PARAM-VALUE>
+                                <ECUC-TEXTUAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferControlType/dmaLogicChannelConfig_bandwidthControl</DEFINITION-REF>
+                                  <VALUE>DMA_IP_BWC_ENGINE_NO_STALL</VALUE>
+                                </ECUC-TEXTUAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferControlType/dmaLogicChannelConfig_disDmaAutoHwReq</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferControlType/dmaLogicChannelConfig_enDmaHalfMajorInterrupt</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferControlType/dmaLogicChannelConfig_enDmaMajorInterrupt</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferControlType/dmaLogicChannelConfig_enEndOfPacketSignal</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                              </PARAMETER-VALUES>
+                            </ECUC-CONTAINER-VALUE>
+                            <ECUC-CONTAINER-VALUE UUID="061598aa-83a4-4873-88f8-9d8c7f513aab">
+                              <SHORT-NAME>dmaLogicChannelConfig_TransferDestinationType</SHORT-NAME>
+                              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferDestinationType</DEFINITION-REF>
+                              <PARAMETER-VALUES>
+                                <ECUC-TEXTUAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-STRING-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferDestinationType/dmaLogicChannelConfig_DestinationAddressType</DEFINITION-REF>
+                                  <VALUE>0</VALUE>
+                                </ECUC-TEXTUAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferDestinationType/dmaLogicChannelConfig_DestinationLastAddressAdjustmentType</DEFINITION-REF>
+                                  <VALUE>0</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferDestinationType/dmaLogicChannelConfig_DestinationModuloType</DEFINITION-REF>
+                                  <VALUE>0</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferDestinationType/dmaLogicChannelConfig_DestinationSignedOffsetType</DEFINITION-REF>
+                                  <VALUE>0</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-TEXTUAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferDestinationType/dmaTransferConfig_TransferSizeType</DEFINITION-REF>
+                                  <VALUE>DMA_IP_TRANSFER_SIZE_1_BYTE</VALUE>
+                                </ECUC-TEXTUAL-PARAM-VALUE>
+                              </PARAMETER-VALUES>
+                            </ECUC-CONTAINER-VALUE>
+                            <ECUC-CONTAINER-VALUE UUID="1200bd1e-1c9f-4c48-bce4-2da33f28a075">
+                              <SHORT-NAME>dmaLogicChannelConfig_TransferMajorLoopType</SHORT-NAME>
+                              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferMajorLoopType</DEFINITION-REF>
+                              <PARAMETER-VALUES>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferMajorLoopType/dmaLogicChannelConfig_MajorLoopCountType</DEFINITION-REF>
+                                  <VALUE>1</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferMajorLoopType/dmaLogicChannelConfig_enMajorLoopLinkCh</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                              </PARAMETER-VALUES>
+                            </ECUC-CONTAINER-VALUE>
+                            <ECUC-CONTAINER-VALUE UUID="59f1724a-4dbd-487e-8aef-f61aaa7d5ca0">
+                              <SHORT-NAME>dmaLogicChannelConfig_TransferMinorLoopType</SHORT-NAME>
+                              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferMinorLoopType</DEFINITION-REF>
+                              <PARAMETER-VALUES>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferMinorLoopType/dmaLogicChannelConfig_MinorLoopSizeType</DEFINITION-REF>
+                                  <VALUE>0</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferMinorLoopType/dmaLogicChannelConfig_OffsetValueType</DEFINITION-REF>
+                                  <VALUE>0</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferMinorLoopType/dmaLogicChannelConfig_enDestinationOffset</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferMinorLoopType/dmaLogicChannelConfig_enMinorLoopLinkCh</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferMinorLoopType/dmaLogicChannelConfig_enSourceOffset</DEFINITION-REF>
+                                  <VALUE>false</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                              </PARAMETER-VALUES>
+                            </ECUC-CONTAINER-VALUE>
+                            <ECUC-CONTAINER-VALUE UUID="0e0288d8-3615-48b9-8ff4-adba4780b058">
+                              <SHORT-NAME>dmaLogicChannelConfig_TransferSourceType</SHORT-NAME>
+                              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferSourceType</DEFINITION-REF>
+                              <PARAMETER-VALUES>
+                                <ECUC-TEXTUAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-STRING-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferSourceType/dmaLogicChannelConfig_SourceAddressType</DEFINITION-REF>
+                                  <VALUE>0</VALUE>
+                                </ECUC-TEXTUAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferSourceType/dmaLogicChannelConfig_SourceLastAddressAdjustmentType</DEFINITION-REF>
+                                  <VALUE>0</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferSourceType/dmaLogicChannelConfig_SourceModuloType</DEFINITION-REF>
+                                  <VALUE>0</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-NUMERICAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferSourceType/dmaLogicChannelConfig_SourceSignedOffsetType</DEFINITION-REF>
+                                  <VALUE>0</VALUE>
+                                </ECUC-NUMERICAL-PARAM-VALUE>
+                                <ECUC-TEXTUAL-PARAM-VALUE>
+                                  <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicChannel_Type/dmaLogicChannel_ConfigType/dmaLogicChannel_TransferConfigType/dmaLogicChannelConfig_TransferSourceType/dmaTransferConfig_TransferSizeType</DEFINITION-REF>
+                                  <VALUE>DMA_IP_TRANSFER_SIZE_1_BYTE</VALUE>
+                                </ECUC-TEXTUAL-PARAM-VALUE>
+                              </PARAMETER-VALUES>
+                            </ECUC-CONTAINER-VALUE>
+                          </SUB-CONTAINERS>
+                        </ECUC-CONTAINER-VALUE>
+                      </SUB-CONTAINERS>
+                    </ECUC-CONTAINER-VALUE>
+                  </SUB-CONTAINERS>
+                </ECUC-CONTAINER-VALUE>
+                <ECUC-CONTAINER-VALUE UUID="4ef842f8-5b44-4ce4-8d73-82537d79b070">
+                  <SHORT-NAME>dmaLogicInstance_ConfigType_UART6</SHORT-NAME>
+                  <INDEX>0</INDEX>
+                  <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicInstance_ConfigType</DEFINITION-REF>
+                  <PARAMETER-VALUES>
+                    <ECUC-TEXTUAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-STRING-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicInstance_ConfigType/dmaLogicInstance_IdName</DEFINITION-REF>
+                      <VALUE>DMA_LOGIC_INST_0</VALUE>
+                    </ECUC-TEXTUAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicInstance_ConfigType/dmaLogicInstance_enChLinking</DEFINITION-REF>
+                      <VALUE>false</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicInstance_ConfigType/dmaLogicInstance_enDebug</DEFINITION-REF>
+                      <VALUE>false</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicInstance_ConfigType/dmaLogicInstance_enGlMasterIdReplication</DEFINITION-REF>
+                      <VALUE>false</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicInstance_ConfigType/dmaLogicInstance_enHaltAfterError</DEFINITION-REF>
+                      <VALUE>false</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicInstance_ConfigType/dmaLogicInstance_enRoundRobin</DEFINITION-REF>
+                      <VALUE>false</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-TEXTUAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclConfig/dmaLogicInstance_ConfigType/dmaLogicInstance_hwId</DEFINITION-REF>
+                      <VALUE>DMA_IP_HW_INST_0</VALUE>
+                    </ECUC-TEXTUAL-PARAM-VALUE>
+                  </PARAMETER-VALUES>
+                </ECUC-CONTAINER-VALUE>
+              </SUB-CONTAINERS>
+            </ECUC-CONTAINER-VALUE>
+            <ECUC-CONTAINER-VALUE UUID="f08719d6-08d4-4b91-97d0-e6e291683bd7">
+              <SHORT-NAME>MclGeneral</SHORT-NAME>
+              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclGeneral</DEFINITION-REF>
+              <PARAMETER-VALUES>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclGeneral/MclEnableDemReportErrorStatus</DEFINITION-REF>
+                  <VALUE>false</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclGeneral/MclEnableDevErrorDetect</DEFINITION-REF>
+                  <VALUE>false</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclGeneral/MclEnableMultipartitionSupport</DEFINITION-REF>
+                  <VALUE>false</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclGeneral/MclEnableUserModeSupport</DEFINITION-REF>
+                  <VALUE>false</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclGeneral/MclEnableVirtualAddressMappingSupport</DEFINITION-REF>
+                  <VALUE>false</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclGeneral/Mcl_VersionInfoApi</DEFINITION-REF>
+                  <VALUE>false</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+              </PARAMETER-VALUES>
+              <SUB-CONTAINERS>
+                <ECUC-CONTAINER-VALUE UUID="410add01-2a78-4458-a3ec-03852ece6845">
+                  <SHORT-NAME>MclCache</SHORT-NAME>
+                  <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclGeneral/MclCache</DEFINITION-REF>
+                  <PARAMETER-VALUES>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclGeneral/MclCache/MclEnableCache</DEFINITION-REF>
+                      <VALUE>true</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                  </PARAMETER-VALUES>
+                </ECUC-CONTAINER-VALUE>
+                <ECUC-CONTAINER-VALUE UUID="ae645153-a173-46c6-a32e-e5e8d53acde6">
+                  <SHORT-NAME>MclDma</SHORT-NAME>
+                  <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclGeneral/MclDma</DEFINITION-REF>
+                  <PARAMETER-VALUES>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclGeneral/MclDma/MclEnableDma</DEFINITION-REF>
+                      <VALUE>true</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                  </PARAMETER-VALUES>
+                </ECUC-CONTAINER-VALUE>
+                <ECUC-CONTAINER-VALUE UUID="2f8cfee7-0416-4adb-8860-57670db38ed2">
+                  <SHORT-NAME>MclEmiosCommon</SHORT-NAME>
+                  <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclGeneral/MclEmiosCommon</DEFINITION-REF>
+                  <PARAMETER-VALUES>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclGeneral/MclEmiosCommon/MclEnableEmiosCommon</DEFINITION-REF>
+                      <VALUE>false</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                  </PARAMETER-VALUES>
+                </ECUC-CONTAINER-VALUE>
+                <ECUC-CONTAINER-VALUE UUID="cb1830fe-36d2-4027-84ca-7257bc89e0df">
+                  <SHORT-NAME>MclFlexioCommon</SHORT-NAME>
+                  <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclGeneral/MclFlexioCommon</DEFINITION-REF>
+                  <PARAMETER-VALUES>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclGeneral/MclFlexioCommon/MclEnableFlexioCommon</DEFINITION-REF>
+                      <VALUE>false</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                  </PARAMETER-VALUES>
+                </ECUC-CONTAINER-VALUE>
+                <ECUC-CONTAINER-VALUE UUID="2f9e1b12-8ca0-4553-99f4-e5b8a6980e48">
+                  <SHORT-NAME>MclLcuConfig</SHORT-NAME>
+                  <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclGeneral/MclLcuConfig</DEFINITION-REF>
+                  <PARAMETER-VALUES>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclGeneral/MclLcuConfig/MclEnableLcu</DEFINITION-REF>
+                      <VALUE>false</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclGeneral/MclLcuConfig/MclEnableLcuAsyncFunc</DEFINITION-REF>
+                      <VALUE>false</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclGeneral/MclLcuConfig/MclEnableLcuSyncFunc</DEFINITION-REF>
+                      <VALUE>false</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                  </PARAMETER-VALUES>
+                </ECUC-CONTAINER-VALUE>
+                <ECUC-CONTAINER-VALUE UUID="ec4e5c6e-6c17-490b-8dbf-035ba34a79a1">
+                  <SHORT-NAME>MclTrgMux</SHORT-NAME>
+                  <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/TS_T40D34M50I0R0/Mcl/MclGeneral/MclTrgMux</DEFINITION-REF>
+                  <PARAMETER-VALUES>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/TS_T40D34M50I0R0/Mcl/MclGeneral/MclTrgMux/MclEnableTrgMux</DEFINITION-REF>
+                      <VALUE>false</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                  </PARAMETER-VALUES>
+                </ECUC-CONTAINER-VALUE>
+              </SUB-CONTAINERS>
+            </ECUC-CONTAINER-VALUE>
+          </CONTAINERS>
+        </ECUC-MODULE-CONFIGURATION-VALUES>
+      </ELEMENTS>
+    </AR-PACKAGE>
+  </AR-PACKAGES>
+</AUTOSAR>

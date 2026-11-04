@@ -1,0 +1,528 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<AUTOSAR xmlns="http://autosar.org/schema/r4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://autosar.org/schema/r4.0 AUTOSAR_00050.xsd">
+  <AR-PACKAGES>
+    <AR-PACKAGE UUID="68e3a5bb-77d8-4e2f-b2b0-7167d2213424">
+      <SHORT-NAME>Mem_43_INFLS</SHORT-NAME>
+      <ELEMENTS>
+        <ECUC-MODULE-CONFIGURATION-VALUES>
+          <SHORT-NAME>Mem</SHORT-NAME>
+          <DEFINITION-REF DEST="ECUC-MODULE-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem</DEFINITION-REF>
+          <IMPLEMENTATION-CONFIG-VARIANT>VARIANT-PRE-COMPILE</IMPLEMENTATION-CONFIG-VARIANT>
+          <CONTAINERS>
+            <ECUC-CONTAINER-VALUE UUID="e2335672-241d-4a64-b4e1-925f6c3dd7c3">
+              <SHORT-NAME>CommonPublishedInformation</SHORT-NAME>
+              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/CommonPublishedInformation</DEFINITION-REF>
+              <PARAMETER-VALUES>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/CommonPublishedInformation/ArReleaseMajorVersion</DEFINITION-REF>
+                  <VALUE>4</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/CommonPublishedInformation/ArReleaseMinorVersion</DEFINITION-REF>
+                  <VALUE>7</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/CommonPublishedInformation/ArReleaseRevisionVersion</DEFINITION-REF>
+                  <VALUE>0</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/CommonPublishedInformation/ModuleId</DEFINITION-REF>
+                  <VALUE>91</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/CommonPublishedInformation/SwMajorVersion</DEFINITION-REF>
+                  <VALUE>5</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/CommonPublishedInformation/SwMinorVersion</DEFINITION-REF>
+                  <VALUE>0</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/CommonPublishedInformation/SwPatchVersion</DEFINITION-REF>
+                  <VALUE>0</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-TEXTUAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-STRING-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/CommonPublishedInformation/VendorApiInfix</DEFINITION-REF>
+                  <VALUE>INFLS</VALUE>
+                </ECUC-TEXTUAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/CommonPublishedInformation/VendorId</DEFINITION-REF>
+                  <VALUE>43</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+              </PARAMETER-VALUES>
+            </ECUC-CONTAINER-VALUE>
+            <ECUC-CONTAINER-VALUE UUID="d2fa094e-c2af-4e32-a853-841ced0c0811">
+              <SHORT-NAME>MemAutosarExt</SHORT-NAME>
+              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemAutosarExt</DEFINITION-REF>
+              <PARAMETER-VALUES>
+                <ECUC-TEXTUAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemAutosarExt/MemBlock4PipeSelect</DEFINITION-REF>
+                  <VALUE>MEM_COMMAND_PIPE_0</VALUE>
+                </ECUC-TEXTUAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemAutosarExt/MemEccDataErrorSuppression</DEFINITION-REF>
+                  <VALUE>true</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemAutosarExt/MemEnableUserModeSupport</DEFINITION-REF>
+                  <VALUE>false</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemAutosarExt/MemSynchronizeCache</DEFINITION-REF>
+                  <VALUE>false</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemAutosarExt/MemUsesAlterInterface</DEFINITION-REF>
+                  <VALUE>false</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+              </PARAMETER-VALUES>
+            </ECUC-CONTAINER-VALUE>
+            <ECUC-CONTAINER-VALUE UUID="a9bd3eb0-a71b-47f5-bda1-2ce2fb24e3a6">
+              <SHORT-NAME>MemGeneral</SHORT-NAME>
+              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral</DEFINITION-REF>
+              <PARAMETER-VALUES>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/MemAbortTimeout</DEFINITION-REF>
+                  <VALUE>32767</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/MemAcErase</DEFINITION-REF>
+                  <VALUE>541261568</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-TEXTUAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-FUNCTION-NAME-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/MemAcErasePointer</DEFINITION-REF>
+                  <VALUE>NULL_PTR</VALUE>
+                </ECUC-TEXTUAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/MemAcLoadOnJobStart</DEFINITION-REF>
+                  <VALUE>true</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/MemAcWrite</DEFINITION-REF>
+                  <VALUE>541261568</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-TEXTUAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-FUNCTION-NAME-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/MemAcWritePointer</DEFINITION-REF>
+                  <VALUE>NULL_PTR</VALUE>
+                </ECUC-TEXTUAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/MemCleanCacheAfterLoadAc</DEFINITION-REF>
+                  <VALUE>true</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/MemDevErrorDetect</DEFINITION-REF>
+                  <VALUE>true</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/MemEnableCheckCfgCrc</DEFINITION-REF>
+                  <VALUE>false</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/MemEraseTimeout</DEFINITION-REF>
+                  <VALUE>2147483647</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/MemEraseVerificationEnabled</DEFINITION-REF>
+                  <VALUE>true</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/MemHwCompareService</DEFINITION-REF>
+                  <VALUE>true</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/MemHwUtestModeService</DEFINITION-REF>
+                  <VALUE>false</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/MemSectorSetLockApi</DEFINITION-REF>
+                  <VALUE>true</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/MemSyncModeEnable</DEFINITION-REF>
+                  <VALUE>false</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-TEXTUAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/MemTimeoutMethod</DEFINITION-REF>
+                  <VALUE>OSIF_COUNTER_DUMMY</VALUE>
+                </ECUC-TEXTUAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/MemTimeoutSupervisionEnabled</DEFINITION-REF>
+                  <VALUE>false</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/MemUtestResumeTimeout</DEFINITION-REF>
+                  <VALUE>32767</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/MemUtestSuspendTimeout</DEFINITION-REF>
+                  <VALUE>32767</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/MemWriteTimeout</DEFINITION-REF>
+                  <VALUE>2147483647</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/MemWriteVerificationEnabled</DEFINITION-REF>
+                  <VALUE>true</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/Mem_SemaphoreAddress</DEFINITION-REF>
+                  <VALUE>0</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-TEXTUAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-FUNCTION-NAME-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/Mem_SemaphoreSymbol</DEFINITION-REF>
+                  <VALUE>NULL</VALUE>
+                </ECUC-TEXTUAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-BOOLEAN-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemGeneral/Mem_SoftwareSemaphoreSupport</DEFINITION-REF>
+                  <VALUE>false</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+              </PARAMETER-VALUES>
+            </ECUC-CONTAINER-VALUE>
+            <ECUC-CONTAINER-VALUE UUID="80adc435-8539-49c7-9351-c1d199f9cb06">
+              <SHORT-NAME>MemInstance_0</SHORT-NAME>
+              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance</DEFINITION-REF>
+              <PARAMETER-VALUES>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemInstanceId</DEFINITION-REF>
+                  <VALUE>0</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+              </PARAMETER-VALUES>
+              <SUB-CONTAINERS>
+                <ECUC-CONTAINER-VALUE UUID="6a7cd1cd-3273-4ea2-b9f9-985ad5ec6b28">
+                  <SHORT-NAME>MemSectorBatch_0</SHORT-NAME>
+                  <INDEX>0</INDEX>
+                  <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch</DEFINITION-REF>
+                  <PARAMETER-VALUES>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemEraseSectorSize</DEFINITION-REF>
+                      <VALUE>8192</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemNumberOfSectors</DEFINITION-REF>
+                      <VALUE>32</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-TEXTUAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemPhysicalSector</DEFINITION-REF>
+                      <VALUE>FLS_CODE_ARRAY_0_BLOCK_0_S000</VALUE>
+                    </ECUC-TEXTUAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemReadPageSize</DEFINITION-REF>
+                      <VALUE>128</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemSpecifiedEraseCycles</DEFINITION-REF>
+                      <VALUE>0</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemStartAddress</DEFINITION-REF>
+                      <VALUE>4194304</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemWritePageSize</DEFINITION-REF>
+                      <VALUE>128</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                  </PARAMETER-VALUES>
+                </ECUC-CONTAINER-VALUE>
+                <ECUC-CONTAINER-VALUE UUID="20836e53-fe04-48fb-8410-3f015f423470">
+                  <SHORT-NAME>MemSectorBatch_1</SHORT-NAME>
+                  <INDEX>1</INDEX>
+                  <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch</DEFINITION-REF>
+                  <PARAMETER-VALUES>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemEraseSectorSize</DEFINITION-REF>
+                      <VALUE>8192</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemNumberOfSectors</DEFINITION-REF>
+                      <VALUE>2</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-TEXTUAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemPhysicalSector</DEFINITION-REF>
+                      <VALUE>FLS_CODE_ARRAY_0_BLOCK_0_S032</VALUE>
+                    </ECUC-TEXTUAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemReadPageSize</DEFINITION-REF>
+                      <VALUE>128</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemSpecifiedEraseCycles</DEFINITION-REF>
+                      <VALUE>0</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemStartAddress</DEFINITION-REF>
+                      <VALUE>4456448</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemWritePageSize</DEFINITION-REF>
+                      <VALUE>128</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                  </PARAMETER-VALUES>
+                </ECUC-CONTAINER-VALUE>
+                <ECUC-CONTAINER-VALUE UUID="e9c76d3e-a411-4413-9700-26e91b531747">
+                  <SHORT-NAME>MemSectorBatch_2</SHORT-NAME>
+                  <INDEX>2</INDEX>
+                  <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch</DEFINITION-REF>
+                  <PARAMETER-VALUES>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemEraseSectorSize</DEFINITION-REF>
+                      <VALUE>8192</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemNumberOfSectors</DEFINITION-REF>
+                      <VALUE>198</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-TEXTUAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemPhysicalSector</DEFINITION-REF>
+                      <VALUE>FLS_CODE_ARRAY_0_BLOCK_0_S036</VALUE>
+                    </ECUC-TEXTUAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemReadPageSize</DEFINITION-REF>
+                      <VALUE>128</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemSpecifiedEraseCycles</DEFINITION-REF>
+                      <VALUE>0</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemStartAddress</DEFINITION-REF>
+                      <VALUE>4489216</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemWritePageSize</DEFINITION-REF>
+                      <VALUE>128</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                  </PARAMETER-VALUES>
+                </ECUC-CONTAINER-VALUE>
+                <ECUC-CONTAINER-VALUE UUID="80c85d58-58c6-42e7-b5cf-fa2d2d80cace">
+                  <SHORT-NAME>MemSectorBatch_3</SHORT-NAME>
+                  <INDEX>3</INDEX>
+                  <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch</DEFINITION-REF>
+                  <PARAMETER-VALUES>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemEraseSectorSize</DEFINITION-REF>
+                      <VALUE>8192</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemNumberOfSectors</DEFINITION-REF>
+                      <VALUE>58</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-TEXTUAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemPhysicalSector</DEFINITION-REF>
+                      <VALUE>FLS_CODE_ARRAY_0_BLOCK_1_S234</VALUE>
+                    </ECUC-TEXTUAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemReadPageSize</DEFINITION-REF>
+                      <VALUE>128</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemSpecifiedEraseCycles</DEFINITION-REF>
+                      <VALUE>0</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemStartAddress</DEFINITION-REF>
+                      <VALUE>6111232</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemWritePageSize</DEFINITION-REF>
+                      <VALUE>128</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                  </PARAMETER-VALUES>
+                </ECUC-CONTAINER-VALUE>
+                <ECUC-CONTAINER-VALUE UUID="e4d2474e-1db4-45c4-8e7a-29a4686ceb5a">
+                  <SHORT-NAME>MemSectorBatch_4</SHORT-NAME>
+                  <INDEX>4</INDEX>
+                  <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch</DEFINITION-REF>
+                  <PARAMETER-VALUES>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemEraseSectorSize</DEFINITION-REF>
+                      <VALUE>8192</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemNumberOfSectors</DEFINITION-REF>
+                      <VALUE>198</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-TEXTUAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemPhysicalSector</DEFINITION-REF>
+                      <VALUE>FLS_CODE_ARRAY_0_BLOCK_2_S292</VALUE>
+                    </ECUC-TEXTUAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemReadPageSize</DEFINITION-REF>
+                      <VALUE>128</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemSpecifiedEraseCycles</DEFINITION-REF>
+                      <VALUE>0</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemStartAddress</DEFINITION-REF>
+                      <VALUE>6586368</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemWritePageSize</DEFINITION-REF>
+                      <VALUE>128</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                  </PARAMETER-VALUES>
+                </ECUC-CONTAINER-VALUE>
+                <ECUC-CONTAINER-VALUE UUID="3e4fad78-812b-4962-b378-17965ad5990c">
+                  <SHORT-NAME>MemSectorBatch_5</SHORT-NAME>
+                  <INDEX>5</INDEX>
+                  <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch</DEFINITION-REF>
+                  <PARAMETER-VALUES>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemEraseSectorSize</DEFINITION-REF>
+                      <VALUE>8192</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemNumberOfSectors</DEFINITION-REF>
+                      <VALUE>1</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-TEXTUAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemPhysicalSector</DEFINITION-REF>
+                      <VALUE>FLS_DATA_ARRAY_0_BLOCK_4_S000</VALUE>
+                    </ECUC-TEXTUAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemReadPageSize</DEFINITION-REF>
+                      <VALUE>1</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemSpecifiedEraseCycles</DEFINITION-REF>
+                      <VALUE>0</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemStartAddress</DEFINITION-REF>
+                      <VALUE>268435456</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemWritePageSize</DEFINITION-REF>
+                      <VALUE>8</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                  </PARAMETER-VALUES>
+                </ECUC-CONTAINER-VALUE>
+                <ECUC-CONTAINER-VALUE UUID="2e23ebda-eb67-4505-b6be-fe66bd7c7070">
+                  <SHORT-NAME>MemSectorBatch_6</SHORT-NAME>
+                  <INDEX>6</INDEX>
+                  <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch</DEFINITION-REF>
+                  <PARAMETER-VALUES>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemEraseSectorSize</DEFINITION-REF>
+                      <VALUE>8192</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemNumberOfSectors</DEFINITION-REF>
+                      <VALUE>1</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-TEXTUAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemPhysicalSector</DEFINITION-REF>
+                      <VALUE>FLS_DATA_ARRAY_0_BLOCK_4_S001</VALUE>
+                    </ECUC-TEXTUAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemReadPageSize</DEFINITION-REF>
+                      <VALUE>1</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemSpecifiedEraseCycles</DEFINITION-REF>
+                      <VALUE>0</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemStartAddress</DEFINITION-REF>
+                      <VALUE>268443648</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemWritePageSize</DEFINITION-REF>
+                      <VALUE>8</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                  </PARAMETER-VALUES>
+                </ECUC-CONTAINER-VALUE>
+                <ECUC-CONTAINER-VALUE UUID="086566b9-2d2b-453d-bf5e-436b65350faf">
+                  <SHORT-NAME>MemSectorBatch_7</SHORT-NAME>
+                  <INDEX>7</INDEX>
+                  <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch</DEFINITION-REF>
+                  <PARAMETER-VALUES>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemEraseSectorSize</DEFINITION-REF>
+                      <VALUE>8192</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemNumberOfSectors</DEFINITION-REF>
+                      <VALUE>1</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-TEXTUAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemPhysicalSector</DEFINITION-REF>
+                      <VALUE>FLS_DATA_ARRAY_0_BLOCK_4_S002</VALUE>
+                    </ECUC-TEXTUAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemReadPageSize</DEFINITION-REF>
+                      <VALUE>1</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemSpecifiedEraseCycles</DEFINITION-REF>
+                      <VALUE>0</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemStartAddress</DEFINITION-REF>
+                      <VALUE>268451840</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemWritePageSize</DEFINITION-REF>
+                      <VALUE>8</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                  </PARAMETER-VALUES>
+                </ECUC-CONTAINER-VALUE>
+                <ECUC-CONTAINER-VALUE UUID="6131d63b-f469-4422-87eb-6d4e6ece5aeb">
+                  <SHORT-NAME>MemSectorBatch_8</SHORT-NAME>
+                  <INDEX>8</INDEX>
+                  <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch</DEFINITION-REF>
+                  <PARAMETER-VALUES>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemEraseSectorSize</DEFINITION-REF>
+                      <VALUE>8192</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemNumberOfSectors</DEFINITION-REF>
+                      <VALUE>1</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-TEXTUAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-ENUMERATION-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemPhysicalSector</DEFINITION-REF>
+                      <VALUE>FLS_DATA_ARRAY_0_BLOCK_4_S003</VALUE>
+                    </ECUC-TEXTUAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemReadPageSize</DEFINITION-REF>
+                      <VALUE>1</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemSpecifiedEraseCycles</DEFINITION-REF>
+                      <VALUE>0</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemStartAddress</DEFINITION-REF>
+                      <VALUE>268460032</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                    <ECUC-NUMERICAL-PARAM-VALUE>
+                      <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemInstance/MemSectorBatch/MemWritePageSize</DEFINITION-REF>
+                      <VALUE>8</VALUE>
+                    </ECUC-NUMERICAL-PARAM-VALUE>
+                  </PARAMETER-VALUES>
+                </ECUC-CONTAINER-VALUE>
+              </SUB-CONTAINERS>
+            </ECUC-CONTAINER-VALUE>
+            <ECUC-CONTAINER-VALUE UUID="caa4cba7-08f9-42f5-bb6c-3df38021e089">
+              <SHORT-NAME>MemPublishedInformation</SHORT-NAME>
+              <DEFINITION-REF DEST="ECUC-PARAM-CONF-CONTAINER-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemPublishedInformation</DEFINITION-REF>
+              <PARAMETER-VALUES>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemPublishedInformation/MemECCValue</DEFINITION-REF>
+                  <VALUE>1427461397</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+                <ECUC-NUMERICAL-PARAM-VALUE>
+                  <DEFINITION-REF DEST="ECUC-INTEGER-PARAM-DEF">/Mem_43_INFLS_TS_T40D34M50I0R0/Mem/MemPublishedInformation/MemErasedValue</DEFINITION-REF>
+                  <VALUE>4294967295</VALUE>
+                </ECUC-NUMERICAL-PARAM-VALUE>
+              </PARAMETER-VALUES>
+            </ECUC-CONTAINER-VALUE>
+          </CONTAINERS>
+        </ECUC-MODULE-CONFIGURATION-VALUES>
+      </ELEMENTS>
+    </AR-PACKAGE>
+  </AR-PACKAGES>
+</AUTOSAR>

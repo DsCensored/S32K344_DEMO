@@ -11,6 +11,13 @@
 #define BSW_CPU_LOAD_ENABLE 0
 #endif
 
+#ifndef BSW_CRYSTAL_COMPENSATION_ENABLE
+#define BSW_CRYSTAL_COMPENSATION_ENABLE		(0)
+#if BSW_CRYSTAL_COMPENSATION_ENABLE
+#define BSW_CRYSTAL_COMPENSATION_CNT		(96000)
+#endif
+#endif
+
 void BSW_IsrPit0Ch0(void);
 unsigned int BSW_GetSystemTick(void);
 unsigned int BSW_GetElapsedTime(unsigned int LastTime);
