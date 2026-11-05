@@ -89,7 +89,7 @@ extern "C"{
 ==================================================================================================*/
 #if (STD_ON == WKPU_IP_USED)
 #define WKPU_CONFIG_PB \
-        extern const Wkpu_Ip_ChannelConfigType Wkpu_Ip_ChannelConfig_PB[2U]; \
+        extern const Wkpu_Ip_ChannelConfigType Wkpu_Ip_ChannelConfig_PB[3U]; \
         extern const Wkpu_Ip_IrqConfigType Wkpu_Ip_Config_PB; \
 
 #endif /* WKPU_IP_USED */

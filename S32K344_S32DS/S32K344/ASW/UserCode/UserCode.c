@@ -67,6 +67,8 @@ static void ASW_userTask5ms(void)
 static void ASW_userTask10ms(void)
 {
 	RTE_POLLING();
+	/* RTC wake forces KL15 high for 1 minute. */
+	NM_RtcWakeupTask10ms();
 	/* AUTOSAR NM uses 10 ms ticks (AUROSAR_NM_MODEL_RUN_STEP).  Run it after
 	 * RTE_POLLING() so BSW_stKL15 reflects the current ignition state. */
 	AutoSarNm_step();

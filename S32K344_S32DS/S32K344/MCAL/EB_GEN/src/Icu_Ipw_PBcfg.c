@@ -191,7 +191,7 @@ extern "C"{
 /** 
  * @brief   Icu channels IP related configuration array
  */
-const Icu_Ipw_ChannelConfigType Icu_Ipw_IpChannelConfig_PB[2U] =
+const Icu_Ipw_ChannelConfigType Icu_Ipw_IpChannelConfig_PB[3U] =
 {
     /** @brief IcuChannel_CAN0RXWKUP */
     {
@@ -250,6 +250,35 @@ const Icu_Ipw_ChannelConfigType Icu_Ipw_IpChannelConfig_PB[2U] =
     #endif  /* CMP_IP_USED */
         /** @brief Index in the configuration table of the channels */
         (uint8)1U
+    },
+    /** @brief IcuChannel_RTCWKUP */
+    {
+        /** @brief IP type of this channel */
+        ICU_WKPU_MODULE,
+        /** @brief Instance number */
+        (uint8)0U,
+    #if (STD_ON == EMIOS_ICU_IP_USED)
+        /** @brief Emios IP channel pointer */
+        NULL_PTR,
+    #endif  /* EMIOS_ICU_IP_USED */
+    #if (STD_ON == WKPU_IP_USED)
+        /** @brief Wkpu IP channel pointer */
+        &Wkpu_Ip_ChannelConfig_PB[2U],
+    #if (defined(ICU_IPW_WKPU_NMI_API_USED))
+        /** @brief Wkpu NMI pointer */
+        NULL_PTR,
+    #endif
+    #endif  /* WKPU_IP_USED */
+    #if (STD_ON == SIUL2_ICU_IP_USED)
+        /** @brief Siul2 IP channel pointer */
+        NULL_PTR,
+    #endif  /* SIUL2_ICU_IP_USED */
+    #if (STD_ON == CMP_IP_USED)
+        /** @brief Cmp IP channel pointer */
+        NULL_PTR,
+    #endif  /* CMP_IP_USED */
+        /** @brief Index in the configuration table of the channels */
+        (uint8)2U
     }
 
 };

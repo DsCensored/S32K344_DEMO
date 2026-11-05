@@ -125,7 +125,7 @@ extern void Icu_ReportWakeupAndOverflow(uint16 Channel, boolean bOverflow);
 #include "Icu_MemMap.h"
 
 /** @brief Variant: PB Default WKPU Configuration. */
-const Wkpu_Ip_ChannelConfigType Wkpu_Ip_ChannelConfig_PB[2U] = 
+const Wkpu_Ip_ChannelConfigType Wkpu_Ip_ChannelConfig_PB[3U] = 
 {
     /** @brief IcuWkpuChannels_CAN0 */
     {
@@ -160,6 +160,23 @@ const Wkpu_Ip_ChannelConfigType Wkpu_Ip_ChannelConfig_PB[2U] =
         NULL_PTR,
         /** @brief Wkpu Callback Param1 */
         1U
+    },
+    /** @brief IcuWkpuChannels_RTC */
+    {
+        /** @brief Wkpu HW Channel used by the Icu channel */
+        0U,
+        /** @brief Wkpu HW Channel Filter enable */
+        (boolean)FALSE,
+        /** @brief Wkpu HW Channel Pullup enable */
+        (boolean)FALSE,
+        /** @brief Wkpu Default Start Edge */
+        WKPU_IP_RISING_EDGE,
+        /** @brief Wkpu Channel Callback */
+        &Icu_ReportEvents,
+        /** @brief The notification functions */
+        NULL_PTR,
+        /** @brief Wkpu Callback Param1 */
+        2U
     }
 };
 
@@ -173,7 +190,7 @@ const Wkpu_Ip_IrqConfigType Wkpu_Ip_Config_PB =
     NULL_PTR,
 #endif
     /** @brief Number of Wkpu channels in the Icu configuration */
-    (uint8)2U,
+    (uint8)3U,
     /** @brief Pointer to the array of Wkpu enabled Icu channel configurations */
     &Wkpu_Ip_ChannelConfig_PB
 };

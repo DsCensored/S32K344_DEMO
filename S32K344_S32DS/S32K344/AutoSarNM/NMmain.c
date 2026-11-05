@@ -20,6 +20,9 @@
 #include "S32K344_FXOSC.h"
 #include "S32K344_FIRC.h"
 #include "S32K344_SIRC.h"
+#include "S32K344_RTC.h"
+#include "Rtc_Ip.h"
+#include "Rtc_Ip_PBcfg.h"
 #include "S32K344_DCM_GPR.h"
 #include "IntCtrl_Ip.h"
 #include "Dio.h"
@@ -38,6 +41,45 @@ unsigned char AutoSarNM_stWKUPMode = 0xFF;
 /* Activity counter consumed by the AutoSarNm model to keep the bus awake
  * for AUROSAR_NM_UDS_OVERTIME after the last diagnostic request. */
 uint8_T AutoSarNM_cntUDSMsgRxCnt = 0U;
+
+/* RTC periodic wake: 5 min while the ECU is in Standby.  SIRC is used as
+ * RTC_CLK (32 kHz), so 5 min = 300 * 32000 ticks. */
+#define NM_RTC_CLK_HZ                    (32000U)
+#define NM_RTC_WAKE_PERIOD_S             (30U)    /* 5 min */
+#define NM_RTC_FORCE_KL15_TIME_10MS      (6000U)   /* 1 min */
+
+#if (NM_RTC_WAKE_ENABLE == STD_ON)
+static uint16_t NM_RtcForceKl15Ticks = 0U;
+#endif
+
+void NM_RtcWakeupTask10ms(void)
+{
+#if (NM_RTC_WAKE_ENABLE == STD_ON)
+	if (NM_RtcForceKl15Ticks > 0U)
+	{
+		/* Force KL15 high for 1 min after an RTC wake. */
+		BSW_stKL15 = 1U;
+		NM_RtcForceKl15Ticks--;
+	}
+#endif
+}
+
+#if (NM_RTC_WAKE_ENABLE == STD_ON)
+static void NM_RtcStartWakeTimer(void)
+{
+	/* Official Rtc_Ip flow: init, enable API interrupt, start one period. */
+	Rtc_Ip_Init(0U, &RTC_0_InitConfig_PB);
+	Rtc_Ip_EnableInterrupt(0U, RTC_IP_API_INTERRUPT);
+	Rtc_Ip_StartTimer(0U, NM_RTC_WAKE_PERIOD_S * NM_RTC_CLK_HZ);
+}
+#endif
+
+void RtcNotification(void)
+{
+	/* Gpt channel notification of the generated RTC configuration.
+	 * It is intentionally empty: the wake-up reason is only taken from the
+	 * ICU/WKPU channel in NM_BsmGetWkupMode(), never from the RTC driver. */
+}
 
 static unsigned char NM_GetNmMsgHandle(void)
 {
@@ -116,6 +158,24 @@ void NM_BsmGetWkupMode(void)
 {
 	boolean canWakeup;
 	boolean kl15Wakeup;
+#if (NM_RTC_WAKE_ENABLE == STD_ON)
+	boolean rtcWkpuWakeup;
+
+	/* The ICU/WKPU wake-up channel is the only authority for the RTC wake-up
+	 * reason.  There is no retained flag and no RTC status fallback: when the
+	 * channel did not latch the event the wake source is treated as not
+	 * captured and the CAN / KL15 checks below decide the result. */
+	rtcWkpuWakeup = Wkpu_Ip_GetInputState(NM_WKPU_INSTANCE, NM_WKPU_CH_RTC);
+
+	/* RTC periodic wake has priority: force KL15 high for 1 minute so the
+	 * network stays active long enough for the application to run. */
+	if (rtcWkpuWakeup != FALSE)
+	{
+		AutoSarNM_stWKUPMode = 0x00U;
+		NM_RtcForceKl15Ticks = NM_RTC_FORCE_KL15_TIME_10MS;
+		return;
+	}
+#endif
 
 	/* This function runs from AutoSarNm_initialize(), i.e. before Icu_Init().
 	 * At this point IRER is still zero, so Wkpu_Ip_GetInputState() only tests
@@ -179,6 +239,7 @@ void WKPU_IRQHandler(void)
 void NM_EnterSleepMode(void)
 {
 	uint8 i;
+	uint32 wkpuWakeMask;
 
 	NM_SetAppMsgEnable(0U);
 	NM_SetNmMsgEnable(0U);
@@ -193,14 +254,26 @@ void NM_EnterSleepMode(void)
 	IP_FIRC->STDBY_ENABLE |= FIRC_STDBY_ENABLE_STDBY_EN_MASK;
 	IP_SIRC->MISCELLANEOUS_IN |= SIRC_MISCELLANEOUS_IN_STANDBY_ENABLE_MASK;
 
+	/* NOTE: the RTC must NOT be armed here.  Gpt_StopTimer()/Gpt_DeInit()
+	 * further down run over both GPT channels and reach the RTC channel:
+	 *   Gpt_StopTimer(1) -> Rtc_Ip_StopTimer() -> APIEN=0 (kills the wake)
+	 *   Gpt_DeInit()     -> Rtc_Ip_DeInit()    -> RTCC=0   (kills CNTEN/CLKSEL)
+	 * The timer is armed right before Mcu_SetMode() instead. */
 	Icu_EnableEdgeDetection(IcuChannel_CAN0RXWKUP);
 	Icu_EnableEdgeDetection(IcuChannel_KL15WKUP);
+#if (NM_RTC_WAKE_ENABLE == STD_ON)
+	Icu_EnableEdgeDetection(IcuChannel_RTCWKUP);
+#endif
 
 	/* Only the wake-up request is used in Standby.  The WKPU interrupt is
 	 * left masked so a wake-up cannot vector through an unhandled IRQ. */
-	IP_WKPU->IRER     &= ~(uint32)(1UL << NM_WKPU_CH_CAN0_RX);
+	wkpuWakeMask = (uint32)(1UL << NM_WKPU_CH_CAN0_RX);
+#if (NM_RTC_WAKE_ENABLE == STD_ON)
+	wkpuWakeMask |= (uint32)(1UL << NM_WKPU_CH_RTC);
+#endif
+	IP_WKPU->IRER     &= ~wkpuWakeMask;
 	IP_WKPU->IRER_64  &= ~(uint32)(1UL << (NM_WKPU_CH_KL15 - 32U));
-	IP_WKPU->WRER     |= (uint32)(1UL << NM_WKPU_CH_CAN0_RX);
+	IP_WKPU->WRER     |= wkpuWakeMask;
 	IP_WKPU->WRER_64  |= (uint32)(1UL << (NM_WKPU_CH_KL15 - 32U));
 
 	/* No external PMIC PGOOD handshake on this board: without the bypass the
@@ -208,6 +281,9 @@ void NM_EnterSleepMode(void)
 	IP_DCM_GPR->DCMRWF1 |= (uint32)(1UL << 18U);
 
 	Dio_WriteChannel(DioConf_DioChannel_DioChannel_PA29, 1U);
+	Dio_WriteChannel(DioConf_DioChannel_DioChannel_PA30, 1U);
+	Dio_WriteChannel(DioConf_DioChannel_DioChannel_PA31, 1U);
+	Dio_WriteChannel(DioConf_DioChannel_DioChannel_PB18, 1U);
 
 	for(i = 0; i < GPT_NUM_CONFIG; i++)
 	{
@@ -224,10 +300,40 @@ void NM_EnterSleepMode(void)
 	Uart_Deinit();
 	(void)Dma_Ip_Deinit();
 
+	/* Mask all NVIC lines before entering Standby.  The wake-up requests
+	 * (WKPU WRER / RTC) are independent of NVIC, and this prevents a stale
+	 * CAN/RTC interrupt from vectoring through an undefined handler before
+	 * Mcu_SetMode() returns and the reset is executed. */
+	{
+		uint16 irq;
+		for (irq = 0U; irq <= (uint16)SoC_PLL_IRQn; irq++)
+		{
+			IntCtrl_Ip_DisableIrq((IRQn_Type)irq);
+		}
+	}
+
+#if (NM_RTC_WAKE_ENABLE == STD_ON)
+	/* Arm the RTC-API wake source LAST, after every driver that touches the
+	 * RTC (Gpt_StopTimer/Gpt_DeInit) has been shut down.  RTC-API is WKPU
+	 * internal wake-up source 0, so only CNTEN/APIEN/APIIE + a clock that
+	 * survives Standby (SIRC, STDBY_EN above) are required. */
+	NM_RtcStartWakeTimer();
+#endif
+
 	(void)Mcu_SetMode(McuModeSettingConf_STANDBY);
 
-	/* Normal (non-fast) Standby resumes here after a wake-up.  Restart the
-	 * MCU so BSW/peripherals are initialized again instead of returning into
-	 * the half-shut-down application. */
+	/* Normal (non-fast) Standby resume path.  It is normally not executed:
+	 * a Standby exit resets the Run domain and the application restarts from
+	 * the reset vector.  The RTC is stopped so it cannot re-trigger before the
+	 * reset; the latched WKPU flags are deliberately left untouched because
+	 * the ICU/WKPU channel is the only wake-up source and they are what
+	 * NM_BsmGetWkupMode() reads after the reset. */
+#if (NM_RTC_WAKE_ENABLE == STD_ON)
+	IP_RTC->RTCC &= ~(uint32_t)(RTC_RTCC_CNTEN_MASK |
+	                            RTC_RTCC_APIEN_MASK |
+	                            RTC_RTCC_APIIE_MASK);
+	IP_RTC->RTCS = RTC_RTCS_APIF_MASK | RTC_RTCS_RTCF_MASK;
+#endif
+	S32_SCB->AIRCR = (0x5FAUL << 16) | (1UL << 2);
 	Mcu_PerformReset();
 }

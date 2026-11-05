@@ -76,12 +76,13 @@ extern "C"{
 /**
 * @brief These defines indicate that at least one channel from each module is used in all configurations.
 */
-#define RTC_IP_USED (STD_OFF)
+#define RTC_IP_USED (STD_ON)
 
 /**
 * @brief IRQ Defines for each channel used
 */
-
+                    #define RTC_0_CH_0_ISR_USED
+                
 /*==================================================================================================
 *                                             ENUMS
 ==================================================================================================*/

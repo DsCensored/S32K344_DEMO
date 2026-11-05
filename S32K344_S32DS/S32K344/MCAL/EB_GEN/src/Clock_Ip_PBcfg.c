@@ -326,7 +326,7 @@ static const Clock_Ip_SelectorConfigType Clock_Ip_SelectorConfigurations_0[CLOCK
         
     {
         RTC_CLK,                     /* Clock name associated to selector */
-        FIRC_CLK,                       /* Name of the selected input source */
+        SIRC_CLK,                       /* Name of the selected input source */
     },
         
     {
@@ -638,7 +638,7 @@ static const Clock_Ip_IrcoscConfigType Clock_Ip_IrcoscConfigurations_1[CLOCK_IP_
 
     {
         SIRC_STANDBY_CLK,
-        0U,
+        1U,
         0U,
         0U,
         0U,
@@ -774,7 +774,7 @@ static const Clock_Ip_SelectorConfigType Clock_Ip_SelectorConfigurations_1[CLOCK
         
     {
         RTC_CLK,                     /* Clock name associated to selector */
-        FIRC_CLK,                       /* Name of the selected input source */
+        SIRC_CLK,                       /* Name of the selected input source */
     },
         
     {

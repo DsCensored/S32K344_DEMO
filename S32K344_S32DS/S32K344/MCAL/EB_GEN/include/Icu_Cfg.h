@@ -119,7 +119,7 @@ extern "C"{
 
 
 /** @brief Maximum number of ICU channels configured. */
-#define ICU_MAX_CHANNEL                 ((Icu_ChannelType)2U)
+#define ICU_MAX_CHANNEL                 ((Icu_ChannelType)3U)
 
 /**
 *   @brief  Switches the Development Error Detection and Notification on or off.
@@ -369,6 +369,8 @@ extern "C"{
 #define IcuConf_IcuChannel_IcuChannel_CAN0RXWKUP  ((Icu_ChannelType)0U)
 #define IcuChannel_KL15WKUP                     (IcuConf_IcuChannel_IcuChannel_KL15WKUP)
 #define IcuConf_IcuChannel_IcuChannel_KL15WKUP  ((Icu_ChannelType)1U)
+#define IcuChannel_RTCWKUP                     (IcuConf_IcuChannel_IcuChannel_RTCWKUP)
+#define IcuConf_IcuChannel_IcuChannel_RTCWKUP  ((Icu_ChannelType)2U)
 
 /**
 * @brief          Number of configured partitions.

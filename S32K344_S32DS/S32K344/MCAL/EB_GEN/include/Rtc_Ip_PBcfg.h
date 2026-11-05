@@ -99,6 +99,7 @@ extern "C"
 #define GPT_START_SEC_CONFIG_DATA_UNSPECIFIED
 #include "Gpt_MemMap.h"
 
+extern const Rtc_Ip_ConfigType RTC_0_InitConfig_PB;
 
 
 #define GPT_STOP_SEC_CONFIG_DATA_UNSPECIFIED
