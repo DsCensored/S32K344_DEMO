@@ -114,13 +114,13 @@ extern "C"{
 * @brief    RTC_IP_STANDBY_WAKEUP_SUPPORT
 * @details  StandBy Mode is not supported in this release
 */
-#define RTC_IP_STANDBY_WAKEUP_SUPPORT    (STD_ON)
+#define RTC_IP_STANDBY_WAKEUP_SUPPORT    (STD_OFF)
 /*================================================================================================*/
 /**
 * @brief        RTC_IP_TICKS_PER_SECONDS define
 * @details      This define contains the ticks number per seconds based on which clock source is configured; Used just in Non-Autosar Context
 */
-#define RTC_IP_TICKS_PER_SECOND        32000UL
+#define RTC_IP_TICKS_PER_SECOND        0UL
 /*==================================================================================================
 *                                             ENUMS
 ==================================================================================================*/

@@ -71,49 +71,6 @@
                       </d:ref>
                     </d:ctr>
                   </d:ctr>
-                  <d:ctr name="GptChannelConfiguration_RTC" type="IDENTIFIABLE">
-                    <d:var name="GptChannelId" type="INTEGER" value="1">
-                      <a:a name="IMPORTER_INFO">
-                        <a:v>@DEF</a:v>
-                        <a:v>@CALC</a:v>
-                      </a:a>
-                    </d:var>
-                    <d:lst name="GptChannelEcucPartitionRef"/>
-                    <d:var name="GptHwIp" type="ENUMERATION" value="RTC"/>
-                    <d:ref name="GptModuleRef" type="REFERENCE" 
-                           value="ASPath:/Gpt/Gpt/GptChannelConfigSet/GptRtc_0"/>
-                    <d:var name="GptChannelMode" type="ENUMERATION" 
-                           value="GPT_CH_MODE_CONTINUOUS"/>
-                    <d:var name="GptChannelTickFrequency" type="FLOAT" 
-                           value="32000.0">
-                      <a:a name="IMPORTER_INFO">
-                        <a:v>@CALC</a:v>
-                        <a:v>@DEF</a:v>
-                      </a:a>
-                    </d:var>
-                    <d:ref name="GptChannelClkSrcRef" type="REFERENCE" 
-                           value="ASPath:/Gpt/Gpt/GptDriverConfiguration/GptClockReferencePoint_RTC"/>
-                    <d:var name="GptChannelTickValueMax" type="INTEGER" 
-                           value="4294967295">
-                      <a:a name="IMPORTER_INFO">
-                        <a:v>@CALC</a:v>
-                        <a:v>@DEF</a:v>
-                      </a:a>
-                    </d:var>
-                    <d:var name="GptEnableWakeup" type="BOOLEAN" value="false">
-                      <a:a name="IMPORTER_INFO" value="@DEF"/>
-                    </d:var>
-                    <d:var name="GptNotification" type="FUNCTION-NAME" 
-                           value="RtcNotification">
-                      <a:a name="ENABLE" value="true"/>
-                    </d:var>
-                    <d:ctr name="GptWakeupConfiguration" type="IDENTIFIABLE">
-                      <a:a name="ENABLE" value="false"/>
-                      <d:ref name="GptWakeupSourceRef" type="REFERENCE" >
-                        <a:a name="IMPORTER_INFO" value="@DEF"/>
-                      </d:ref>
-                    </d:ctr>
-                  </d:ctr>
                 </d:lst>
                 <d:lst name="GptPit" type="MAP">
                   <d:ctr name="GptPit_0" type="IDENTIFIABLE">
@@ -138,17 +95,7 @@
                   </d:ctr>
                 </d:lst>
                 <d:lst name="GptStm" type="MAP"/>
-                <d:lst name="GptRtc" type="MAP">
-                  <d:ctr name="GptRtc_0" type="IDENTIFIABLE">
-                    <d:var name="GptRtcModule" type="ENUMERATION" 
-                           value="RTC_0_CH_0"/>
-                    <d:var name="RtcFreezeEnable" type="BOOLEAN" value="false"/>
-                    <d:var name="DivBy512" type="BOOLEAN" value="false"/>
-                    <d:var name="DivBy32" type="BOOLEAN" value="false"/>
-                    <d:var name="GptRtcChannelClkSrc" type="ENUMERATION" 
-                           value="RTC_IP_CLOCK_SOURCE_1"/>
-                  </d:ctr>
-                </d:lst>
+                <d:lst name="GptRtc" type="MAP"/>
                 <d:lst name="GptEmios" type="MAP"/>
               </d:ctr>
               <d:lst name="GptHwConfiguration" type="MAP">
@@ -780,10 +727,10 @@
                       <a:v>@CALC</a:v>
                     </a:a>
                   </d:var>
-                  <d:var name="GptIsrEnable" type="BOOLEAN" value="true">
+                  <d:var name="GptIsrEnable" type="BOOLEAN" value="false">
                     <a:a name="IMPORTER_INFO" value="@DEF"/>
                   </d:var>
-                  <d:var name="GptChannelIsUsed" type="BOOLEAN" value="true">
+                  <d:var name="GptChannelIsUsed" type="BOOLEAN" value="false">
                     <a:a name="IMPORTER_INFO" value="@DEF"/>
                   </d:var>
                 </d:ctr>
@@ -862,7 +809,7 @@
                   <a:a name="IMPORTER_INFO" value="@DEF"/>
                 </d:var>
                 <d:var name="GptStandbyWakeupSupport" type="BOOLEAN" 
-                       value="true">
+                       value="false">
                   <a:a name="IMPORTER_INFO" value="@DEF"/>
                 </d:var>
               </d:ctr>
@@ -901,10 +848,6 @@
                   <d:ctr name="GptClockReferencePoint_PIT" type="IDENTIFIABLE">
                     <d:ref name="GptClockReference" type="REFERENCE" 
                            value="ASPath:/Mcu/Mcu/McuModuleConfiguration/McuClockSettingConfig_160Mhz/McuClockReferencePoint_GptPITClock"/>
-                  </d:ctr>
-                  <d:ctr name="GptClockReferencePoint_RTC" type="IDENTIFIABLE">
-                    <d:ref name="GptClockReference" type="REFERENCE" 
-                           value="ASPath:/Mcu/Mcu/McuModuleConfiguration/McuClockSettingConfig_160Mhz/McuClockReferencePoint_WDGClock"/>
                   </d:ctr>
                 </d:lst>
               </d:ctr>

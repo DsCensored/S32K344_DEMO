@@ -161,7 +161,7 @@ extern "C"{
 *           The driver shall NOT CLEAR the interrupt flag,
 *           the interrupt enable bit and also should not disable the counter, during init *(Gpt_Rtc_Init()) the flag is already set.
 */
-#define GPT_STANDBY_WAKEUP_SUPPORT (STD_ON)
+#define GPT_STANDBY_WAKEUP_SUPPORT (STD_OFF)
 /*================================================================================================*/
 /**
 * @brief    GPT_ENABLE_USER_MODE_SUPPORT switch
@@ -206,13 +206,12 @@ extern "C"{
 * @details      Symbolic names of channels.
 */
 #define GptConf_GptChannelConfiguration_GptChannelConfiguration_PIT0_CH0 (0U)
-#define GptConf_GptChannelConfiguration_GptChannelConfiguration_RTC (1U)
 /*================================================================================================*/
 /**
 * @brief       GPT_HW_CHANNEL_NUM
 * @details     The maximum number of HW channels. This is used to allocate memory space for channel runtime info.
 */
-#define GPT_HW_CHANNEL_NUM (2U)
+#define GPT_HW_CHANNEL_NUM (1U)
 /*================================================================================================*/
 /**
 * @brief        GPT_MAX_PARTITIONS_CFG.
@@ -230,7 +229,7 @@ extern "C"{
 * @brief        GPT_NUM_CONFIG.
 * @details      Number of ChannelConfiguration
 */
-#define GPT_NUM_CONFIG (2U)
+#define GPT_NUM_CONFIG (1U)
 /*================================================================================================*/
 /**
 *   @brief      GPT_HW_PREDEFTIMER_NUM

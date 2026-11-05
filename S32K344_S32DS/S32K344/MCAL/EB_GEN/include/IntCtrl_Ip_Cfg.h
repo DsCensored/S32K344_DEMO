@@ -86,7 +86,6 @@ extern void Dma0_Ch16_IRQHandler(void);
 extern void Dma0_Ch17_IRQHandler(void);
 extern void Swt_Ip_Swt0_Isr(void);
 extern void PIT_0_ISR(void);
-extern void RTC_0_Ch_0_ISR(void);
 
 #ifdef  PLATFORM_IP_ENABLE_INT_CTRL
 #if  (PLATFORM_IP_ENABLE_INT_CTRL == STD_ON)

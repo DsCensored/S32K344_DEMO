@@ -101,23 +101,6 @@ extern "C"{
  *================================================================================================*/
 #define GPT_START_SEC_CONFIG_DATA_UNSPECIFIED
 #include "Gpt_MemMap.h"
-const Rtc_Ip_ConfigType RTC_0_InitConfig_PB = 
-{
-    /**< @brief RTC Debug Mode */
-    (boolean)(FALSE), /**< @brief Disable Freeze Bit */
-    /**< @brief DivBy512 Prescaler enable */
-    (boolean)(FALSE), /**< @brief Disable */
-    /**< @brief DivBy32 Prescaler enable */
-    (boolean)(FALSE), /**< @brief Disable */
-    /**< @brief Rtc clock source  */
-    RTC_IP_CLOCK_SOURCE_1,
-    /**< @brief RTC callback name */
-    &Gpt_ProcessCommonInterrupt,
-    /** @brief RTC callbackparam */
-    (uint8)1U,
-    /** @brief RTC channel mode */
-    RTC_IP_CH_MODE_CONTINUOUS
-};
 #define GPT_STOP_SEC_CONFIG_DATA_UNSPECIFIED
 #include "Gpt_MemMap.h"
 /*==================================================================================================

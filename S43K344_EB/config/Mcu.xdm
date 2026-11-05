@@ -1437,14 +1437,13 @@
                         <a:a name="IMPORTER_INFO" value="@DEF"/>
                       </d:var>
                       <d:var name="McuRtc_Source" type="ENUMERATION" 
-                             value="SIRC_CLK">
+                             value="FIRC_CLK">
                         <a:a name="IMPORTER_INFO">
                           <a:v>@DEF</a:v>
                           <a:v>@CALC</a:v>
                         </a:a>
                       </d:var>
-                      <d:var name="McuRtc_Frequency" type="FLOAT" 
-                             value="32000.0">
+                      <d:var name="McuRtc_Frequency" type="FLOAT" value="4.8E7">
                         <a:a name="IMPORTER_INFO">
                           <a:v>@DEF</a:v>
                           <a:v>@CALC</a:v>
@@ -1825,7 +1824,7 @@
                         </a:a>
                       </d:var>
                       <d:var name="McuSircStandbyEnable" type="BOOLEAN" 
-                             value="true">
+                             value="false">
                         <a:a name="IMPORTER_INFO" value="@DEF"/>
                       </d:var>
                     </d:ctr>
@@ -2660,14 +2659,13 @@
                         <a:a name="IMPORTER_INFO" value="@DEF"/>
                       </d:var>
                       <d:var name="McuRtc_Source" type="ENUMERATION" 
-                             value="SIRC_CLK">
+                             value="FIRC_CLK">
                         <a:a name="IMPORTER_INFO">
                           <a:v>@DEF</a:v>
                           <a:v>@CALC</a:v>
                         </a:a>
                       </d:var>
-                      <d:var name="McuRtc_Frequency" type="FLOAT" 
-                             value="32000.0">
+                      <d:var name="McuRtc_Frequency" type="FLOAT" value="4.8E7">
                         <a:a name="IMPORTER_INFO">
                           <a:v>@DEF</a:v>
                           <a:v>@CALC</a:v>

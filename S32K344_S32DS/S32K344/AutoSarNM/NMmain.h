@@ -15,26 +15,11 @@
 /* WKPU hardware channels used as standby wake-up sources.
  * Keep these in sync with S43K344_EB/config/Icu.xdm and Port.xdm:
  *   CAN0_RX -> WKPU channel 19 (CAN0 RX pin)
- *   KL15    -> WKPU channel 42 (PB19)
- *   RTC     -> ICU channel IcuChannel_RTCWKUP (WKPU channel 0 as configured
- *              in Icu.xdm).  This is the only accepted source of the RTC
- *              wake-up reason; there is no RTC-status/retained-flag fallback.
+ *   KL15    -> WKPU channel 43 (PB19, Port mode WKPU_WKPU_43_IN)
  */
 #define NM_WKPU_INSTANCE						(0U)
 #define NM_WKPU_CH_CAN0_RX						(19U)
 #define NM_WKPU_CH_KL15							(42U)
-#define NM_WKPU_CH_RTC							(0U)
-
-/* Master switch for the RTC periodic wake-up from Standby.
- *   1 = enabled  : the RTC-API timer is armed right before Standby entry and
- *                  the wake reason is taken from the ICU/WKPU channel only.
- *   0 = disabled : nothing RTC-wake related is executed at all - no RTC
- *                  arming, no ICU edge detection / WKPU wake request for the
- *                  RTC channel, no RTC wake-source check and no forced KL15.
- *                  Standby wake-up is then limited to the CAN0_RX / KL15
- *                  WKPU channels.
- */
-#define NM_RTC_WAKE_ENABLE						(0U)
 
 #define CAN_ID_VEH_RX_NM                        (402784010)        	//整车CAN网络管理的接收报文ID(低8位掩码屏蔽不关心) 或 两者皆可(CAN_TYPE_STD_FD)
 
@@ -67,8 +52,6 @@ void NM_PbsmGetWkupMode(unsigned char reset);
 void NM_EnterSleepMode(void);
 
 void NM_BsmGetWkupMode(void);
-
-void NM_RtcWakeupTask10ms(void);
 
 void NM_CanNmRecvCallBack(CAN_FD_MESSAGE *Data);
 
