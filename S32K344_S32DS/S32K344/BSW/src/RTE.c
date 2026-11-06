@@ -9,13 +9,9 @@
 #include "rtwtypes.h"
 #include "Dio.h"
 #include "Dio_Cfg.h"
+#include "DSC.h"
 
 uint8_T BSW_stKL15 = 0;
-
-uint8_T ASW_stLEDR1Ctrl = 0;
-uint8_T ASW_stLEDG1Ctrl = 0;
-uint8_T ASW_stLEDB1Ctrl = 0;
-uint8_T ASW_stLEDY1Ctrl = 0;
 
 typedef struct
 {

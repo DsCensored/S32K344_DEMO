@@ -214,6 +214,7 @@ static void BSW_CANRX_FillMessage
     }
 }
 
+uint32 BSW_cntCan0RxCnt = 0;
 boolean BSW_CanRxCallout
 (
     uint8 Hrh,
@@ -247,6 +248,7 @@ boolean BSW_CanRxCallout
 
     now = BSW_GetSystemTick();
     rxEntry->get_time_tick = now;
+    BSW_cntCan0RxCnt++;
 
     if ((NULL_PTR != rxEntry->timeout_flag) && (0U != *(rxEntry->timeout_flag)))
     {
