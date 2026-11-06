@@ -16,11 +16,11 @@ const uint8 App_Info_AppVersion[APP_INFO_BLOCK_SIZE] = "APP-1.0.0";
 
 /* 0x00448110 - bootloader version */
 __attribute__((section(".app_boot_ver_flash"), used))
-const uint8 App_Info_BootVersion[APP_INFO_BLOCK_SIZE] = "BOOT-1.0.0";
+const uint8 App_Info_BootVersion[APP_INFO_BLOCK_SIZE] = "HW_0.0.1";
 
 /* 0x00448120 - hardware / board version */
 __attribute__((section(".app_hw_ver_flash"), used))
-const uint8 App_Info_HardwareVersion[APP_INFO_BLOCK_SIZE] = "S32K344-Q172";
+const uint8 App_Info_HardwareVersion[APP_INFO_BLOCK_SIZE] = "NXP-S32K344-Q172";
 
 /* 0x00448130 - order / part number */
 __attribute__((section(".app_order_flash"), used))

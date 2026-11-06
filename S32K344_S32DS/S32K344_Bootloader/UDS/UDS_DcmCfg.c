@@ -17,6 +17,7 @@
 #include "Boot.h"
 #include "Boot_Shared.h"
 #include "Boot_Program.h"
+#include "App_Info.h"
 #include "Nvm.h"
 #include "NvmApp.h"
 #include <string.h>
@@ -322,6 +323,23 @@ static unsigned char UDS_DcmF184Write(const UDS_DcmDidType *did,
 	return 0U;
 }
 
+uint8 BSW_stForceUpdate = 0;
+static unsigned char UDS_DcmF7F7Write(const UDS_DcmDidType *did,
+                                      const unsigned char *buf,
+                                      unsigned int len)
+{
+	(void)did;
+
+	if (1 != len)
+	{
+		return NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
+	}
+
+	BSW_stForceUpdate = 1;
+
+	return 0U;
+}
+
 static unsigned char UDS_DcmF190Read(const UDS_DcmDidType *did,
                                      unsigned char *buf,
                                      unsigned int maxLen,
@@ -334,9 +352,12 @@ static unsigned char UDS_DcmF190Read(const UDS_DcmDidType *did,
 		return NRC_RESPONSE_TOO_LONG;
 	}
 
-	/* Valid VIN written by the application (or by the bootloader);
-	 * no valid record -> 17 x 0x00. */
-	(void)Nvm_F190_Read(buf);
+	/* No block validity check: an unprogrammed F190 simply reads as 0xFF. */
+	if (E_OK != Nvm_F190_Read(buf))
+	{
+		return NRC_CONDITIONS_NOT_CORRECT;
+	}
+
 	*outLen = NVM_F190_VIN_LEN;
 	return 0U;
 }
@@ -361,10 +382,80 @@ static unsigned char UDS_DcmF190Write(const UDS_DcmDidType *did,
 	return 0U;
 }
 
+/*
+ * Version / identification DIDs.
+ *
+ * Every DID returns one 16-byte App_Info block read from a fixed flash
+ * address.  The addresses are the same in the APP and in the BOOT image, so
+ * the bootloader answers exactly like the application:
+ *
+ *   F180  boot software version    0x00400110 (boot image, .app_boot_ver_flash)
+ *   F187  hardware version         0x00448120 (app  App_Info block 2)
+ *   F189  application version      0x00448100 (app  App_Info block 0)
+ *   F18A  board hardware version   0x00448110 (app  App_Info block 1)
+ *   F18C  ECU serial number        0x00448300 (fixed serial area)
+ *   F191  hardware part number     0x00448130 (app  App_Info block 3)
+ *   F192  production / build date  0x00448160 (app  App_Info block 6)
+ *   F19E  supplier code            0x00448140 (app  App_Info block 4)
+ */
+typedef struct
+{
+	unsigned short Did;
+	unsigned long  Address;
+} UDS_DcmFixedDidType;
+
+static const UDS_DcmFixedDidType UDS_DcmFixedDids[] =
+{
+	{0xF180U, 0x00400110UL},
+	{0xF187U, 0x00448120UL},
+	{0xF189U, 0x00448100UL},
+	{0xF18AU, 0x00448110UL},
+	{0xF18CU, 0x00448300UL},
+	{0xF191U, 0x00448130UL},
+	{0xF192U, 0x00448160UL},
+	{0xF19EU, 0x00448140UL}
+};
+
+static unsigned char UDS_DcmFixedDidRead(const UDS_DcmDidType *did,
+                                         unsigned char *buf,
+                                         unsigned int maxLen,
+                                         unsigned int *outLen)
+{
+	unsigned int i;
+
+	for (i = 0U; i < (unsigned int)(sizeof(UDS_DcmFixedDids) / sizeof(UDS_DcmFixedDids[0])); i++)
+	{
+		if (UDS_DcmFixedDids[i].Did == did->Did)
+		{
+			if (maxLen < APP_INFO_BLOCK_SIZE)
+			{
+				return NRC_RESPONSE_TOO_LONG;
+			}
+
+			memcpy(buf, (const void *)UDS_DcmFixedDids[i].Address,
+			       APP_INFO_BLOCK_SIZE);
+			*outLen = APP_INFO_BLOCK_SIZE;
+			return 0U;
+		}
+	}
+
+	return NRC_REQUEST_OUT_OF_RANGE;
+}
+
 const UDS_DcmDidType UDS_DcmDids[] =
 {
 	{0xF190U, UDS_DcmF190Read, UDS_DcmF190Write},
-	{0xF184U, UDS_DcmF184Read, UDS_DcmF184Write}
+	{0xF184U, UDS_DcmF184Read, UDS_DcmF184Write},
+	{0xF7F7U, UDS_DcmF184Read, UDS_DcmF7F7Write},
+	/* Version / identification DIDs (fixed flash addresses). */
+	{0xF180U, UDS_DcmFixedDidRead, 0},
+	{0xF187U, UDS_DcmFixedDidRead, 0},
+	{0xF189U, UDS_DcmFixedDidRead, 0},
+	{0xF18AU, UDS_DcmFixedDidRead, 0},
+	{0xF18CU, UDS_DcmFixedDidRead, 0},
+	{0xF191U, UDS_DcmFixedDidRead, 0},
+	{0xF192U, UDS_DcmFixedDidRead, 0},
+	{0xF19EU, UDS_DcmFixedDidRead, 0}
 };
 
 const unsigned int UDS_DcmDidCount =
@@ -659,6 +750,7 @@ static unsigned char UDS_DcmRoutineDependency(const unsigned char *req,
 
 /* 0xFF02: copy the APP from the backup area to the run area, 8 KB per call.
  * Returning 0x78 makes the DCM call this routine again on its next poll. */
+extern unsigned char BSW_stUpdateVerValid;
 static unsigned char UDS_DcmRoutineCopy(const unsigned char *req, unsigned int len,
                                         unsigned int *status)
 {
@@ -667,6 +759,13 @@ static unsigned char UDS_DcmRoutineCopy(const unsigned char *req, unsigned int l
 
 	(void)req;
 	(void)len;
+
+	if(BSW_stUpdateVerValid == 0)
+	{
+		return NRC_CONDITIONS_NOT_CORRECT;
+	}
+
+	BSW_stUpdateVerValid = 0;
 
 	nrc = BootProg_CopyStep(status, &more);
 	if (0U != nrc)

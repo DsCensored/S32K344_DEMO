@@ -298,54 +298,124 @@ static unsigned char UDS_DcmF184Read(const UDS_DcmDidType *did,
 	return 0U;
 }
 
-static unsigned char UDS_DcmF189Read(const UDS_DcmDidType *did,
+/*
+ * Version / identification DIDs.
+ *
+ * Every DID returns one 16-byte App_Info block read from a fixed flash
+ * address, so the answer is identical no matter whether the APP or the BOOT
+ * is running (the bootloader uses the same table):
+ *
+ *   F180  boot software version    0x00400110 (boot image, .app_boot_ver_flash)
+ *   F187  hardware version         0x00448120 (app  App_Info block 2)
+ *   F189  application version      0x00448100 (app  App_Info block 0)
+ *   F18A  board hardware version   0x00448110 (app  App_Info block 1)
+ *   F18C  ECU serial number        0x00448300 (fixed serial area)
+ *   F191  hardware part number     0x00448130 (app  App_Info block 3)
+ *   F192  production / build date  0x00448160 (app  App_Info block 6)
+ *   F19E  supplier code            0x00448140 (app  App_Info block 4)
+ */
+typedef struct
+{
+	unsigned short Did;
+	unsigned long  Address;
+} UDS_DcmFixedDidType;
+
+static const UDS_DcmFixedDidType UDS_DcmFixedDids[] =
+{
+	{0xF180U, 0x00400110UL},
+	{0xF187U, 0x00448120UL},
+	{0xF189U, 0x00448100UL},
+	{0xF18AU, 0x00448110UL},
+	{0xF18CU, 0x00448300UL},
+	{0xF191U, 0x00448130UL},
+	{0xF192U, 0x00448160UL},
+	{0xF19EU, 0x00448140UL}
+};
+
+static unsigned char UDS_DcmFixedDidRead(const UDS_DcmDidType *did,
+                                         unsigned char *buf,
+                                         unsigned int maxLen,
+                                         unsigned int *outLen)
+{
+	unsigned int i;
+
+	for (i = 0U; i < (unsigned int)(sizeof(UDS_DcmFixedDids) / sizeof(UDS_DcmFixedDids[0])); i++)
+	{
+		if (UDS_DcmFixedDids[i].Did == did->Did)
+		{
+			if (maxLen < APP_INFO_BLOCK_SIZE)
+			{
+				return NRC_RESPONSE_TOO_LONG;
+			}
+
+			memcpy(buf, (const void *)UDS_DcmFixedDids[i].Address,
+			       APP_INFO_BLOCK_SIZE);
+			*outLen = APP_INFO_BLOCK_SIZE;
+			return 0U;
+		}
+	}
+
+	return NRC_REQUEST_OUT_OF_RANGE;
+}
+
+static unsigned char UDS_DcmF120Read(const UDS_DcmDidType *did,
                                      unsigned char *buf,
                                      unsigned int maxLen,
                                      unsigned int *outLen)
 {
 	(void)did;
 
-	if (maxLen < APP_INFO_BLOCK_SIZE)
+	if (maxLen < 32)
 	{
 		return NRC_RESPONSE_TOO_LONG;
 	}
 
-	memcpy(buf, (const void *)0x00448100, APP_INFO_BLOCK_SIZE);
-	*outLen = APP_INFO_BLOCK_SIZE;
+	memcpy(buf, (const void *)0x00448160, 32);
+	*outLen = 32;
 	return 0U;
 }
 
-static unsigned char UDS_DcmF180Read(const UDS_DcmDidType *did,
-                                     unsigned char *buf,
-                                     unsigned int maxLen,
-                                     unsigned int *outLen)
+/*
+ * 0xF121 .. 0xF128: one App_Info block per DID.
+ *
+ *   F121 -> App_Info_AppVersion        (0x00448100)
+ *   F122 -> App_Info_BootVersion       (0x00448110)
+ *   F123 -> App_Info_HardwareVersion   (0x00448120)
+ *   F124 -> App_Info_OrderCode         (0x00448130)
+ *   F125 -> App_Info_SupplierCode      (0x00448140)
+ *   F126 -> App_Info_SerialNumber      (0x00448150)
+ *   F127 -> App_Info_ProductionDate    (0x00448160)
+ *   F128 -> App_Info_UpdateComponent   (0x00448170)
+ *
+ * Every DID returns APP_INFO_BLOCK_SIZE (16) bytes.  Read only, no 0x2E.
+ */
+static unsigned char UDS_DcmAppInfoRead(const UDS_DcmDidType *did,
+                                        unsigned char *buf,
+                                        unsigned int maxLen,
+                                        unsigned int *outLen)
 {
-	(void)did;
+	const unsigned int len = (unsigned int)APP_INFO_BLOCK_SIZE;
+	unsigned int id;
 
-	if (maxLen < APP_INFO_BLOCK_SIZE)
+	/* F121 selects block 0, F122 block 1, ... */
+	if (did->Did < 0xF121U)
+	{
+		return NRC_REQUEST_OUT_OF_RANGE;
+	}
+
+	id = (unsigned int)(did->Did - 0xF121U);
+	if (id >= (unsigned int)APP_INFO_BLOCK_COUNT)
+	{
+		return NRC_REQUEST_OUT_OF_RANGE;
+	}
+
+	if (maxLen < len)
 	{
 		return NRC_RESPONSE_TOO_LONG;
 	}
 
-	memcpy(buf, (const void *)0x00400100, APP_INFO_BLOCK_SIZE);
-	*outLen = APP_INFO_BLOCK_SIZE;
-	return 0U;
-}
-
-static unsigned char UDS_DcmF18CRead(const UDS_DcmDidType *did,
-                                     unsigned char *buf,
-                                     unsigned int maxLen,
-                                     unsigned int *outLen)
-{
-	(void)did;
-
-	if (maxLen < 16)
-	{
-		return NRC_RESPONSE_TOO_LONG;
-	}
-
-	memcpy(buf, (const void *)0x00448300, APP_INFO_BLOCK_SIZE);
-	*outLen = APP_INFO_BLOCK_SIZE;
+	memcpy(buf, (const void *)APP_INFO_ADDRESS(id), len);
+	*outLen = len;
 	return 0U;
 }
 
@@ -361,8 +431,12 @@ static unsigned char UDS_DcmF190Read(const UDS_DcmDidType *did,
 		return NRC_RESPONSE_TOO_LONG;
 	}
 
-	/* No valid record (magic/checksum mismatch): buf is filled with 0x00. */
-	(void)Nvm_F190_Read(buf);
+	/* No block validity check: an unprogrammed F190 simply reads as 0xFF. */
+	if (E_OK != Nvm_F190_Read(buf))
+	{
+		return NRC_CONDITIONS_NOT_CORRECT;
+	}
+
 	*outLen = NVM_F190_VIN_LEN;
 	return 0U;
 }
@@ -378,10 +452,11 @@ static unsigned char UDS_DcmF190Write(const UDS_DcmDidType *did,
 		return NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
 	}
 
-	/* Write once and commit: refused when a valid VIN already exists. */
+	/* The write is refused when F190 was already programmed (see
+	 * Nvm_F190_Write): all bytes must still be 0xFF. */
 	if (E_OK != Nvm_F190_Write(buf))
 	{
-		return NRC_GENERAL_PROGRAMMING_FAILURE;
+		return NRC_CONDITIONS_NOT_CORRECT;
 	}
 
 	return 0U;
@@ -391,9 +466,24 @@ const UDS_DcmDidType UDS_DcmDids[] =
 {
 	{0xF190U, UDS_DcmF190Read, UDS_DcmF190Write},
 	{0xF184U, UDS_DcmF184Read, 0},
-	{0xF189U, UDS_DcmF189Read, 0},
-	{0xF180U, UDS_DcmF180Read, 0},
-	{0xF18CU, UDS_DcmF18CRead, 0}
+	{0xF120U, UDS_DcmF120Read, 0},
+	{0xF121U, UDS_DcmAppInfoRead, 0},
+	{0xF122U, UDS_DcmAppInfoRead, 0},
+	{0xF123U, UDS_DcmAppInfoRead, 0},
+	{0xF124U, UDS_DcmAppInfoRead, 0},
+	{0xF125U, UDS_DcmAppInfoRead, 0},
+	{0xF126U, UDS_DcmAppInfoRead, 0},
+	{0xF127U, UDS_DcmAppInfoRead, 0},
+	{0xF128U, UDS_DcmAppInfoRead, 0},
+	/* Version / identification DIDs (fixed flash addresses). */
+	{0xF180U, UDS_DcmFixedDidRead, 0},
+	{0xF187U, UDS_DcmFixedDidRead, 0},
+	{0xF189U, UDS_DcmFixedDidRead, 0},
+	{0xF18AU, UDS_DcmFixedDidRead, 0},
+	{0xF18CU, UDS_DcmFixedDidRead, 0},
+	{0xF191U, UDS_DcmFixedDidRead, 0},
+	{0xF192U, UDS_DcmFixedDidRead, 0},
+	{0xF19EU, UDS_DcmFixedDidRead, 0}
 };
 
 const unsigned int UDS_DcmDidCount =

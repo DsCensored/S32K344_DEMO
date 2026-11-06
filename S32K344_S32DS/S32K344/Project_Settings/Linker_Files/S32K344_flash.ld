@@ -73,19 +73,19 @@ SECTIONS
          * Fixed information blocks (16 bytes each), see App_Info.h.
          * They are part of the application image and must keep their
          * addresses, so a flasher / the bootloader can find them.
-         *   0x00448100 .app_ver_flash       app version
-         *   0x00448110 .app_boot_ver_flash  bootloader version
+         *   0x00448100 .SW_VER       app version
+         *   0x00448110 .HW_VER  bootloader version
          *   0x00448120 .app_hw_ver_flash    hardware version
          *   0x00448130 .app_order_flash     order / part number
          *   0x00448140 .app_supplier_flash  supplier code
          *   0x00448150 .app_serial_flash    serial number
-         *   0x00448160 .app_prod_date_flash production date
-         *   0x00448170 .app_upd_comp_flash  update component id
+         *   0x00448160 .app_Build_date production date
+         *   0x00448170 .app_Build_time  update component id
          * ------------------------------------------------------------------ */
         . = 0x100;
-        KEEP(*(.app_ver_flash))
+        KEEP(*(.SW_VER))
         . = 0x110;
-        KEEP(*(.app_boot_ver_flash))
+        KEEP(*(.HW_VER))
         . = 0x120;
         KEEP(*(.app_hw_ver_flash))
         . = 0x130;
@@ -95,9 +95,9 @@ SECTIONS
         . = 0x150;
         KEEP(*(.app_serial_flash))
         . = 0x160;
-        KEEP(*(.app_prod_date_flash))
+        KEEP(*(.app_Build_date))
         . = 0x170;
-        KEEP(*(.app_upd_comp_flash))
+        KEEP(*(.app_Build_time))
         . = 0x200;
         . = ALIGN(8192);  /* The minimum erase size of C40 Flash IP is 8kb */
         __text_start = .;

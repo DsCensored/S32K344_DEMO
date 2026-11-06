@@ -194,43 +194,93 @@ App_Info_GetCopy(APP_INFO_SERIAL_NUMBER, buf);
 
 ## 5. NVM 接口
 
+每个逻辑块 256 B，布局固定为：
+
+```
+块偏移 0..3   : 初始化标志 0x55AA55AA（U32，小端）
+块偏移 4..254 : 应用数据（251 B，MAX_NVM_LEN = NVM_BLOCK_DATA_SIZE）
+块偏移 255    : 校验和（字节 0..254 的 8 位累加和）
+```
+
+应用侧的 `BlockXData` 枚举从 0 开始表示**数据区**偏移，`Nvm` 内部访问
+DFlash 时统一加 `NVM_BLOCK_DATA_OFFSET`（=4）；初始化标志和校验字节对
+`NvmApp`（ASW）不开放，ASW 只通过 `NvmApp` 读写数据。
+
+**DID 不再各自加 magic/checksum**：F190（以及其它读写 NVM 的 DID）直接使用
+块级别的初始化标志 + 块校验和，读写时不做任何记录级校验；未写入的数据统一
+为 `0xFF`（DFlash 擦除态）。
+
+`Nvm_Init()` 的行为：
+
+- 初始化标志不在位（新片、随机数据、旧布局）→ **立刻创建一个全新的块**，
+  内容全部 `0xFF`，并写入 DFlash；
+- 标志在位但**校验和与内容不匹配** → 只把 `Nvm_GetChecksumErrorFlags()`
+  的对应位置 1（bit0=块0 … bit3=块3），**不修复、不处理**，由应用层决定；
+  块数据按读到的内容保留。
+
+写 `0xF190`（`Nvm_F190_Write()`）：
+
+- 只检查当前 F190 的 17 个字节是否都为 `0xFF`，只要有一个不是 `0xFF`
+  就拒绝写入（已经写过了）；
+- 只改这 17 个字节，块内其它内容保持不变（一个块可以存多个 DID）。
+
+读 `0xF190`（`Nvm_F190_Read()`）：
+
+- 不检查块有效性，直接返回当前 17 字节；没写过的就是 17 × `0xFF`。
+
+休眠前（`NM_EnterSleepMode()`）：
+
+- 调用 `Nvm_Flush()`：把每个块从 DFlash 读回、和 RAM 影子比较，不一致就
+  重新写入，直到一致（最多重试 `NVM_FLUSH_RETRIES` 次），保证掉电前数据
+  真正落盘。
+
+> 关于「原地写入」：目前持久化仍走 Fee，`Commit` 时 Fee 会写新页/新块，
+> 所以 0x0F→0x0E 这类按位写入仍然会占用新的 Fee 页。要实现真正的原地编程
+> 需要改 Fee（或绕过 Fee 直接用 Mem 驱动写物理地址），按要求这次不改。
+> 现在只把未用数据统一成 `0xFF`，为以后改成原地写入留好数据格式。
+
 ```c
 #include "Nvm.h"
 
 typedef enum {
-    NVM_BLOCK_BOOT_PARAM = 0,   /* 256 B */
-    NVM_BLOCK_APP_PARAM,        /* 256 B */
-    NVM_BLOCK_CALIBRATION,      /* 256 B */
-    NVM_BLOCK_LOG,              /* 256 B */
+    NVM_BLOCK_0 = 0,   /* 256 B = 4 B 标志 + 251 B 数据 + 1 B 校验和 */
+    NVM_BLOCK_1,
+    NVM_BLOCK_2,
+    NVM_BLOCK_3,
     NVM_BLOCK_INVALID = 0xFF
 } Nvm_BlockIdType;
 ```
 
 | 函数 | 作用 |
 | --- | --- |
-| `Nvm_Init()` | 初始化 MemAcc/Fee，等待启动扫描完成，把 4 块读到 RAM 影子（未写过的块清零） |
-| `Nvm_ReadByte(block, offset, &val)` | 按字节读（RAM 影子） |
+| `Nvm_Init()` | 初始化 MemAcc/Fee，读 4 块；缺标志的块立即创建（0xFF 内容），校验和错的块只置错误标志 |
+| `Nvm_GetChecksumErrorFlags()` | 4 个错误位（bit0..bit3），仅在初始化时检测 |
+| `Nvm_ReadByte(block, offset, &val)` | 按字节读（offset 为数据区偏移 0..250） |
 | `Nvm_WriteByte(block, offset, val)` | 按字节写（只改 RAM，标脏） |
-| `Nvm_GetBlockData(block)` | 整块 256 B 指针，可直接字节访问 |
-| `Nvm_LoadBlock(block, buf)` / `Nvm_StoreBlock(block, buf)` | 整块读 / 整块写并立即落盘 |
-| `Nvm_CommitBlock(block)` / `Nvm_Commit()` | 把脏块写入 DFlash |
-| `Nvm_IsBlockDirty(block)` / `Nvm_GetStatus()` / `Nvm_MainFunction()` | 状态查询 / 周期轮询 |
+| `Nvm_GetBlockData(block)` | 数据区（251 B）指针，可直接字节访问 |
+| `Nvm_LoadBlock(block, buf)` / `Nvm_StoreBlock(block, buf)` | 读/写 251 B 数据区；`StoreBlock` 立即落盘 |
+| `Nvm_CommitBlock(block)` / `Nvm_Commit()` | 把脏块写入 DFlash（自动写标志和校验和） |
+| `Nvm_Flush()` | 休眠前使用：DFlash 与 RAM 影子逐块比对，不一致就重写直到一致 |
+| `Nvm_GetBlockInvalid(block)` / `Nvm_GetBlockXInvalid()` | 整块是否无效 |
+| `Nvm_InvalidateBlock(block)` | 在 RAM 里作废一个块（创建失败回滚用，不写 Flash） |
+| `Nvm_IsBlockValid(block)` / `Nvm_IsBlockDirty(block)` / `Nvm_GetStatus()` / `Nvm_MainFunction()` | 状态查询 / 周期轮询 |
 
 示例：
 
 ```c
 uint8_t v = 0;
-Nvm_ReadByte(NVM_BLOCK_CALIBRATION, 0U, &v);
-Nvm_WriteByte(NVM_BLOCK_CALIBRATION, 0U, v + 1U);
-Nvm_CommitBlock(NVM_BLOCK_CALIBRATION);     /* 落盘 */
+Nvm_ReadByte(NVM_BLOCK_2, 0U, &v);          /* 无效块返回 E_NOT_OK */
+Nvm_WriteByte(NVM_BLOCK_2, 0U, v + 1U);     /* 首次写入会创建该块 */
+Nvm_CommitBlock(NVM_BLOCK_2);               /* 落盘 */
 
-uint8_t *p = Nvm_GetBlockData(NVM_BLOCK_APP_PARAM);
+uint8_t *p = Nvm_GetBlockData(NVM_BLOCK_1); /* 251 B 数据区 */
 p[10] = 0x5A;
-Nvm_CommitBlock(NVM_BLOCK_APP_PARAM);
+Nvm_CommitBlock(NVM_BLOCK_1);
 ```
 
 限制：`Nvm_WriteByte` 只改 RAM，必须 `Commit` 才落盘；API 阻塞，勿在中断调用；
 首次使用 Fee 会格式化 4 个 DFlash 扇区（几十 ms）。
+
 
 ## 6. 资源占用（当前构建）
 

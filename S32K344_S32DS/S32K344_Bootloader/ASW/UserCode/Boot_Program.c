@@ -10,6 +10,8 @@
 #include "Boot.h"
 #include "UDS_CanTp.h"
 #include <string.h>
+#include <stdio.h>
+#include "App_Info.h"
 
 #define BOOT_PROG_MODE_NONE     0U
 #define BOOT_PROG_MODE_RAM      1U
@@ -390,9 +392,106 @@ unsigned char BootProg_EraseStep(unsigned int addr, unsigned int len,
     return 0U;
 }
 
+/* ---------- 工具函数：严格解析版本号 ---------- */
+/* 返回 0 成功；-1 格式错误 */
+static int parse_version(const char *buf, size_t len,
+                         int *major, int *minor, int *patch)
+{
+    /* 1. 必须有 '\0' 终止，否则 sscanf 会越界 */
+    if (memchr(buf, '\0', len) == NULL) {
+        return -1;
+    }
+
+    int pos = 0;
+    int n = sscanf(buf, "%9d.%9d.%9d%n", major, minor, patch, &pos);
+    /* 2. 三段必须都匹配上，且整串被消费完 */
+    if (n != 3 || buf[pos] != '\0') {
+        return -1;
+    }
+    return 0;
+}
+
+/* ---------- 版本比较：返回 -1/0/1 ---------- */
+static int version_cmp(int a1, int b1, int c1,
+                       int a2, int b2, int c2)
+{
+    if (a1 != a2) return (a1 > a2) ? 1 : -1;
+    if (b1 != b2) return (b1 > b2) ? 1 : -1;
+    if (c1 != c2) return (c1 > c2) ? 1 : -1;
+    return 0;
+}
+
+/* ---------- 主校验 ---------- */
+extern unsigned char BSW_stForceUpdate;
+static unsigned char check_version(unsigned int *status)
+{
+    int major_now = 0, minor_now = 0, patch_now = 0;
+    int major_nxt = 0, minor_nxt = 0, patch_nxt = 0;
+    char buf[APP_INFO_BLOCK_SIZE];
+
+    /* ECU 一致 */
+    if (memcmp((const void *)0x00648120,
+               (const void *)0x00400120,
+               APP_INFO_BLOCK_SIZE) != 0) {
+        *status = 1;
+        return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+    }
+
+    /* 板型号一致 */
+    if (memcmp((const void *)0x00648110,
+               (const void *)0x00400110,
+               APP_INFO_BLOCK_SIZE) != 0) {
+        *status = 1;
+        return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+    }
+
+    if(BSW_stForceUpdate != 0)
+    {
+    	//强制升级，不要求软件版本号一定正向
+    	BSW_stForceUpdate = 0;
+        *status = 0;
+        return 0;
+    }
+
+    /* 解析当前版本 */
+    memcpy(buf, (const void *)0x00448100, APP_INFO_BLOCK_SIZE);
+    if (parse_version(buf, sizeof(buf),
+                      &major_now, &minor_now, &patch_now) != 0) {
+        *status = 1;
+        return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+    }
+
+    /* 解析新版本 */
+    memcpy(buf, (const void *)0x00648100, APP_INFO_BLOCK_SIZE);
+    if (parse_version(buf, sizeof(buf),
+                      &major_nxt, &minor_nxt, &patch_nxt) != 0) {
+        *status = 1;
+        return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+    }
+
+    /* 只允许严格升级，禁止降级和同级互刷 */
+    if (version_cmp(major_nxt, minor_nxt, patch_nxt,
+                    major_now, minor_now, patch_now) <= 0) {
+        *status = 1;
+        return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+    }
+
+    *status = 0;
+    return 0;
+}
+
+unsigned char BSW_stUpdateVerValid = 0;
 unsigned char BootProg_DependencyCheck(unsigned int *status)
 {
     *status = 0U;
+
+    if(check_version(status) != 0)
+    {
+    	return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+    }
+
+    BSW_stUpdateVerValid = 1;
+
 
     if (0U == Boot_FlashDriverValid())
     {

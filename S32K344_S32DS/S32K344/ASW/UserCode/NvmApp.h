@@ -15,33 +15,35 @@
  *      (call it from a cyclic task; a UDS write may also call it directly to
  *      make the value permanent before answering)
  *
- *  0xF190 (VIN) record in block 0:
- *
- *      offset  0..16  VIN (17 bytes)
- *      offset  17     magic 0x5A
- *      offset  18     magic 0xA5
- *      offset  19     checksum (bitwise complement of the byte sum of the
- *                     VIN + both magic bytes)
- *      offset  20..   unused (kept at 0x00 by the first write)
- *
- *  Nvm_F190_IsValid()/Nvm_F190_Read() reject a record whose magic or
- *  checksum is wrong, so random/leftover flash content is never returned as
- *  a VIN and never blocks the first write. Nvm_F190_Write() clears the whole
- *  block before storing the record (deterministic initialisation) and refuses
- *  to overwrite a valid VIN.
+ *  DIDs do not carry their own magic/checksum any more: the validity of every
+ *  block is covered by the block initialisation flag (0x55AA55AA) and the
+ *  block checksum, see Nvm.h.  0xF190 is simply the first 17 payload bytes of
+ *  block 0; the rest of the block is 0xFF (erased) so that a later write only
+ *  has to programme the used bytes.
  */
 
 #ifndef USERCODE_NVMAPP_H_
 #define USERCODE_NVMAPP_H_
 
 #include "Std_Types.h"
+#include "Nvm.h"
 
-#define MAX_NVM_LEN 256
+/*
+ * Maximum payload of one NVM block.  The block header (4-byte initialisation
+ * flag + 1-byte checksum) is not part of it:
+ *     256 - 4 - 1 = 251 bytes
+ * The BlockXData enums below start at 0 for the payload; the Nvm module adds
+ * NVM_BLOCK_DATA_OFFSET (=4) when it accesses the DFlash block.
+ */
+#define MAX_NVM_LEN NVM_BLOCK_DATA_SIZE
+
+/** Value of a payload byte that was never written (erased DFlash). */
+#define NVM_UNUSED_BYTE          (0xFFU)
 
 typedef enum{
 	kBlock0_DataStart = 0,
 	kBlock0_F190Data = kBlock0_DataStart,     /* F190 data, 17 bytes: 0..16 */
-	kBlock0_Resv = kBlock0_F190Data + 20,     /* first free offset (VIN+magic+chk) */
+	kBlock0_Resv = kBlock0_F190Data + 17,     /* first free offset */
 	kBlock0_End = MAX_NVM_LEN - 1
 }Block0Data;
 
@@ -63,10 +65,9 @@ typedef enum{
 	kBlock3_End = MAX_NVM_LEN - 1
 }Block3Data;
 
-/* 0xF190 record layout */
+/* 0xF190 DID: payload offsets inside block 0 */
 #define NVM_F190_VIN_LEN         (17U)
 #define NVM_F190_OFFSET          (0U)
-#define NVM_F190_RECORD_LEN      (NVM_F190_VIN_LEN + 3U)   /* VIN + 2 magic + checksum */
 
 uint8 Nvm_Block0_Read_U8(Block0Data Aim);
 uint8 Nvm_Block1_Read_U8(Block1Data Aim);
@@ -86,31 +87,28 @@ Std_ReturnType Nvm_Block3_Write_U8(Block3Data Aim, uint8 Data);
  */
 Std_ReturnType Nvm_UserBlock_Polling_10ms(void);
 
-/**
- * @brief Check whether block 0 contains a valid VIN record (magic + checksum).
- * @return TRUE if a valid VIN is stored, FALSE for empty/invalid data.
- */
-boolean Nvm_F190_IsValid(void);
 
 /**
- * @brief Read the VIN.
+ * @brief Read the VIN (first 17 payload bytes of block 0).
+ *
+ * No block validity check is done here: a block that was never programmed
+ * simply reads as 0xFF in every byte.
  *
  * @param Vin Destination, at least NVM_F190_VIN_LEN (17) bytes.
- * @return E_OK  - a valid record was copied,
- *         E_NOT_OK - no valid record; Vin is filled with 0x00.
+ * @return E_OK when the bytes were copied, E_NOT_OK on a NULL pointer.
  */
 Std_ReturnType Nvm_F190_Read(uint8 *Vin);
 
 /**
- * @brief Store the VIN once (write-once).
+ * @brief Store the VIN once (write-once, byte wise).
  *
- * The whole block is cleared first, so unused bytes and old garbage are
- * replaced by 0x00 and the record is written deterministically. A second
- * write is refused while a valid record exists.
+ * The write is refused when any of the 17 F190 bytes is not 0xFF, i.e. when a
+ * VIN was already programmed.  Only these 17 bytes are modified, the rest of
+ * the block keeps its content (other DIDs may share block 0).
  *
  * @param Vin Source, NVM_F190_VIN_LEN (17) bytes.
- * @return E_OK if the block was written, E_NOT_OK on invalid parameter,
- *         an already valid record or a memory stack failure.
+ * @return E_OK if the bytes were written, E_NOT_OK on a NULL pointer or when
+ *         F190 is already programmed.
  */
 Std_ReturnType Nvm_F190_Write(const uint8 *Vin);
 

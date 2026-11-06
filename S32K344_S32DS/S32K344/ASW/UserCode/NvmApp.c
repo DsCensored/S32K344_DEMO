@@ -8,10 +8,8 @@
  *  the RAM shadow of the Nvm module (loaded once by Nvm_Init), so reading is
  *  a plain memory access and writing only marks the block for a later commit.
  *
- *  The 0xF190 record is protected by two magic bytes and a checksum, see
- *  NvmApp.h. This makes random / half erased flash content harmless: it is
- *  detected as invalid, read as "not programmed" and can be initialised by
- *  the first write.
+ *  DIDs do not add their own magic/checksum: block validity is covered by the
+ *  block initialisation flag and the block checksum (see Nvm.h).
  */
 
 #include <string.h>
@@ -22,20 +20,16 @@
 /* Block waiting for a DFlash commit; NVM_BLOCK_INVALID = no pending write. */
 static Nvm_BlockIdType Nvm_AppWriteReq = NVM_BLOCK_INVALID;
 
-/* Scratch buffer for the 0xF190 record (whole 256-byte block). */
-static uint8 Nvm_F190Block[MAX_NVM_LEN];
-
-/* 0xF190 record protection */
-#define NVM_F190_MAGIC0          (0x5AU)
-#define NVM_F190_MAGIC1          (0xA5U)
-#define NVM_F190_MAGIC_OFFSET    (NVM_F190_OFFSET + NVM_F190_VIN_LEN)
-#define NVM_F190_CHECK_OFFSET    (NVM_F190_MAGIC_OFFSET + 2U)
-
 static uint8 Nvm_AppRead(Nvm_BlockIdType Block, uint16 Offset)
 {
-	uint8 value = 0U;
+	uint8 value = NVM_UNUSED_BYTE;
 
-	(void)Nvm_ReadByte(Block, Offset, &value);
+	/* Nothing stored / not readable: behave like erased DFlash. */
+	if (E_OK != Nvm_ReadByte(Block, Offset, &value))
+	{
+		value = NVM_UNUSED_BYTE;
+	}
+
 	return value;
 }
 
@@ -59,45 +53,6 @@ static Std_ReturnType Nvm_AppWrite(Nvm_BlockIdType Block, uint16 Offset, uint8 D
 	return ret;
 }
 
-/**
- * @brief Checksum of the VIN record: complement of the byte sum.
- */
-static uint8 Nvm_F190Checksum(const uint8 *Vin)
-{
-	uint16 sum = (uint16)NVM_F190_MAGIC0 + (uint16)NVM_F190_MAGIC1;
-	uint16 i;
-
-	for (i = 0U; i < NVM_F190_VIN_LEN; i++)
-	{
-		sum = (uint16)(sum + (uint16)Vin[i]);
-	}
-
-	return (uint8)((uint8)(sum & 0xFFU) ^ 0xFFU);
-}
-
-boolean Nvm_F190_IsValid(void)
-{
-	const uint8 *block = Nvm_GetBlockData(NVM_BLOCK_0);
-
-	if (NULL_PTR == block)
-	{
-		return FALSE;
-	}
-
-	if ((NVM_F190_MAGIC0 != block[NVM_F190_MAGIC_OFFSET]) ||
-	    (NVM_F190_MAGIC1 != block[NVM_F190_MAGIC_OFFSET + 1U]))
-	{
-		return FALSE;
-	}
-
-	if (Nvm_F190Checksum(&block[NVM_F190_OFFSET]) != block[NVM_F190_CHECK_OFFSET])
-	{
-		return FALSE;
-	}
-
-	return TRUE;
-}
-
 Std_ReturnType Nvm_F190_Read(uint8 *Vin)
 {
 	if (NULL_PTR == Vin)
@@ -105,45 +60,42 @@ Std_ReturnType Nvm_F190_Read(uint8 *Vin)
 		return E_NOT_OK;
 	}
 
-	if (FALSE == Nvm_F190_IsValid())
+	/* No block check here: an unwritten F190 simply reads as 0xFF. */
+	for(uint8 i = 0; i < NVM_F190_VIN_LEN; i++)
 	{
-		(void)memset(Vin, 0, NVM_F190_VIN_LEN);
-		return E_NOT_OK;
+		Vin[i] = Nvm_Block0_Read_U8(kBlock0_F190Data + i);
 	}
 
-	(void)memcpy(Vin, Nvm_GetBlockData(NVM_BLOCK_0) + NVM_F190_OFFSET, NVM_F190_VIN_LEN);
 	return E_OK;
 }
 
 Std_ReturnType Nvm_F190_Write(const uint8 *Vin)
 {
+	uint8 i;
+
 	if (NULL_PTR == Vin)
 	{
 		return E_NOT_OK;
 	}
 
-	/* Write once: a valid VIN must not be overwritten. */
-	if (TRUE == Nvm_F190_IsValid())
+	/* Write once: refuse when any F190 byte was already programmed
+	 * (something else than 0xFF is stored). */
+	for (i = 0U; i < NVM_F190_VIN_LEN; i++)
 	{
-		return E_NOT_OK;
+		if (NVM_UNUSED_BYTE != Nvm_Block0_Read_U8(kBlock0_F190Data + i))
+		{
+			return E_NOT_OK;
+		}
 	}
 
-	/* Deterministic initialisation: clear the complete block, then store the
-	 * record. Random leftovers outside the record are removed by this. */
-	(void)memset(Nvm_F190Block, 0, MAX_NVM_LEN);
-	(void)memcpy(&Nvm_F190Block[NVM_F190_OFFSET], Vin, NVM_F190_VIN_LEN);
-	Nvm_F190Block[NVM_F190_MAGIC_OFFSET] = NVM_F190_MAGIC0;
-	Nvm_F190Block[NVM_F190_MAGIC_OFFSET + 1U] = NVM_F190_MAGIC1;
-	Nvm_F190Block[NVM_F190_CHECK_OFFSET] = Nvm_F190Checksum(Vin);
-
-	/* Copy into the Nvm shadow and commit the block immediately. */
-	if (E_OK != Nvm_StoreBlock(NVM_BLOCK_0, Nvm_F190Block))
+	/* Only the 17 F190 bytes are touched, the rest of the block keeps its
+	 * content (other DIDs may live in the same block). */
+	for (i = 0U; i < NVM_F190_VIN_LEN; i++)
 	{
-		/* Commit failed: remove the validity marker from the RAM shadow so
-		 * the VIN is reported as "not programmed" and a retry is possible. */
-		(void)Nvm_WriteByte(NVM_BLOCK_0, (uint16)NVM_F190_MAGIC_OFFSET, 0x00U);
-		(void)Nvm_WriteByte(NVM_BLOCK_0, (uint16)(NVM_F190_MAGIC_OFFSET + 1U), 0x00U);
-		return E_NOT_OK;
+		if (E_OK != Nvm_Block0_Write_U8(kBlock0_F190Data + i, Vin[i]))
+		{
+			return E_NOT_OK;
+		}
 	}
 
 	return E_OK;

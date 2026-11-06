@@ -7,6 +7,7 @@
 #include "NMmain.h"
 #include "ASW_CanCallback.h"
 #include "BSW_CanCallback.h"
+#include "Nvm.h"
 #include "RTE.h"
 #include "Mcu.h"
 #include "Icu.h"
@@ -179,6 +180,11 @@ void WKPU_IRQHandler(void)
 void NM_EnterSleepMode(void)
 {
 	uint8 i;
+
+	/* Before the power is removed (Standby): read every NVM block back from
+	 * the DFlash, compare it with the RAM shadow and write it again until
+	 * both are identical. */
+	(void)Nvm_Flush();
 
 	NM_SetAppMsgEnable(0U);
 	NM_SetNmMsgEnable(0U);

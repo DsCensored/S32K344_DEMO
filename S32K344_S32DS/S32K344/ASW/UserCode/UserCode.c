@@ -93,10 +93,10 @@ static void ASW_userTask1000ms(void)
 	unsigned char data[] = "Hallo world";
 	BSW_UART6_Send(data,sizeof(data));
 
-	ASW_stLEDR1Ctrl = !ASW_stLEDR1Ctrl;
-	ASW_stLEDG1Ctrl = !ASW_stLEDG1Ctrl;
-	ASW_stLEDB1Ctrl = !ASW_stLEDB1Ctrl;
-	ASW_stLEDY1Ctrl = !ASW_stLEDY1Ctrl;
+//	ASW_stLEDR1Ctrl = !ASW_stLEDR1Ctrl;
+//	ASW_stLEDG1Ctrl = !ASW_stLEDG1Ctrl;
+//	ASW_stLEDB1Ctrl = !ASW_stLEDB1Ctrl;
+//	ASW_stLEDY1Ctrl = !ASW_stLEDY1Ctrl;
 
 }
 
