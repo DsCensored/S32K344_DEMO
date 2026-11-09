@@ -697,6 +697,16 @@ static unsigned char UDS_DcmTransferExit(const unsigned char *req,
 /* Routine control 0x31                                                      */
 /* ------------------------------------------------------------------------- */
 
+/*
+ * 例程控制约定（0x0202 / 0x0203 / 0xFF00 / 0xFF01 / 0xFF02）：
+ *
+ *   71 <subFn> <RID> <status>
+ *
+ * status = 0 表示成功，非 0 表示失败原因（BOOT_ST_xxx，见 Boot_Program.h）。
+ * 例程执行失败不再回 NRC 0x22；只有报文长度、子功能、例程号、安全等级等
+ * 协议层错误仍回对应 NRC。0xFF00/0xFF02 每轮询一次返回 0x78，最终仍回正响应。
+ */
+
 /* 0xFF00: erase [address, address + length), one 8 KB sector per DCM poll.
  * Returning 0x78 makes the DCM call this routine again on its next poll. */
 static unsigned char UDS_DcmRoutineErase(const unsigned char *req, unsigned int len,
@@ -705,7 +715,6 @@ static unsigned char UDS_DcmRoutineErase(const unsigned char *req, unsigned int 
 	unsigned int addr;
 	unsigned int size;
 	unsigned char more = 0U;
-	unsigned char nrc;
 
 	if ((len >= 13U) && (0x44U == req[4]))
 	{
@@ -723,11 +732,8 @@ static unsigned char UDS_DcmRoutineErase(const unsigned char *req, unsigned int 
 		return NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
 	}
 
-	nrc = BootProg_EraseStep(addr, size, status, &more);
-	if (0U != nrc)
-	{
-		return nrc;
-	}
+	/* 擦除结果通过 status 返回，例程本身始终回正响应。 */
+	(void)BootProg_EraseStep(addr, size, status, &more);
 
 	if (0U != more)
 	{
@@ -757,32 +763,33 @@ static unsigned char UDS_DcmRoutineCopy(const unsigned char *req, unsigned int l
                                         unsigned int *status)
 {
 	unsigned char more = 0U;
-	unsigned char nrc;
 
 	(void)req;
 	(void)len;
 
-	if(BSW_stUpdateVerValid == 0)
+	if (0U == BSW_stUpdateVerValid)
 	{
-		return NRC_CONDITIONS_NOT_CORRECT;
+		*status = BOOT_ST_COPY_NOT_CHECKED;
+		return 0U;
 	}
 
-	nrc = BootProg_CopyStep(status, &more);
-	if (0U != nrc)
-	{
-		return nrc;
-	}
+	(void)BootProg_CopyStep(status, &more);
 
 	if (0U != more)
 	{
 		return (unsigned char)NRC_REQUEST_CORRECTLY_RECEIVED_RESPONSE_PENDING;
 	}
 
-	/* Programming complete: do not leave the ITCM driver executable. */
-	BootProg_DestroyFlash();
+	if (0U == *status)
+	{
+		/* Programming complete: do not leave the ITCM driver executable. */
+		BootProg_DestroyFlash();
+	}
+
 	return 0U;
 }
 
+/* 0x0202: always answers positively; the result is the status byte. */
 static unsigned char UDS_DcmRoutineIntegrity(const unsigned char *req, unsigned int len,
                                               unsigned int *status)
 {

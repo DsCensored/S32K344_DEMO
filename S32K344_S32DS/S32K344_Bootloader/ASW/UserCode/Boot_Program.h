@@ -15,6 +15,43 @@
 #define BOOT_PROG_MAX_BLOCK     500U      /* data bytes per 0x36 request */
 #define BOOT_PROG_COPY_CHUNK    0x2000U   /* 8 KB per DCM poll */
 
+/* ---------------- 0x31 例程结果码 ----------------
+ * 例程控制统一回正响应 71 <subFn> <RID> <status>：
+ *   status = 0 表示成功，非 0 表示失败原因（不再回 NRC 0x22）。
+ * 报文格式/子功能/例程号/安全等级错误仍由 DCM 层回相应 NRC。
+ */
+
+/* 0x0202：文件校验（与最后一次 0x37 下载的镜像比较） */
+#define BOOT_ST_CHK_OK              0x00U
+#define BOOT_ST_CHK_CRC_MISMATCH    0x01U   /* CRC 与下载内容不一致 */
+#define BOOT_ST_CHK_NO_DOWNLOAD     0x02U   /* 没有有效的下载结果 */
+
+/* 0xFF00：擦除 */
+#define BOOT_ST_ERASE_OK            0x00U
+#define BOOT_ST_ERASE_RANGE         0x01U   /* 地址/长度非法 */
+#define BOOT_ST_ERASE_DRIVER        0x02U   /* FlashDriver 无效/初始化失败 */
+#define BOOT_ST_ERASE_FAIL          0x03U   /* 擦除失败 */
+
+/* 0xFF01：依赖校验 */
+#define BOOT_ST_DEP_OK              0x00U
+#define BOOT_ST_DEP_ECU             0x01U   /* ECU 型号不一致 */
+#define BOOT_ST_DEP_HW              0x02U   /* 硬件版本不一致 */
+#define BOOT_ST_DEP_VER_NOW         0x04U   /* 当前 APP 版本解析失败 */
+#define BOOT_ST_DEP_VER_NEW         0x05U   /* 新 APP 版本解析失败 */
+#define BOOT_ST_DEP_VER_DOWN        0x06U   /* 非正向升级（降级/同级） */
+#define BOOT_ST_DEP_DRIVER          0x10U   /* FlashDriver 无效 */
+#define BOOT_ST_DEP_APP_HEADER      0x11U   /* 备份区 APP 头无效 */
+#define BOOT_ST_DEP_APP_INCOMPLETE  0x12U   /* 没有完整的 APP 下载 */
+#define BOOT_ST_DEP_APP_CRC         0x13U   /* APP CRC 不一致 */
+
+/* 0xFF02：备份区 -> 运行区拷贝 */
+#define BOOT_ST_COPY_OK             0x00U
+#define BOOT_ST_COPY_NOT_CHECKED    0x01U   /* 未通过 0xFF01 依赖校验 */
+#define BOOT_ST_COPY_PRECOND        0x02U   /* 前置条件不满足 */
+#define BOOT_ST_COPY_ERASE          0x03U   /* 运行区擦除失败 */
+#define BOOT_ST_COPY_WRITE          0x04U   /* 写入失败 */
+#define BOOT_ST_COPY_CRC            0x05U   /* 拷贝后 CRC 不一致 */
+
 unsigned char BootProg_RequestDownload(unsigned int addr, unsigned int size,
                                        unsigned int *maxBlock);
 unsigned char BootProg_TransferData(unsigned char seq, const unsigned char *data,
@@ -22,16 +59,22 @@ unsigned char BootProg_TransferData(unsigned char seq, const unsigned char *data
 unsigned char BootProg_TransferExit(unsigned int *crc);
 
 /* Erase one 8 KB sector per call; *more is set when the DCM must call again
- * (the handler then returns NRC 0x78). */
+ * (the handler then returns NRC 0x78).  The result is reported in *status
+ * (BOOT_ST_ERASE_xxx); the function itself always returns 0. */
 unsigned char BootProg_EraseStep(unsigned int addr, unsigned int len,
                                  unsigned int *status, unsigned char *more);
-/* 0xFF01 dependency check.  The forward-only APP version policy is skipped
- * when the last download was the flash driver (fs). */
+/* 0xFF01 dependency check.  The result is reported in *status
+ * (BOOT_ST_DEP_xxx); the function always returns 0.  The forward-only APP
+ * version policy is skipped when the last download was the flash driver (fs). */
 unsigned char BootProg_DependencyCheck(unsigned int *status);
+/* Copy 8 KB per call; *more is set when the DCM must call again.  The result
+ * is reported in *status (BOOT_ST_COPY_xxx); the function always returns 0. */
 unsigned char BootProg_CopyStep(unsigned int *status, unsigned char *more);
 
 /* QCC 04.171 31 01 02 02: compare the tester checksum with the CRC of the
- * last downloaded block.  *status = 0 (correct) / 1 (incorrect). */
+ * last image, which is computed while receiving it (the same value that
+ * 0x37 returned).  The result is reported in *status (BOOT_ST_CHK_xxx);
+ * the function always returns 0 (0 = checksum valid). */
 unsigned char BootProg_CheckIntegrity(unsigned int expected, unsigned int *status);
 
 /* QCC 04.171 2E F1 84: fingerprint interface.  Fee is not integrated yet,

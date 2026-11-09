@@ -33,6 +33,8 @@ typedef struct
     unsigned char AppCrcValid;
     unsigned int AppCrc;
     unsigned int AppSize;
+    unsigned char LastCrcValid;           /* result of the last 0x37 (APP or fs) */
+    unsigned int LastCrc;
 } Boot_ProgType;
 
 static Boot_ProgType g_prog;
@@ -44,6 +46,10 @@ static unsigned char g_fingerprint[9];
  * ITCM.  The APP version policy only makes sense for the APP image, so the
  * dependency check must not run check_version() while fs was the last image. */
 static unsigned char g_progImageIsDriver;
+
+/* Set by 0xFF01 only when every APP dependency check passed; it authorises
+ * the 0xFF02 copy.  Defined below. */
+extern unsigned char BSW_stUpdateVerValid;
 
 static unsigned char BootProg_InitFlash(void)
 {
@@ -124,8 +130,10 @@ unsigned char BootProg_RequestDownload(unsigned int addr, unsigned int size,
     memset(&g_prog, 0, sizeof(g_prog));
     g_prog.Crc = 0xFFFFFFFFUL;
 
-    /* A new download invalidates any erase/copy state of a previous one. */
+    /* A new download invalidates any erase/copy state of a previous one, and
+     * the dependency check of the previous image no longer applies. */
     g_copyState = 0U;
+    BSW_stUpdateVerValid = 0U;
 
     if (0U == addr)
     {
@@ -322,6 +330,14 @@ unsigned char BootProg_TransferExit(unsigned int *crc)
         g_copyState = 0U;
     }
 
+    if (0U == nrc)
+    {
+        /* 0x0202 compares the tester checksum with this value: keep the CRC of
+         * the last image even when it was the flash driver (fs). */
+        g_prog.LastCrc = g_prog.Crc ^ 0xFFFFFFFFUL;
+        g_prog.LastCrcValid = 1U;
+    }
+
     *crc = g_prog.Crc ^ 0xFFFFFFFFUL;
     g_prog.Mode = BOOT_PROG_MODE_NONE;
     g_prog.BufLen = 0U;
@@ -335,12 +351,13 @@ unsigned char BootProg_EraseStep(unsigned int addr, unsigned int len,
     unsigned int start;
     unsigned int end;
 
-    *status = 0U;
+    *status = BOOT_ST_ERASE_OK;
     *more = 0U;
 
     if ((0U == len) || (addr > 0x007FFFFFUL) || (len > 0x00800000UL))
     {
-        return (unsigned char)NRC_REQUEST_OUT_OF_RANGE;
+        *status = BOOT_ST_ERASE_RANGE;
+        return 0U;
     }
 
     /* A different request (or a stale state after a session change) restarts
@@ -357,13 +374,15 @@ unsigned char BootProg_EraseStep(unsigned int addr, unsigned int len,
             (0U == BootProg_IsRangeAllowed(start, end - start)))
         {
             g_eraseActive = 0U;
-            return (unsigned char)NRC_REQUEST_OUT_OF_RANGE;
+            *status = BOOT_ST_ERASE_RANGE;
+            return 0U;
         }
 
         if (0U != BootProg_InitFlash())
         {
-            *status = 1U;
-            return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+            g_eraseActive = 0U;
+            *status = BOOT_ST_ERASE_DRIVER;
+            return 0U;
         }
 
         g_eraseAddr  = addr;
@@ -380,8 +399,8 @@ unsigned char BootProg_EraseStep(unsigned int addr, unsigned int len,
         if (0U != Boot_FlashErase(g_eraseNext, BOOT_APP_ERASE_UNIT))
         {
             g_eraseActive = 0U;
-            *status = 1U;
-            return (unsigned char)NRC_GENERAL_PROGRAMMING_FAILURE;
+            *status = BOOT_ST_ERASE_FAIL;
+            return 0U;
         }
 
         g_eraseNext += BOOT_APP_ERASE_UNIT;
@@ -440,23 +459,23 @@ static unsigned char check_version(unsigned int *status)
     if (memcmp((const void *)0x00648120,
                (const void *)0x00400120,
                APP_INFO_BLOCK_SIZE) != 0) {
-        *status = 1;
-        return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+        *status = BOOT_ST_DEP_ECU;
+        return 1U;
     }
 
     /* 板型号一致 */
     if (memcmp((const void *)0x00648110,
                (const void *)0x00400110,
                APP_INFO_BLOCK_SIZE) != 0) {
-        *status = 1;
-        return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+        *status = BOOT_ST_DEP_HW;
+        return 1U;
     }
 
     if(BSW_stForceUpdate != 0)
     {
     	//强制升级，不要求软件版本号一定正向
     	BSW_stForceUpdate = 0;
-        *status = 0;
+        *status = BOOT_ST_DEP_OK;
         return 0;
     }
 
@@ -464,77 +483,75 @@ static unsigned char check_version(unsigned int *status)
     memcpy(buf, (const void *)0x00448100, APP_INFO_BLOCK_SIZE);
     if (parse_version(buf, sizeof(buf),
                       &major_now, &minor_now, &patch_now) != 0) {
-        *status = 1;
-        return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+        *status = BOOT_ST_DEP_VER_NOW;
+        return 1U;
     }
 
     /* 解析新版本 */
     memcpy(buf, (const void *)0x00648100, APP_INFO_BLOCK_SIZE);
     if (parse_version(buf, sizeof(buf),
                       &major_nxt, &minor_nxt, &patch_nxt) != 0) {
-        *status = 1;
-        return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+        *status = BOOT_ST_DEP_VER_NEW;
+        return 1U;
     }
 
     /* 只允许严格升级，禁止降级和同级互刷 */
     if (version_cmp(major_nxt, minor_nxt, patch_nxt,
                     major_now, minor_now, patch_now) <= 0) {
-        *status = 1;
-        return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+        *status = BOOT_ST_DEP_VER_DOWN;
+        return 1U;
     }
 
-    *status = 0;
+    *status = BOOT_ST_DEP_OK;
     return 0;
 }
 
 unsigned char BSW_stUpdateVerValid = 0;
 unsigned char BootProg_DependencyCheck(unsigned int *status)
 {
-    *status = 0U;
+    *status = BOOT_ST_DEP_OK;
 
-    /* 刷写 fs（FlashDriver，0x34 地址 0 -> ITCM）时不做版本号校验：
-     * fs 镜像里没有 APP 版本信息，正向升级策略只对 APP 生效。 */
-    if (0U == g_progImageIsDriver)
-    {
-        if(check_version(status) != 0)
-        {
-        	BSW_stUpdateVerValid = 0;
-            return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
-        }
-
-        BSW_stUpdateVerValid = 1;
-    }
-    else
-    {
-    	BSW_stUpdateVerValid = 0;
-    }
-
+    /* 只有本次校验全部通过才允许 0xFF02 拷贝。 */
+    BSW_stUpdateVerValid = 0U;
 
     if (0U == Boot_FlashDriverValid())
     {
-        *status = 1U;
-        return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+        *status = BOOT_ST_DEP_DRIVER;
+        return 0U;
+    }
+
+    /* 刷写 fs（FlashDriver，0x34 地址 0 -> ITCM）时不做 APP 校验：
+     * fs 镜像里没有 APP 版本信息，正向升级策略只对 APP 生效。 */
+    if (0U != g_progImageIsDriver)
+    {
+        return 0U;
+    }
+
+    if (check_version(status) != 0U)
+    {
+        return 0U;
     }
 
     /* The downloaded image lives in the backup area: check its header. */
     if (BOOT_APP_HEADER_MAGIC != *(volatile unsigned int *)BOOT_APP_BACKUP_BASE)
     {
-        *status = 3U;
-        return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+        *status = BOOT_ST_DEP_APP_HEADER;
+        return 0U;
     }
 
     if (0U == g_prog.AppCrcValid)
     {
-        *status = 2U;
-        return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+        *status = BOOT_ST_DEP_APP_INCOMPLETE;
+        return 0U;
     }
 
     if (Boot_Crc32((const unsigned char *)BOOT_APP_BACKUP_BASE, g_prog.AppSize) != g_prog.AppCrc)
     {
-        *status = 2U;
-        return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+        *status = BOOT_ST_DEP_APP_CRC;
+        return 0U;
     }
 
+    BSW_stUpdateVerValid = 1U;
     return 0U;
 }
 
@@ -543,13 +560,15 @@ unsigned char BootProg_CopyStep(unsigned int *status, unsigned char *more)
     unsigned int chunk;
     unsigned int remaining;
 
-    *status = 0U;
+    *status = BOOT_ST_COPY_OK;
     *more = 0U;
 
     if ((0U == g_prog.AppCrcValid) || (0U == Boot_FlashDriverValid()) ||
         (0U != BootProg_InitFlash()))
     {
-        return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+        g_copyState = 0U;
+        *status = BOOT_ST_COPY_PRECOND;
+        return 0U;
     }
 
     if (0U == g_copyState)
@@ -561,8 +580,8 @@ unsigned char BootProg_CopyStep(unsigned int *status, unsigned char *more)
                                   (g_prog.AppSize + BOOT_APP_ERASE_UNIT - 1U) &
                                   ~(BOOT_APP_ERASE_UNIT - 1U)))
         {
-            *status = 1U;
-            return (unsigned char)NRC_GENERAL_PROGRAMMING_FAILURE;
+            *status = BOOT_ST_COPY_ERASE;
+            return 0U;
         }
 
         g_copyState = 1U;
@@ -581,9 +600,9 @@ unsigned char BootProg_CopyStep(unsigned int *status, unsigned char *more)
                               (chunk + BOOT_FLASH_WRITE_UNIT - 1U) &
                               ~(BOOT_FLASH_WRITE_UNIT - 1U)))
     {
-        *status = 1U;
+        *status = BOOT_ST_COPY_WRITE;
         g_copyState = 0U;
-        return (unsigned char)NRC_GENERAL_PROGRAMMING_FAILURE;
+        return 0U;
     }
 
     g_copyCrc = Boot_Crc32Update(g_copyCrc, g_copyBuf, chunk);
@@ -598,8 +617,8 @@ unsigned char BootProg_CopyStep(unsigned int *status, unsigned char *more)
     g_copyState = 0U;
     if ((g_copyCrc ^ 0xFFFFFFFFUL) != g_prog.AppCrc)
     {
-        *status = 2U;
-        return (unsigned char)NRC_GENERAL_PROGRAMMING_FAILURE;
+        *status = BOOT_ST_COPY_CRC;
+        return 0U;
     }
 
     return 0U;
@@ -607,17 +626,19 @@ unsigned char BootProg_CopyStep(unsigned int *status, unsigned char *more)
 
 unsigned char BootProg_CheckIntegrity(unsigned int expected, unsigned int *status)
 {
-    *status = 0U;
+    *status = BOOT_ST_CHK_OK;
 
-    if (0U == g_prog.AppCrcValid)
+    if (0U == g_prog.LastCrcValid)
     {
-        *status = 1U;
+        *status = BOOT_ST_CHK_NO_DOWNLOAD;
         return 0U;
     }
 
-    if (expected != g_prog.AppCrc)
+    /* 直接复用 0x37 时算出的 CRC（fs 和 APP 都在下载过程中计算），
+     * 与上位机从 0x37 响应里拿到的值是同一个。 */
+    if (expected != g_prog.LastCrc)
     {
-        *status = 1U;
+        *status = BOOT_ST_CHK_CRC_MISMATCH;
     }
 
     return 0U;
