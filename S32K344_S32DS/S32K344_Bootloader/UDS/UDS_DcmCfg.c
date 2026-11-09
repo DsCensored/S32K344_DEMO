@@ -446,7 +446,7 @@ const UDS_DcmDidType UDS_DcmDids[] =
 {
 	{0xF190U, UDS_DcmF190Read, UDS_DcmF190Write},
 	{0xF184U, UDS_DcmF184Read, UDS_DcmF184Write},
-	{0xF7F7U, UDS_DcmF184Read, UDS_DcmF7F7Write},
+	{0xF7F7U, 0, UDS_DcmF7F7Write},
 	/* Version / identification DIDs (fixed flash addresses). */
 	{0xF180U, UDS_DcmFixedDidRead, 0},
 	{0xF187U, UDS_DcmFixedDidRead, 0},
@@ -737,7 +737,9 @@ static unsigned char UDS_DcmRoutineErase(const unsigned char *req, unsigned int 
 	return 0U;
 }
 
-/* 0xFF01: programming dependency check (APP + flash driver). */
+/* 0xFF01: programming dependency check (APP + flash driver).
+ * The APP version policy is not evaluated when the last download was the
+ * flash driver (fs): fs carries no APP version information. */
 static unsigned char UDS_DcmRoutineDependency(const unsigned char *req,
                                               unsigned int len,
                                               unsigned int *status)
@@ -764,8 +766,6 @@ static unsigned char UDS_DcmRoutineCopy(const unsigned char *req, unsigned int l
 	{
 		return NRC_CONDITIONS_NOT_CORRECT;
 	}
-
-	BSW_stUpdateVerValid = 0;
 
 	nrc = BootProg_CopyStep(status, &more);
 	if (0U != nrc)
@@ -904,6 +904,56 @@ static unsigned char UDS_DcmRoutineControl(const unsigned char *req, unsigned in
 	return 0U;
 }
 
+static unsigned char UDS_DcmControlDtcSetting(const unsigned char *req,
+                                              unsigned int len,
+                                              unsigned int *rspLen)
+{
+	unsigned char subFn;
+
+	if (len < 2U)
+	{
+		return (unsigned char)NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
+	}
+
+	subFn = (unsigned char)(req[1] & 0x7FU);
+	if ((0x01U != subFn) && (0x02U != subFn))
+	{
+		return (unsigned char)NRC_SUBFUNCTION_NOT_SUPPORTED;
+	}
+
+	UDS_TxBuf[1] = subFn;
+	*rspLen = 2U;
+	return 0U;
+}
+
+static unsigned char UDS_DcmCommunicationControl(const unsigned char *req,
+                                                 unsigned int len,
+                                                 unsigned int *rspLen)
+{
+	unsigned char subFn;
+
+	if (len < 3U)
+	{
+		return (unsigned char)NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
+	}
+
+	subFn = (unsigned char)(req[1] & 0x7FU);
+	if ((0x00U != subFn) && (0x03U != subFn))
+	{
+		return (unsigned char)NRC_SUBFUNCTION_NOT_SUPPORTED;
+	}
+
+	if (0x03U != req[2])
+	{
+		return (unsigned char)NRC_REQUEST_OUT_OF_RANGE;
+	}
+
+
+	UDS_TxBuf[1] = subFn;
+	*rspLen = 2U;
+	return 0U;
+}
+
 /* ------------------------------------------------------------------------- */
 /* Configuration tables                                                      */
 /* ------------------------------------------------------------------------- */
@@ -973,6 +1023,12 @@ const UDS_DcmServiceType UDS_DcmServices[] =
 	                UDS_DCM_SESSION_MASK_PROGRAMMING),                 UDS_DCM_SECURITY_NONE, UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmRoutineControl},
 
 	{0x3EU, 0x00U, UDS_DCM_SESSION_MASK_ALL,                           UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmKeepSession},
+
+	{0x85U, 0x01U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmControlDtcSetting},
+	{0x85U, 0x02U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmControlDtcSetting},
+
+	{0x28U, 0x00U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmCommunicationControl},
+	{0x28U, 0x03U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmCommunicationControl},
 };
 
 const unsigned int UDS_DcmServiceCount =

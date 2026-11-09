@@ -40,6 +40,11 @@ static Boot_ProgType g_prog;
 static unsigned char g_flashReady;
 static unsigned char g_fingerprint[9];
 
+/* Set when the last 0x34/0x36/0x37 job downloaded the flash driver (fs) into
+ * ITCM.  The APP version policy only makes sense for the APP image, so the
+ * dependency check must not run check_version() while fs was the last image. */
+static unsigned char g_progImageIsDriver;
+
 static unsigned char BootProg_InitFlash(void)
 {
     if (0U != g_flashReady)
@@ -130,6 +135,7 @@ unsigned char BootProg_RequestDownload(unsigned int addr, unsigned int size,
         }
         g_prog.Mode = BOOT_PROG_MODE_RAM;
         g_prog.Target = (unsigned int)Boot_FlashRamBase();
+        g_progImageIsDriver = 1U;
 
         /* The ITCM image is about to be replaced: run INIT again before the
          * next flash job. */
@@ -157,6 +163,7 @@ unsigned char BootProg_RequestDownload(unsigned int addr, unsigned int size,
 
         g_prog.Mode = BOOT_PROG_MODE_FLASH;
         g_prog.Target = target;
+        g_progImageIsDriver = 0U;
     }
 
     g_prog.Size = size;
@@ -485,12 +492,22 @@ unsigned char BootProg_DependencyCheck(unsigned int *status)
 {
     *status = 0U;
 
-    if(check_version(status) != 0)
+    /* 刷写 fs（FlashDriver，0x34 地址 0 -> ITCM）时不做版本号校验：
+     * fs 镜像里没有 APP 版本信息，正向升级策略只对 APP 生效。 */
+    if (0U == g_progImageIsDriver)
     {
-    	return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
-    }
+        if(check_version(status) != 0)
+        {
+        	BSW_stUpdateVerValid = 0;
+            return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+        }
 
-    BSW_stUpdateVerValid = 1;
+        BSW_stUpdateVerValid = 1;
+    }
+    else
+    {
+    	BSW_stUpdateVerValid = 0;
+    }
 
 
     if (0U == Boot_FlashDriverValid())

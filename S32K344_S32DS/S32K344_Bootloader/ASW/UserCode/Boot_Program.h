@@ -25,6 +25,8 @@ unsigned char BootProg_TransferExit(unsigned int *crc);
  * (the handler then returns NRC 0x78). */
 unsigned char BootProg_EraseStep(unsigned int addr, unsigned int len,
                                  unsigned int *status, unsigned char *more);
+/* 0xFF01 dependency check.  The forward-only APP version policy is skipped
+ * when the last download was the flash driver (fs). */
 unsigned char BootProg_DependencyCheck(unsigned int *status);
 unsigned char BootProg_CopyStep(unsigned int *status, unsigned char *more);
 
