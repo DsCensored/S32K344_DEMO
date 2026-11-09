@@ -53,3 +53,8 @@ void NM_EnterSleepMode(void)
 {
 
 }
+
+void NM_ResetWKUPMode(void)
+{
+
+}

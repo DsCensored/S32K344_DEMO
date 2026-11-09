@@ -20,3 +20,5 @@ void NM_PbsmGetWkupMode(unsigned char a);
 void NM_EnterSleepMode(void);
 
 void NM_BsmGetWkupMode(void);
+
+void NM_ResetWKUPMode(void);

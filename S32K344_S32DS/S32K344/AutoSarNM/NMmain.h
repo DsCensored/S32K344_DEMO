@@ -59,4 +59,6 @@ void NM_CanNmSendCallBack(CAN_TX_BufType *buf);
 
 void NM_NotifyUdsActivity(void);
 
+void NM_ResetWKUPMode(void);
+
 #endif /* NMMAIN_H_ */

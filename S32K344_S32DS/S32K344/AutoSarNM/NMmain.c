@@ -88,6 +88,10 @@ void NM_SetAppMsgEnable(unsigned char Enable)
 void NM_ResetCanNmSendCnt(void)
 {
 	CANNM_cntAuroSarNMFrameSendCnt = 0;
+}
+
+void NM_ResetWKUPMode(void)
+{
 	AutoSarNM_stWKUPMode = 0xFF;
 }
 
@@ -99,6 +103,8 @@ void NM_PbsmGetWkupMode(unsigned char reset)
 		CANNM_cntAuroSarNMFrameRecvCnt_Delay = CANNM_cntAuroSarNMFrameRecvCnt;
 		return;
 	}
+
+	if(AutoSarNM_stWKUPMode != 0xFF)return;
 
 	//产生主动唤醒
 	if(BSW_stKL15 != 0)

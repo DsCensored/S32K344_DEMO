@@ -3,9 +3,9 @@
  *
  * Code generated for Simulink model 'AutoSarNm'.
  *
- * Model version                  : 14.376
+ * Model version                  : 14.379
  * Simulink Coder version         : 9.8 (R2022b) 13-May-2022
- * C/C++ source code generated on : Tue Nov  3 08:36:09 2026
+ * C/C++ source code generated on : Mon Nov  9 10:17:00 2026
  *
  * Target selection: ert.tlc
  * Embedded hardware selection: ARM Compatible->ARM 7
