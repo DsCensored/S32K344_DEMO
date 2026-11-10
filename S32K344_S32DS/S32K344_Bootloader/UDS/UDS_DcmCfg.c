@@ -839,8 +839,10 @@ static unsigned char UDS_DcmRoutineLoadHseKeys(const unsigned char *req, unsigne
 	(void)req;
 	(void)len;
 
-	/* 罐装两个 AES-128 密钥到 HSE RAM 密钥槽（0x31 01 AA01） */
-	*status = (0U == HseAes_LoadKeys()) ? 0U : 1U;
+	/* 0x31 01 AA01：格式化 HSE 密钥目录，并把两个 AES-128 密钥导入
+	 * NVM 密钥槽（group 0 slot 0/1）。密钥掉电保持，后续 0x27 直接使用。
+	 * 参考 Chery C0V bootloader 的 HSE_Crypto_Init 流程。 */
+	*status = (0U == HseAes_ProgramKeys()) ? 0U : 1U;
 	return 0U;
 }
 

@@ -1,34 +1,45 @@
 /**
  * @file    hse_aes.h
- * @brief   HSE AES-128（ECB）封装：给 UDS 0x27 的 16 字节密钥用
+ * @brief   HSE AES-128-ECB wrapper used by UDS 0x27.
  *
- *   ECU 侧：key16 = AES128-ECB(HSE密钥[level], seed16)
- *   PC 侧 ：sa_demo.dll 里用同样的算法和同样的两个密钥
+ *   ECU:  key16 = AES128-ECB(HSE AES key[level], seed16)
  *
- *   两个密钥放在 HSE 的 RAM key catalog（group 0, slot 0/1），
- *   由 HseAes_LoadKeys() 导入；Bootloader 的 0x31 01 AA01 例程调用它。
+ * The two keys are stored in the HSE NVM key catalog (group 0, slots 0/1).
+ * The bootloader routine 0x31 01 AA01 calls HseAes_LoadKeys() to format the
+ * catalogs and import the keys; the application can use them directly.
  */
 #ifndef HSE_AES_H
 #define HSE_AES_H
 
 #include <stdint.h>
 
-#define HSE_AES_LEVEL1   (1U)   /* 0x27 01/02 -> 密钥 1 */
-#define HSE_AES_LEVEL2   (2U)   /* 0x27 03/04 -> 密钥 2 */
+#define HSE_AES_LEVEL1   (1U)   /* 0x27 01/02 -> key 1 */
+#define HSE_AES_LEVEL2   (2U)   /* 0x27 03/04 -> key 2 */
 
-/** 0 = 成功 */
+/** 0 = HSE ready */
 uint8_t HseAes_Init(void);
 
-/** 把两个 AES-128 密钥导入 HSE RAM 密钥槽（可重复调用，幂等） */
+/** Format the key catalogs and import both AES keys into NVM (0x31 01 AA01).
+ *  This is intentionally destructive: it is the production provisioning step. */
+uint8_t HseAes_ProgramKeys(void);
+
+/** Backwards-compatible alias of HseAes_ProgramKeys(). */
 uint8_t HseAes_LoadKeys(void);
 
-/** 用指定等级对应的密钥做 AES-128-ECB 加密一个 16 字节块 */
+/** AES-128-ECB encrypt one 16-byte block with key[level].
+ *  On the first call the keys are provisioned automatically if they are
+ *  missing (so 0x27 also works before AA01 has been run once). */
 uint8_t HseAes_EncryptBlock(uint8_t level, const uint8_t in[16], uint8_t out[16]);
 
-/** 最近一次失败原因（HSE 服务返回码，0 = OK） */
+/** Low byte of the last HSE response (0 = OK). */
 uint8_t HseAes_GetLastError(void);
 
-/** 诊断（调试器可读）：[0]=LoadKeys结果 [1]=ENC结果 [2..5]=最后一次密文前 4 字 */
+/** Full 32-bit HSE response of the last service (0x55A5AA33 = OK). */
+uint32_t HseAes_GetLastResponse(void);
+
+/** Debug view for J-Link: [0] HSE status, [1] reserved, [2] format,
+ *  [3] import L1, [4] import L2, [5] encrypt, [6] last status,
+ *  [7] last raw HSE response. */
 extern volatile uint32_t g_hseAesDiag[8];
 
 #endif /* HSE_AES_H */
