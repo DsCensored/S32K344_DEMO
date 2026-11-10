@@ -20,3 +20,7 @@
 /AutoSarNm/NMmain.c
 /AutoSarNm/NMmain.h
 /.dsh_shots
+
+# 构建/验证临时目录
+.hse_ws/
+*.bak_hsetrng

@@ -21,6 +21,7 @@
 #include "Nvm.h"
 #include "NvmApp.h"
 #include <string.h>
+#include "hse_trng.h"      /* HSE 硬件 TRNG，供 UDS 0x27 取随机种子 */
 
 UDS_DcmContextType UDS_DcmCtx;
 
@@ -200,8 +201,16 @@ static unsigned char UDS_DcmSeedRequest(const unsigned char *req, unsigned int l
 	}
 
 	UDS_DcmCtx.SeedLevel = level;
-	UDS_DcmCtx.Seed = 0x12345678U ^ ((unsigned int)level << 16);
-	UDS_DcmCtx.Seed ^= BSW_GetSystemTick();
+
+	/* 安全随机种子：优先用 HSE 硬件 TRNG（DRG4 类，带预测抵抗）。
+	 * 若 HSE 不可用（未启动 / RNG 未就绪 / 通道忙），退回原来的 tick 方案，
+	 * 保证 0x27 服务不因此失效；量产安全件建议把回退改成返回 NRC 0x22。 */
+	UDS_DcmCtx.Seed = HseTrng_GetRandomU32();
+	if (0U == UDS_DcmCtx.Seed)
+	{
+		UDS_DcmCtx.Seed = 0x12345678U ^ ((unsigned int)level << 16);
+		UDS_DcmCtx.Seed ^= BSW_GetSystemTick();
+	}
 
 	UDS_TxBuf[1] = subFn;
 	UDS_TxBuf[2] = (unsigned char)(UDS_DcmCtx.Seed >> 24);

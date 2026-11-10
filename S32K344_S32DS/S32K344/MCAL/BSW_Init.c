@@ -17,6 +17,7 @@
 #include "S32K344_SWT.h"
 #include "BSW_UART.h"
 #include "Nvm.h"
+#include "hse_trng.h"   /* HSE 硬件 TRNG 自检 / UDS 0x27 种子 */
 #include "AutoSarNm.h"
 #include "Icu.h"
 #include "Icu_PBcfg.h"
@@ -152,6 +153,12 @@ static void MCAL_Init(void)
 void BSW_Init(void)
 {
 	MCAL_Init();
+
+#if (HSE_TRNG_SELFTEST_ON_BOOT != 0U)
+	/* HSE TRNG 上电自检：结果存入 g_hseTrngSelfTest[]（调试器可直接读），
+	 * 用来确认 HSE 随机数服务可用；量产可把 HSE_TRNG_SELFTEST_ON_BOOT 置 0。 */
+	(void)HseTrng_SelfTest();
+#endif
 	/* Start the watchdog only after all blocking MCAL/NVM initialization is
 	 * complete, so a long startup cannot trip the 10 s timeout. */
 	MCAL_WDG_Init();
