@@ -21,9 +21,14 @@
 #include "Nvm.h"
 #include "NvmApp.h"
 #include <string.h>
-#include "hse_trng.h"      /* HSE 硬件 TRNG，供 UDS 0x27 取随机种子 */
+#include "hse_trng.h"
+#include "hse_aes.h"      /* HSE 硬件 TRNG，供 UDS 0x27 取随机种子 */
 
 UDS_DcmContextType UDS_DcmCtx;
+
+/* UDS 0x27：16 字节种子 + AES128 预期密钥（文件内静态，避免改上下文结构体） */
+static unsigned char UDS_Seed16[16];
+static unsigned char UDS_ExpectedKey[16];
 
 static unsigned char UDS_DcmPreconditionOk = 0U;
 
@@ -202,22 +207,24 @@ static unsigned char UDS_DcmSeedRequest(const unsigned char *req, unsigned int l
 
 	UDS_DcmCtx.SeedLevel = level;
 
-	/* 安全随机种子：优先用 HSE 硬件 TRNG（DRG4 类，带预测抵抗）。
-	 * 若 HSE 不可用（未启动 / RNG 未就绪 / 通道忙），退回原来的 tick 方案，
-	 * 保证 0x27 服务不因此失效；量产安全件建议把回退改成返回 NRC 0x22。 */
-	UDS_DcmCtx.Seed = HseTrng_GetRandomU32();
-	if (0U == UDS_DcmCtx.Seed)
+	/* 16 字节种子（HSE TRNG）；密钥 = AES128(HSE 密钥[level], seed)。
+	 * TRNG 不可用时用 tick 派生的伪随机填充，保证 0x27 不失效。 */
+	if (0U != HseTrng_GetBytes(UDS_Seed16, 16U))
 	{
-		UDS_DcmCtx.Seed = 0x12345678U ^ ((unsigned int)level << 16);
-		UDS_DcmCtx.Seed ^= BSW_GetSystemTick();
+		unsigned int t = BSW_GetSystemTick();
+		unsigned char k;
+		for (k = 0U; k < 16U; k++)
+		{
+			t = (t * 1664525U) + 1013904223U;
+			UDS_Seed16[k] = (unsigned char)(t >> 24);
+		}
 	}
+	UDS_DcmCtx.Seed = ((unsigned int)UDS_Seed16[0] << 24) | ((unsigned int)UDS_Seed16[1] << 16)
+	                | ((unsigned int)UDS_Seed16[2] << 8)  |  (unsigned int)UDS_Seed16[3];
 
 	UDS_TxBuf[1] = subFn;
-	UDS_TxBuf[2] = (unsigned char)(UDS_DcmCtx.Seed >> 24);
-	UDS_TxBuf[3] = (unsigned char)(UDS_DcmCtx.Seed >> 16);
-	UDS_TxBuf[4] = (unsigned char)(UDS_DcmCtx.Seed >> 8);
-	UDS_TxBuf[5] = (unsigned char)(UDS_DcmCtx.Seed);
-	*rspLen = 6U;
+	(void)memcpy(&UDS_TxBuf[2], UDS_Seed16, 16U);	
+	*rspLen = 18U;
 
 	return 0U;
 }
@@ -227,9 +234,8 @@ static unsigned char UDS_DcmKeyRequest(const unsigned char *req, unsigned int le
 	unsigned char subFn;
 	unsigned char level;
 	unsigned int key;
-	unsigned int expected;
 
-	if (len < 6U)
+	if (len < 18U)
 	{
 		return NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
 	}
@@ -257,9 +263,12 @@ static unsigned char UDS_DcmKeyRequest(const unsigned char *req, unsigned int le
 	      ((unsigned int)req[4] << 8) |
 	      (unsigned int)req[5];
 
-	expected = UDS_DcmCtx.Seed ^ 0xA5A5A5A5U;
-
-	if (key != expected)
+	if (0U != HseAes_EncryptBlock((1U == level) ? HSE_AES_LEVEL1 : HSE_AES_LEVEL2, UDS_Seed16, UDS_ExpectedKey))
+	{
+		return NRC_CONDITIONS_NOT_CORRECT;
+	}
+	(void)key;
+	if (0 != memcmp(&req[2], UDS_ExpectedKey, 16U))
 	{
 		UDS_DcmCtx.SecurityFailCount++;
 
@@ -824,13 +833,25 @@ static unsigned char UDS_DcmRoutinePrecondition(const unsigned char *req, unsign
 	return 0U;
 }
 
+static unsigned char UDS_DcmRoutineLoadHseKeys(const unsigned char *req, unsigned int len,
+                                               unsigned int *status)
+{
+	(void)req;
+	(void)len;
+
+	/* 罐装两个 AES-128 密钥到 HSE RAM 密钥槽（0x31 01 AA01） */
+	*status = (0U == HseAes_LoadKeys()) ? 0U : 1U;
+	return 0U;
+}
+
 const UDS_DcmRoutineType UDS_DcmRoutines[] =
 {
 	{0x0202U, UDS_DcmRoutineIntegrity, 0, 0},
 	{0x0203U, UDS_DcmRoutinePrecondition, 0, 0},
 	{0xFF00U, UDS_DcmRoutineErase, 0, 0},
 	{0xFF01U, UDS_DcmRoutineDependency, 0, 0},
-	{0xFF02U, UDS_DcmRoutineCopy, 0, 0}
+	{0xFF02U, UDS_DcmRoutineCopy, 0, 0},
+	{0xAA01U, UDS_DcmRoutineLoadHseKeys, 0, 0}
 };
 
 const unsigned int UDS_DcmRoutineCount =
@@ -867,7 +888,7 @@ static unsigned char UDS_DcmRoutineControl(const unsigned char *req, unsigned in
 		return NRC_REQUEST_OUT_OF_RANGE;
 	}
 
-	if (0x0203U != routineId)
+	if ((0x0203U != routineId) && (0xAA01U != routineId))
 	{
 		unsigned char required = (UDS_DCM_SESSION_PROGRAMMING == UDS_DcmCtx.Session)
 		    ? UDS_DCM_SECURITY_LEVEL2 : UDS_DCM_SECURITY_LEVEL1;
@@ -1031,8 +1052,7 @@ const UDS_DcmServiceType UDS_DcmServices[] =
 	{0x27U, 0x03U, UDS_DCM_SESSION_MASK_PROGRAMMING,                   UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmSeedRequest},
 	{0x27U, 0x04U, UDS_DCM_SESSION_MASK_PROGRAMMING,                   UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmKeyRequest},
 
-	{0x31U, 0x01U, (UDS_DCM_SESSION_MASK_EXTENDED |
-	                UDS_DCM_SESSION_MASK_PROGRAMMING),                 UDS_DCM_SECURITY_NONE, UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmRoutineControl},
+	{0x31U, 0x01U, UDS_DCM_SESSION_MASK_ALL,                 UDS_DCM_SECURITY_NONE, UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmRoutineControl},
 	{0x31U, 0x02U, (UDS_DCM_SESSION_MASK_EXTENDED |
 	                UDS_DCM_SESSION_MASK_PROGRAMMING),                 UDS_DCM_SECURITY_NONE, UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmRoutineControl},
 	{0x31U, 0x03U, (UDS_DCM_SESSION_MASK_EXTENDED |
