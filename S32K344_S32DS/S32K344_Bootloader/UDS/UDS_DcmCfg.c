@@ -21,8 +21,9 @@
 #include "Nvm.h"
 #include "NvmApp.h"
 #include <string.h>
-#include "hse_trng.h"
-#include "hse_aes.h"      /* HSE 硬件 TRNG，供 UDS 0x27 取随机种子 */
+#include "hse_trng.h"     /* HSE 硬件 TRNG，供 UDS 0x27 取随机种子 */
+#include "hse_aes.h"      /* HSE AES-128，供 UDS 0x27 key 计算 */
+#include "hse_hash.h"     /* HSE SHA-256，供刷写镜像完整性校验 */
 
 UDS_DcmContextType UDS_DcmCtx;
 
@@ -690,24 +691,21 @@ static unsigned char UDS_DcmTransferExit(const unsigned char *req,
                                          unsigned int len,
                                          unsigned int *rspLen)
 {
-	unsigned int crc = 0U;
 	unsigned char nrc;
 
 	(void)req;
 	(void)len;
 
-	nrc = BootProg_TransferExit(&crc);
+	/* 77 <SHA-256:32>: the digest is computed by the HSE over the image as
+	 * it is stored (ITCM / backup area).  The tester compares it with the
+	 * SHA-256 of the file it sent (and repeats it in 31 01 02 02). */
+	nrc = BootProg_TransferExit(&UDS_TxBuf[1]);
 	if (0U != nrc)
 	{
 		return nrc;
 	}
 
-	/* 77 <CRC32:4>: the tester compares it with the CRC of the image it sent. */
-	UDS_TxBuf[1] = (unsigned char)(crc >> 24);
-	UDS_TxBuf[2] = (unsigned char)(crc >> 16);
-	UDS_TxBuf[3] = (unsigned char)(crc >> 8);
-	UDS_TxBuf[4] = (unsigned char)(crc);
-	*rspLen = 5U;
+	*rspLen = 1U + HSE_HASH_SHA256_SIZE;
 	return 0U;
 }
 
@@ -807,19 +805,17 @@ static unsigned char UDS_DcmRoutineCopy(const unsigned char *req, unsigned int l
 	return 0U;
 }
 
-/* 0x0202: always answers positively; the result is the status byte. */
+/* 0x0202: always answers positively; the result is the status byte.
+ * Request: 31 01 02 02 <SHA-256:32> (HSE SHA-256 of the downloaded image). */
 static unsigned char UDS_DcmRoutineIntegrity(const unsigned char *req, unsigned int len,
                                               unsigned int *status)
 {
-	unsigned int expected;
-
-	if (len < 8U)
+	if (len < (4U + HSE_HASH_SHA256_SIZE))
 	{
 		return (unsigned char)NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
 	}
 
-	expected = UDS_DcmGetU32(&req[4]);
-	return BootProg_CheckIntegrity(expected, status);
+	return BootProg_CheckIntegrity(&req[4], status);
 }
 
 static unsigned char UDS_DcmRoutinePrecondition(const unsigned char *req, unsigned int len,

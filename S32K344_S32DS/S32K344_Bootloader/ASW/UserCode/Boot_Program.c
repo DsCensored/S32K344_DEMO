@@ -12,6 +12,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "App_Info.h"
+#include "hse_hash.h"     /* HSE SHA-256 used for the image integrity checks */
 
 #define BOOT_PROG_MODE_NONE     0U
 #define BOOT_PROG_MODE_RAM      1U
@@ -26,15 +27,14 @@ typedef struct
     unsigned int Target;
     unsigned int Size;
     unsigned int Received;
-    unsigned int Crc;                     /* running CRC, without final xor */
     unsigned char Seq;
     unsigned char Buf[BOOT_PROG_BUF_SIZE] __attribute__((aligned(4)));
     unsigned int BufLen;
-    unsigned char AppCrcValid;
-    unsigned int AppCrc;
+    unsigned char AppHashValid;
+    unsigned char AppHash[HSE_HASH_SHA256_SIZE];   /* SHA-256 of the APP image */
     unsigned int AppSize;
-    unsigned char LastCrcValid;           /* result of the last 0x37 (APP or fs) */
-    unsigned int LastCrc;
+    unsigned char LastHashValid;           /* result of the last 0x37 (APP or fs) */
+    unsigned char LastHash[HSE_HASH_SHA256_SIZE];
 } Boot_ProgType;
 
 static Boot_ProgType g_prog;
@@ -69,9 +69,28 @@ static unsigned char BootProg_InitFlash(void)
 
 static unsigned char g_copyState;
 static unsigned int g_copyOffset;
-static unsigned int g_copyCrc;
 static unsigned char g_copyBuf[BOOT_PROG_COPY_CHUNK + BOOT_FLASH_WRITE_UNIT]
     __attribute__((aligned(4)));
+
+/* SHA-256 of [base, base + size), computed by the HSE while streaming the
+ * bytes through its non-cacheable staging buffer.  The region may live in
+ * PFlash or ITCM; returns 0 on success. */
+static unsigned char BootProg_HashRegion(unsigned int base, unsigned int size,
+                                         unsigned char *digest)
+{
+    /* Address 0 is the ITCM, not a NULL pointer (see the 0x37 HardFault note
+     * in NVM_DFlash_Fee.md 9.6).  Read the base through a volatile variable
+     * so the compiler cannot collapse the constant 0 into a trap. */
+    volatile unsigned int baseAddr = base;
+
+    if (0U == HseHash_Sha256Region((const unsigned char *)baseAddr,
+                                   size, digest))
+    {
+        return 0U;
+    }
+
+    return 1U;
+}
 
 /* FF00 progress: one 8 KB sector per call. */
 static unsigned char g_eraseActive;
@@ -128,7 +147,6 @@ unsigned char BootProg_RequestDownload(unsigned int addr, unsigned int size,
     }
 
     memset(&g_prog, 0, sizeof(g_prog));
-    g_prog.Crc = 0xFFFFFFFFUL;
 
     /* A new download invalidates any erase/copy state of a previous one, and
      * the dependency check of the previous image no longer applies. */
@@ -232,7 +250,6 @@ unsigned char BootProg_TransferData(unsigned char seq, const unsigned char *data
     {
         memcpy((unsigned char *)(g_prog.Target + g_prog.Received), data, len);
         g_prog.Received += len;
-        g_prog.Crc = Boot_Crc32Update(g_prog.Crc, data, len);
         g_prog.Seq = seq;
     }
     else
@@ -240,7 +257,6 @@ unsigned char BootProg_TransferData(unsigned char seq, const unsigned char *data
         unsigned char oldSeq = g_prog.Seq;
         unsigned int oldReceived = g_prog.Received;
         unsigned int oldBufLen = g_prog.BufLen;
-        unsigned int oldCrc = g_prog.Crc;
 
         if ((g_prog.BufLen + len) > BOOT_PROG_BUF_SIZE)
         {
@@ -250,7 +266,6 @@ unsigned char BootProg_TransferData(unsigned char seq, const unsigned char *data
         memcpy(&g_prog.Buf[g_prog.BufLen], data, len);
         g_prog.BufLen += len;
         g_prog.Received += len;
-        g_prog.Crc = Boot_Crc32Update(g_prog.Crc, data, len);
         g_prog.Seq = seq;
 
         if (0U != BootProg_Flush())
@@ -260,7 +275,6 @@ unsigned char BootProg_TransferData(unsigned char seq, const unsigned char *data
             g_prog.Seq = oldSeq;
             g_prog.Received = oldReceived;
             g_prog.BufLen = oldBufLen;
-            g_prog.Crc = oldCrc;
             return (unsigned char)NRC_GENERAL_PROGRAMMING_FAILURE;
         }
     }
@@ -268,20 +282,28 @@ unsigned char BootProg_TransferData(unsigned char seq, const unsigned char *data
     return 0U;
 }
 
-unsigned char BootProg_TransferExit(unsigned int *crc)
+unsigned char BootProg_TransferExit(unsigned char *hash)
 {
     unsigned char nrc = 0U;
+    unsigned char digest[HSE_HASH_SHA256_SIZE];
+    unsigned int imageBase = 0U;
 
-    if (BOOT_PROG_MODE_NONE == g_prog.Mode)
+    if ((BOOT_PROG_MODE_NONE == g_prog.Mode) || (0 == hash))
     {
         return (unsigned char)NRC_REQUEST_SEQUENCE_ERROR;
     }
+
+    (void)memset(digest, 0, sizeof(digest));
 
     if (BOOT_PROG_MODE_RAM == g_prog.Mode)
     {
         if (0U == Boot_FlashDriverValid())
         {
             nrc = (unsigned char)NRC_GENERAL_PROGRAMMING_FAILURE;
+        }
+        else
+        {
+            imageBase = (unsigned int)Boot_FlashRamBase();
         }
     }
     else
@@ -310,12 +332,16 @@ unsigned char BootProg_TransferExit(unsigned int *crc)
             }
         }
 
-        if (0U == nrc)
-        {
-            g_prog.AppCrc = g_prog.Crc ^ 0xFFFFFFFFUL;
-            g_prog.AppSize = g_prog.Size;
-            g_prog.AppCrcValid = 1U;
-        }
+        imageBase = g_prog.Target;
+    }
+
+    /* SHA-256 of the image as it is stored: ITCM for the flash driver, the
+     * backup area for the APP.  The 0xFF padding of the last 128-byte write
+     * page is outside g_prog.Size and is therefore not hashed. */
+    if ((0U == nrc) &&
+        (0U != BootProg_HashRegion(imageBase, g_prog.Size, digest)))
+    {
+        nrc = (unsigned char)NRC_GENERAL_PROGRAMMING_FAILURE;
     }
 
     if (BOOT_PROG_MODE_RAM == g_prog.Mode)
@@ -332,13 +358,20 @@ unsigned char BootProg_TransferExit(unsigned int *crc)
 
     if (0U == nrc)
     {
-        /* 0x0202 compares the tester checksum with this value: keep the CRC of
-         * the last image even when it was the flash driver (fs). */
-        g_prog.LastCrc = g_prog.Crc ^ 0xFFFFFFFFUL;
-        g_prog.LastCrcValid = 1U;
+        if (BOOT_PROG_MODE_RAM != g_prog.Mode)
+        {
+            (void)memcpy(g_prog.AppHash, digest, sizeof(g_prog.AppHash));
+            g_prog.AppSize = g_prog.Size;
+            g_prog.AppHashValid = 1U;
+        }
+
+        /* 0x0202 compares the tester digest with this value: keep the SHA-256
+         * of the last image even when it was the flash driver (fs). */
+        (void)memcpy(g_prog.LastHash, digest, sizeof(g_prog.LastHash));
+        g_prog.LastHashValid = 1U;
     }
 
-    *crc = g_prog.Crc ^ 0xFFFFFFFFUL;
+    (void)memcpy(hash, digest, HSE_HASH_SHA256_SIZE);
     g_prog.Mode = BOOT_PROG_MODE_NONE;
     g_prog.BufLen = 0U;
 
@@ -539,16 +572,29 @@ unsigned char BootProg_DependencyCheck(unsigned int *status)
         return 0U;
     }
 
-    if (0U == g_prog.AppCrcValid)
+    if (0U == g_prog.AppHashValid)
     {
         *status = BOOT_ST_DEP_APP_INCOMPLETE;
         return 0U;
     }
 
-    if (Boot_Crc32((const unsigned char *)BOOT_APP_BACKUP_BASE, g_prog.AppSize) != g_prog.AppCrc)
+    /* Re-read the backup area and hash it again: this also catches a flash
+     * programming error that the CAN reception obviously cannot see. */
     {
-        *status = BOOT_ST_DEP_APP_CRC;
-        return 0U;
+        unsigned char digest[HSE_HASH_SHA256_SIZE];
+
+        if (0U != BootProg_HashRegion(BOOT_APP_BACKUP_BASE, g_prog.AppSize,
+                                      digest))
+        {
+            *status = BOOT_ST_DEP_HSE;
+            return 0U;
+        }
+
+        if (0 != memcmp(digest, g_prog.AppHash, HSE_HASH_SHA256_SIZE))
+        {
+            *status = BOOT_ST_DEP_APP_HASH;
+            return 0U;
+        }
     }
 
     BSW_stUpdateVerValid = 1U;
@@ -563,7 +609,7 @@ unsigned char BootProg_CopyStep(unsigned int *status, unsigned char *more)
     *status = BOOT_ST_COPY_OK;
     *more = 0U;
 
-    if ((0U == g_prog.AppCrcValid) || (0U == Boot_FlashDriverValid()) ||
+    if ((0U == g_prog.AppHashValid) || (0U == Boot_FlashDriverValid()) ||
         (0U != BootProg_InitFlash()))
     {
         g_copyState = 0U;
@@ -574,7 +620,6 @@ unsigned char BootProg_CopyStep(unsigned int *status, unsigned char *more)
     if (0U == g_copyState)
     {
         g_copyOffset = 0U;
-        g_copyCrc = 0xFFFFFFFFUL;
 
         if (0U != Boot_FlashErase(BOOT_APP_BASE,
                                   (g_prog.AppSize + BOOT_APP_ERASE_UNIT - 1U) &
@@ -605,7 +650,6 @@ unsigned char BootProg_CopyStep(unsigned int *status, unsigned char *more)
         return 0U;
     }
 
-    g_copyCrc = Boot_Crc32Update(g_copyCrc, g_copyBuf, chunk);
     g_copyOffset += chunk;
 
     if (g_copyOffset < g_prog.AppSize)
@@ -615,30 +659,44 @@ unsigned char BootProg_CopyStep(unsigned int *status, unsigned char *more)
     }
 
     g_copyState = 0U;
-    if ((g_copyCrc ^ 0xFFFFFFFFUL) != g_prog.AppCrc)
+
+    /* The copy is complete: hash the run area as it has been written and
+     * compare it with the digest of the downloaded image. */
     {
-        *status = BOOT_ST_COPY_CRC;
-        return 0U;
+        unsigned char digest[HSE_HASH_SHA256_SIZE];
+
+        if (0U != BootProg_HashRegion(BOOT_APP_BASE, g_prog.AppSize, digest))
+        {
+            *status = BOOT_ST_COPY_HSE;
+            return 0U;
+        }
+
+        if (0 != memcmp(digest, g_prog.AppHash, HSE_HASH_SHA256_SIZE))
+        {
+            *status = BOOT_ST_COPY_HASH;
+            return 0U;
+        }
     }
 
     return 0U;
 }
 
-unsigned char BootProg_CheckIntegrity(unsigned int expected, unsigned int *status)
+unsigned char BootProg_CheckIntegrity(const unsigned char *expected,
+                                      unsigned int *status)
 {
     *status = BOOT_ST_CHK_OK;
 
-    if (0U == g_prog.LastCrcValid)
+    if ((0U == g_prog.LastHashValid) || (0 == expected))
     {
         *status = BOOT_ST_CHK_NO_DOWNLOAD;
         return 0U;
     }
 
-    /* 直接复用 0x37 时算出的 CRC（fs 和 APP 都在下载过程中计算），
-     * 与上位机从 0x37 响应里拿到的值是同一个。 */
-    if (expected != g_prog.LastCrc)
+    /* 直接复用 0x37 时由 HSE 算出的 SHA-256（fs 和 APP 都算），
+     * 与上位机从 0x37 响应里拿到的摘要是同一个。 */
+    if (0 != memcmp(expected, g_prog.LastHash, HSE_HASH_SHA256_SIZE))
     {
-        *status = BOOT_ST_CHK_CRC_MISMATCH;
+        *status = BOOT_ST_CHK_HASH_MISMATCH;
     }
 
     return 0U;

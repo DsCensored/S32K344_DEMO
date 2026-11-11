@@ -4,8 +4,10 @@
  * Bootloader-side boot flow:
  *   - consumes the APP->Boot programming request (see Boot_Shared.h),
  *   - validates the application image,
- *   - jumps to the application after a timeout,
- *   - provides the standard CRC32 used by the programming services.
+ *   - jumps to the application after a timeout.
+ *
+ * The integrity checks of the programming services are done with the HSE
+ * SHA-256 engine, see Boot_Program.h / hse_hash.h.
  */
 
 #ifndef BOOT_H_
@@ -39,12 +41,6 @@ void Boot_RequestJumpToApp(void);
 void Boot_ProcessJumpRequest(void);
 void Boot_TryJumpToApp(void);
 void Boot_JumpToApp(void);
-
-/* Standard CRC-32 (IEEE 802.3, reflected, poly 0xEDB88320, init/xor 0xFFFFFFFF). */
-unsigned int Boot_Crc32(const unsigned char *data, unsigned int len);
-/* Running CRC without the final xor; pass the previous return value as crc. */
-unsigned int Boot_Crc32Update(unsigned int crc, const unsigned char *data,
-                              unsigned int len);
 
 #endif /* BOOT_H_ */
 

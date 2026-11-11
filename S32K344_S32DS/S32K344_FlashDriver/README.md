@@ -54,7 +54,8 @@ Project_Settings/Linker_Files/
   `Mem_43_INFLS_MainFunction()` 轮询完成。
 - **擦写校验/缓存同步**：`C40_IP_ERASE_VERIFICATION_ENABLED`、
   `C40_IP_PROGRAM_VERIFICATION_ENABLED`、`C40_IP_SYNCRONIZE_CACHE` 关闭。
-  Bootloader 运行时 D-Cache 关闭，校验由 UDS 层（0x37 CRC、FF01）完成。
+  Bootloader 运行时 D-Cache 关闭，校验由 UDS 层（`0x37` 的 HSE SHA-256、`FF01`）
+  完成。
 - **中断**：Boot 在调用驱动前后 `cpsid i` / 恢复 PRIMASK。C40 擦写期间
   program flash 不可取指，中断服务程序若从 flash 取指会挂死。
 - **超时**：`FlashDriver_WaitJob()` 对 PENDING 有循环上限，避免硬件异常时死等。
@@ -69,7 +70,15 @@ Project_Settings/Linker_Files/
 
 `Boot_Program.c` 的 `0x34/0x36/0x37` 把驱动下载到 ITCM、把 APP 下载到
 备份区；`FF00` 每次 DCM poll 擦一个 8 KB 扇区（返回 NRC 0x78），`FF01` 校验，
-`FF02` 每 8 KB 把备份区拷贝到运行区并重新计算 CRC。
+`FF02` 每 8 KB 把备份区拷贝到运行区并重新计算 SHA-256。
+
+镜像完整性全部由 **HSE 的 SHA-256** 完成（`MCAL/HSE/hse_hash.c`，参考
+`S32K3_HSE_DemoExamples` 的 `hse_host_hash.c`），不再使用软件 CRC32：
+
+- `0x37` 正响应：`77 <SHA-256:32>`；
+- `31 01 02 02`：`31 01 02 02 <SHA-256:32>`，与最后一次 `0x37` 的摘要比较；
+- `FF01`：对备份区重新计算 SHA-256；
+- `FF02`：对运行区重新计算 SHA-256。
 
 ## 构建
 
@@ -98,7 +107,7 @@ $env:PATH = 'D:\NXP\S32DS\build_tools\gcc_v10.2\gcc-10.2-arm32-eabi\bin;' +
 
 ```
 10 02 -> 50 02
-34/36/37 driver -> ITCM 0x0 (0x37 返回 CRC 校验)
+34/36/37 driver -> ITCM 0x0 (0x37 返回 HSE SHA-256，32 字节)
 31 01 FF00 0x00648000 0x12000 (整段擦除，期间多次 0x78)
 34/36/37 app    -> 备份区 0x00648000
 31 01 FF01 -> 71 01 FF 01 00

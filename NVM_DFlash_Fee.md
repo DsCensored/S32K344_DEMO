@@ -189,8 +189,8 @@ App_Info_GetCopy(APP_INFO_SERIAL_NUMBER, buf);
 块 1 = BOOT 版本、……），工具按同一套偏移即可读取任一镜像；刷写工具可直接改
 这些地址；Boot 侧也可以用绝对地址读取 APP 的版本信息（例如显示 APP 版本）。
 
-> 注意：这些块位于 APP 镜像内，属于 Boot 校验 CRC 的范围；如果刷写工具在
-> 刷写后改动它们，需要同步更新校验值，或在 Boot 的 CRC 计算中排除该区间。
+> 注意：这些块位于 APP 镜像内，属于 Boot 校验 SHA-256 的范围；如果刷写工具在
+> 刷写后改动它们，需要同步更新校验值，或在 Boot 的哈希计算中排除该区间。
 
 ## 5. NVM 接口
 
@@ -522,7 +522,12 @@ static const Boot_FlashDriverType *BootFlashHeader(void)
 2. `Boot_Program.c` 的 RAM 下载目标改成 `(unsigned int)Boot_FlashRamBase()`，
    避免 `memcpy((void *)0, ...)` 同样被当成未定义行为优化。
 3. `37` 的响应原来是 `*rspLen = 1`（只回 `77`），而 DCM 会把小于 2 字节的响应补到
-   2 字节，多出一个旧字节；现改为 `77 + CRC32(4 字节)`，与上位机/测试脚本一致。
+   2 字节，多出一个旧字节；当时改为 `77 + CRC32(4 字节)`，与上位机/测试脚本一致。
+   （当前版本已进一步改为 `77 + SHA-256(32 字节)`，见 9.7；下面的实测记录是
+   CRC32 时代的历史数据。）
+
+> 注意：`HseHash_Sha256Region()` 同样不能对地址 0 做 NULL 判断，`Boot_Program.c`
+> 的 `BootProg_HashRegion()` 因此也通过 volatile 变量把 `base` 转成指针。
 
 **验证（USBCAN-2E-U 实测）**：
 
@@ -538,6 +543,64 @@ static const Boot_FlashDriverType *BootFlashHeader(void)
 ```
 
 之后等 5 s 超时，APP 正常接管（`22 F184` 返回 `FF FF...`）。
+
+### 9.7 刷写完整性校验改为 HSE SHA-256（替代软件 CRC32）
+
+需求：刷写流程不再用 CRC 校验下载内容，改用 HSE 的 SHA-256（参考
+`D:\NXP\S32K3_HSE_DemoExamples_1_0_0\S32K3_HSE_DemoExamples`，主要是
+`Template/S32K344_DemoAppTemplate/framework/host_crypto_helper/hse_host_hash.c`
+的 `HashDataStartStreamSrv/UpdateStreamSrv/FinishStreamSrv`）。
+
+**改动文件**
+
+| 文件 | 内容 |
+| --- | --- |
+| `MCAL/HSE/hse_hash.c/.h` | 新增：HSE HASH 服务封装（SHA-256，START/UPDATE/FINISH 流式） |
+| `ASW/UserCode/Boot_Program.c/.h` | 删除软件 CRC32，改为对“已落盘镜像”重新计算 SHA-256 |
+| `UDS/UDS_DcmCfg.c` | `0x37` 回 32 字节摘要；`31 01 02 02` 收发 32 字节摘要 |
+| `ASW/UserCode/Boot.c/.h` | 删除已不再使用的 `Boot_Crc32()` / `Boot_Crc32Update()` |
+
+**UDS 报文变化**
+
+```
+0x37 正响应 : 77 <SHA-256:32>                      （33 字节）
+0x31 01 02 02: 31 01 02 02 <SHA-256:32> -> 71 01 02 02 <status>
+```
+
+`FF01` / `FF02` 的 result 码含义不变（只把 CRC 换成 SHA-256），并新增
+`0x14`（FF01：HSE 计算失败）与 `0x06`（FF02：HSE 计算失败）用于区分
+“摘要不一致”和“HSE 服务失败”。
+
+**实现要点**
+
+1. `0x37` 不再对 CAN 收到的字节做增量校验，而是在结束时由 HSE 对**实际存储
+   的镜像**做 SHA-256：FlashDriver 读 ITCM `0x00000000`，APP 读备份区
+   `0x00648000`，长度就是 `0x34` 请求的 size。这样连 Flash 写入错误也能发现
+   （原来的 RAM 增量 CRC 只能证明“收到的字节没错”）。
+2. HSE 流式 SHA-256 要求 UPDATE 长度为 64 的整数倍、FINISH 可为任意长度，
+   因此 `hse_hash.c` 用 2 KB 的 non-cacheable 暂存区把任意区间切成
+   “整数个 64 字节块 + 末尾不足 64 字节”两部分；调用者无需关心对齐。
+3. HSE 读不到 M7 的 DTCM（栈所在），所有描述符/输入/输出都放在
+   `.non_cacheable_data`（`int_sram_no_cacheable`），并在每次请求前后做
+   D-Cache clean/invalidate。
+4. 地址 `0x00000000` 是 ITCM，**不是**空指针：`HseHash_*` 因此不对输入指针
+   做非空判断，`BootProg_HashRegion()` 用 volatile 变量保存基地址，避免
+   `-O3` 把常量 0 优化成 `udf`（与 9.6 的 0x37 HardFault 同一个坑）。
+5. `FF02` 仍然是每次 DCM poll 拷贝 8 KB（回 0x78），只有最后一块拷贝完成后
+   才整段回读运行区算 SHA-256 并与下载摘要比较。
+
+**编译验证**（与 IDE 相同的工具链）：
+
+```powershell
+$env:PATH = 'D:\NXP\S32DS\build_tools\gcc_v10.2\gcc-10.2-arm32-eabi\bin;' +
+            'D:\NXP\S32DS\build_tools\msys32\usr\bin;' + $env:PATH
+& 'D:\NXP\S32DS\build_tools\msys32\usr\bin\make.exe' `
+  -C 'D:\Order_Git\S32K344_DEMO\S32K344_S32DS\S32K344_Bootloader\Debug_FLASH' all
+```
+
+编译无警告；`arm-none-eabi-size` 结果 `text 110584 / data 6568 / bss 32048`。
+HSE 序列与摘要值需要在实板上用总线工具确认（`0x37` 的 32 字节摘要应与上位机
+对同一 `.bin` 计算的 SHA-256 完全一致）。
 
 
 

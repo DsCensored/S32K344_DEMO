@@ -1,8 +1,11 @@
 /*
  * Boot.c
  *
- * Bootloader boot flow, application validation/jump and the standard CRC32
- * implementation used by the programming services.
+ * Bootloader boot flow and application validation/jump.
+ *
+ * The integrity checks of the programming services (former software CRC32)
+ * are now done by the HSE SHA-256 engine; see Boot_Program.c and
+ * hse_hash.c.
  */
 
 #include "Boot.h"
@@ -330,42 +333,6 @@ void Boot_JumpToApp(void)
 
     /* Switch to the application stack and start its reset vector. */
     Boot_StartApp(sp, reset);
-}
-
-unsigned int Boot_Crc32Update(unsigned int crc, const unsigned char *data,
-                              unsigned int len)
-{
-    unsigned int i;
-    unsigned int bit;
-
-    if (0 == data)
-    {
-        return crc;
-    }
-
-    for (i = 0U; i < len; i++)
-    {
-        crc ^= (unsigned int)data[i];
-
-        for (bit = 0U; bit < 8U; bit++)
-        {
-            if (0U != (crc & 1UL))
-            {
-                crc = (crc >> 1U) ^ 0xEDB88320UL;
-            }
-            else
-            {
-                crc >>= 1U;
-            }
-        }
-    }
-
-    return crc;
-}
-
-unsigned int Boot_Crc32(const unsigned char *data, unsigned int len)
-{
-    return Boot_Crc32Update(0xFFFFFFFFUL, data, len) ^ 0xFFFFFFFFUL;
 }
 
 
