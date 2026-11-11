@@ -12,7 +12,7 @@
 
 /* 0x00448100 - application version */
 __attribute__((section(".app_ver_flash"), used))
-const uint8 App_Info_AppVersion[APP_INFO_BLOCK_SIZE] = "APP-1.0.0";
+const uint8 App_Info_AppVersion[APP_INFO_BLOCK_SIZE] = "1.1.0";
 
 /* 0x00448110 - bootloader version */
 __attribute__((section(".app_boot_ver_flash"), used))
@@ -36,11 +36,11 @@ const uint8 App_Info_SerialNumber[APP_INFO_BLOCK_SIZE] = "SN-0000000001";
 
 /* 0x00448160 - production date */
 __attribute__((section(".app_prod_date_flash"), used))
-const uint8 App_Info_ProductionDate[APP_INFO_BLOCK_SIZE] = "2026-10-29";
+const uint8 App_Info_ProductionDate[APP_INFO_BLOCK_SIZE] = __DATE__;
 
 /* 0x00448170 - software update component id */
 __attribute__((section(".app_upd_comp_flash"), used))
-const uint8 App_Info_UpdateComponent[APP_INFO_BLOCK_SIZE] = "UPD-COMP-0001";
+const uint8 App_Info_UpdateComponent[APP_INFO_BLOCK_SIZE] = __TIME__;
 
 static const uint8 *const App_Info_Blocks[APP_INFO_BLOCK_COUNT] =
 {

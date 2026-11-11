@@ -12,7 +12,7 @@
 
 /* 0x00448100 - application version */
 __attribute__((section(".SW_VER"), used))
-const uint8 App_Info_AppVersion[APP_INFO_BLOCK_SIZE] = "1.0.2";
+const uint8 App_Info_AppVersion[APP_INFO_BLOCK_SIZE] = "1.1.0";
 
 /* 0x00448110 - HardWare version */
 __attribute__((section(".HW_VER"), used))

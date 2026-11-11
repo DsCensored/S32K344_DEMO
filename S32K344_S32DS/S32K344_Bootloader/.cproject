@@ -185,7 +185,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="ASW"/>
+						<entry excluding="UserCode/AES128.h|UserCode/AES128.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="ASW"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="BSW"/>
 						<entry excluding="RTD_PACK_config_backup_20261020.zip" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="MCAL"/>
 						<entry excluding="Linker_Files|Debugger" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Project_Settings"/>
@@ -308,7 +308,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="ASW"/>
+						<entry excluding="UserCode/AES128.h|UserCode/AES128.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="ASW"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="BSW"/>
 						<entry excluding="RTD_PACK_config_backup_20261020.zip" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="MCAL"/>
 						<entry excluding="Linker_Files|Debugger" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Project_Settings"/>
@@ -430,7 +430,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="ASW"/>
+						<entry excluding="UserCode/AES128.h|UserCode/AES128.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="ASW"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="BSW"/>
 						<entry excluding="RTD_PACK_config_backup_20261020.zip" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="MCAL"/>
 						<entry excluding="Startup_Code/boot_header.c|Linker_Files|Debugger" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Project_Settings"/>
@@ -552,7 +552,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="ASW"/>
+						<entry excluding="UserCode/AES128.h|UserCode/AES128.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="ASW"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="BSW"/>
 						<entry excluding="RTD_PACK_config_backup_20261020.zip" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="MCAL"/>
 						<entry excluding="Startup_Code/boot_header.c|Linker_Files|Debugger" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Project_Settings"/>
