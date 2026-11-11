@@ -693,10 +693,54 @@ unsigned char BootProg_CheckIntegrity(const unsigned char *expected,
     }
 
     /* 直接复用 0x37 时由 HSE 算出的 SHA-256（fs 和 APP 都算），
-     * 与上位机从 0x37 响应里拿到的摘要是同一个。 */
+     * 与上位机从 0x37 响应里拿到的摘要是同一个。
+     * 这是兼容旧上位机的 32 字节明文摘要路径。 */
     if (0 != memcmp(expected, g_prog.LastHash, HSE_HASH_SHA256_SIZE))
     {
         *status = BOOT_ST_CHK_HASH_MISMATCH;
+    }
+
+    return 0U;
+}
+
+/* 0x31 01 02 02 (RSA): the tester sends a 256-byte RSA-2048 block that
+ * contains the SHA-256 of the downloaded image, encrypted with the matching
+ * private key.  HseRsa_VerifyDigest() performs the public-key operation
+ * (HSE SIGN/VERIFY or RSA decrypt) and compares the recovered digest with the
+ * value computed by 0x37. */
+unsigned char BootProg_CheckIntegritySignature(const unsigned char *signature,
+                                               unsigned int signatureLen,
+                                               unsigned int *status)
+{
+    uint8_t rc;
+
+    *status = BOOT_ST_CHK_OK;
+
+    if ((0U == g_prog.LastHashValid) || (0 == signature))
+    {
+        *status = BOOT_ST_CHK_NO_DOWNLOAD;
+        return 0U;
+    }
+
+    if ((unsigned int)HSE_RSA_SIGNATURE_SIZE != signatureLen)
+    {
+        *status = BOOT_ST_CHK_RSA;
+        return 0U;
+    }
+
+    rc = HseRsa_VerifyDigest(signature, (uint16_t)signatureLen, g_prog.LastHash);
+
+    if (HSE_RSA_OK == rc)
+    {
+        *status = BOOT_ST_CHK_OK;
+    }
+    else if (HSE_RSA_ERR_HASH_MISMATCH == rc)
+    {
+        *status = BOOT_ST_CHK_HASH_MISMATCH;
+    }
+    else
+    {
+        *status = BOOT_ST_CHK_RSA;
     }
 
     return 0U;

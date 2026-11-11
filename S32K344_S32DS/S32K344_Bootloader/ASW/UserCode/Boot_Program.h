@@ -13,13 +13,24 @@
  * the bytes received on CAN, so a flash programming error is detected too.
  *
  * 0x37 response:   77 <SHA-256:32>
- * 0x31 01 02 02 :  31 01 02 02 <SHA-256:32> -> compare with the last 0x37
+ * 0x31 01 02 02 :  31 01 02 02 <RSA-2048 signature:256> -> RSA public-key
+ *                  operation with the AA01 key, recovered SHA-256 compared
+ *                  with the last 0x37 digest.
+ *
+ * Set BOOT_RSA_ALLOW_PLAIN_HASH to 0 in production: 0202 then only accepts
+ * the 256-byte RSA block.  The default 1 keeps the previous 32-byte
+ * plaintext digest working while the tester is being updated.
  */
 
 #ifndef BOOT_PROGRAM_H_
 #define BOOT_PROGRAM_H_
 
 #include "hse_hash.h"      /* HSE_HASH_SHA256_SIZE */
+#include "hse_rsa.h"       /* HSE_RSA_SIGNATURE_SIZE */
+
+#ifndef BOOT_RSA_ALLOW_PLAIN_HASH
+#define BOOT_RSA_ALLOW_PLAIN_HASH   1
+#endif
 
 #define BOOT_PROG_MAX_BLOCK     500U      /* data bytes per 0x36 request */
 #define BOOT_PROG_COPY_CHUNK    0x2000U   /* 8 KB per DCM poll */
@@ -34,6 +45,7 @@
 #define BOOT_ST_CHK_OK              0x00U
 #define BOOT_ST_CHK_HASH_MISMATCH   0x01U   /* SHA-256 与下载内容不一致 */
 #define BOOT_ST_CHK_NO_DOWNLOAD     0x02U   /* 没有有效的下载结果 */
+#define BOOT_ST_CHK_RSA             0x03U   /* RSA 解密/验签失败（密钥/HSE） */
 
 /* 0xFF00：擦除 */
 #define BOOT_ST_ERASE_OK            0x00U
@@ -91,6 +103,14 @@ unsigned char BootProg_CopyStep(unsigned int *status, unsigned char *more);
  * returns 0 (0 = digest valid). */
 unsigned char BootProg_CheckIntegrity(const unsigned char *expected,
                                       unsigned int *status);
+
+/* QCC 04.171 31 01 02 02 with RSA: signature points to a 256-byte RSA-2048
+ * block.  The public key installed by AA01 is used to recover the SHA-256,
+ * which is compared with the digest of the last image.  The result is
+ * reported in *status (BOOT_ST_CHK_xxx); the function always returns 0. */
+unsigned char BootProg_CheckIntegritySignature(const unsigned char *signature,
+                                               unsigned int signatureLen,
+                                               unsigned int *status);
 
 /* QCC 04.171 2E F1 84: fingerprint interface.  Fee is not integrated yet,
  * so the current implementation keeps the 9 bytes in RAM. */

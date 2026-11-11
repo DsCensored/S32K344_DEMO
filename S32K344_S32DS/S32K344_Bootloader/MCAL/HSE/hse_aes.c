@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include "hse_aes.h"
+#include "hse_rsa.h"           /* RSA public key catalog group */
 #include "hse_trng.h"
 #include "hse_trng_cfg.h"      /* shared section + D-cache helpers */
 
@@ -32,8 +33,9 @@
 #define HSE_AES_SHARED
 #endif
 
-/* NVM catalog layout used by both the bootloader and the application.
- * Group 0: two AES-128 slots.  Slot 0 = level 1, slot 1 = level 2. */
+/* NVM catalog layout used by the bootloader.
+ * Group 0: two AES-128 slots (0x27 level 1 / level 2).
+ * Group 1: one RSA-2048 public key slot (0x31 01 02 02 signature check). */
 #define HSE_AES_KEY_GROUP       (0U)
 #define HSE_AES_KEY_SLOT_L1     (0U)
 #define HSE_AES_KEY_SLOT_L2     (1U)
@@ -43,8 +45,8 @@
 static HSE_AES_SHARED hseSrvDescriptor_t     s_desc;
 static HSE_AES_SHARED hseKeyInfo_t           s_keyInfo;
 static HSE_AES_SHARED hseKeyInfo_t           s_infoOut;
-static HSE_AES_SHARED hseKeyGroupCfgEntry_t  s_nvmCatalog[2];
-static HSE_AES_SHARED hseKeyGroupCfgEntry_t  s_ramCatalog[2];
+static HSE_AES_SHARED hseKeyGroupCfgEntry_t  s_nvmCatalog[3];
+static HSE_AES_SHARED hseKeyGroupCfgEntry_t  s_ramCatalog[3];
 static HSE_AES_SHARED uint8_t                s_keyBuf[16];
 static HSE_AES_SHARED uint8_t                s_inBuf[16];
 static HSE_AES_SHARED uint8_t                s_outBuf[16];
@@ -142,12 +144,28 @@ static uint8_t HseAes_FormatCatalogs(void)
     s_nvmCatalog[0].numOfKeySlots = 2U;
     s_nvmCatalog[0].maxKeyBitLen  = HSE_KEY128_BITS;
 
+    /* Group 1: RSA-2048 public key used by 0x31 01 02 02.  It is imported by
+     * HseRsa_ProgramPublicKey() right after this format step (AA01). */
+    s_nvmCatalog[1].muMask        = (hseMuMask_t)HSE_ALL_MU_MASK;
+    s_nvmCatalog[1].groupOwner    = HSE_KEY_OWNER_CUST;
+    s_nvmCatalog[1].keyType       = HSE_KEY_TYPE_RSA_PUB;
+    s_nvmCatalog[1].numOfKeySlots = 1U;
+    s_nvmCatalog[1].maxKeyBitLen  = HSE_KEY2048_BITS;
+
     (void)memset(s_ramCatalog, 0, sizeof(s_ramCatalog));
     s_ramCatalog[0].muMask        = (hseMuMask_t)HSE_ALL_MU_MASK;
     s_ramCatalog[0].groupOwner    = HSE_KEY_OWNER_ANY;
     s_ramCatalog[0].keyType       = HSE_KEY_TYPE_AES;
     s_ramCatalog[0].numOfKeySlots = 2U;
     s_ramCatalog[0].maxKeyBitLen  = HSE_KEY128_BITS;
+
+    /* Keep the RAM catalog layout aligned with the NVM one (same groups,
+     * owner ANY for RAM).  No RAM RSA key is imported by the bootloader. */
+    s_ramCatalog[1].muMask        = (hseMuMask_t)HSE_ALL_MU_MASK;
+    s_ramCatalog[1].groupOwner    = HSE_KEY_OWNER_ANY;
+    s_ramCatalog[1].keyType       = HSE_KEY_TYPE_RSA_PUB;
+    s_ramCatalog[1].numOfKeySlots = 1U;
+    s_ramCatalog[1].maxKeyBitLen  = HSE_KEY2048_BITS;
 
     (void)memset(&s_desc, 0, sizeof(s_desc));
     s_desc.srvId = HSE_SRV_ID_FORMAT_KEY_CATALOGS;

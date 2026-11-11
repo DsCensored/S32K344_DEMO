@@ -24,6 +24,7 @@
 #include "hse_trng.h"     /* HSE 硬件 TRNG，供 UDS 0x27 取随机种子 */
 #include "hse_aes.h"      /* HSE AES-128，供 UDS 0x27 key 计算 */
 #include "hse_hash.h"     /* HSE SHA-256，供刷写镜像完整性校验 */
+#include "hse_rsa.h"      /* HSE RSA-2048 公钥，供 0x31 01 02 02 验签 */
 
 UDS_DcmContextType UDS_DcmCtx;
 
@@ -698,7 +699,7 @@ static unsigned char UDS_DcmTransferExit(const unsigned char *req,
 
 	/* 77 <SHA-256:32>: the digest is computed by the HSE over the image as
 	 * it is stored (ITCM / backup area).  The tester compares it with the
-	 * SHA-256 of the file it sent (and repeats it in 31 01 02 02). */
+	 * SHA-256 of the file it sent (and later signs it in 31 01 02 02). */
 	nrc = BootProg_TransferExit(&UDS_TxBuf[1]);
 	if (0U != nrc)
 	{
@@ -806,16 +807,39 @@ static unsigned char UDS_DcmRoutineCopy(const unsigned char *req, unsigned int l
 }
 
 /* 0x0202: always answers positively; the result is the status byte.
- * Request: 31 01 02 02 <SHA-256:32> (HSE SHA-256 of the downloaded image). */
+ *
+ * New request: 31 01 02 02 <RSA-2048 block:256>
+ *   The tester encrypts/signs the SHA-256 of the downloaded image with the
+ *   RSA private key.  The ECU decrypts it with the public key installed by
+ *   AA01 and compares the recovered digest with the 0x37 value.
+ *
+ * Legacy request (still accepted while BOOT_RSA_ALLOW_PLAIN_HASH is 1):
+ *   31 01 02 02 <SHA-256:32> */
 static unsigned char UDS_DcmRoutineIntegrity(const unsigned char *req, unsigned int len,
                                               unsigned int *status)
 {
-	if (len < (4U + HSE_HASH_SHA256_SIZE))
+	unsigned int dataLen;
+
+	if (len < 4U)
 	{
 		return (unsigned char)NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
 	}
 
-	return BootProg_CheckIntegrity(&req[4], status);
+	dataLen = len - 4U;
+
+	if ((unsigned int)HSE_RSA_SIGNATURE_SIZE == dataLen)
+	{
+		return BootProg_CheckIntegritySignature(&req[4], dataLen, status);
+	}
+
+#if BOOT_RSA_ALLOW_PLAIN_HASH
+	if (dataLen >= (unsigned int)HSE_HASH_SHA256_SIZE)
+	{
+		return BootProg_CheckIntegrity(&req[4], status);
+	}
+#endif
+
+	return (unsigned char)NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
 }
 
 static unsigned char UDS_DcmRoutinePrecondition(const unsigned char *req, unsigned int len,
@@ -832,13 +856,25 @@ static unsigned char UDS_DcmRoutinePrecondition(const unsigned char *req, unsign
 static unsigned char UDS_DcmRoutineLoadHseKeys(const unsigned char *req, unsigned int len,
                                                unsigned int *status)
 {
+	unsigned char err;
+
 	(void)req;
 	(void)len;
 
-	/* 0x31 01 AA01：格式化 HSE 密钥目录，并把两个 AES-128 密钥导入
-	 * NVM 密钥槽（group 0 slot 0/1）。密钥掉电保持，后续 0x27 直接使用。
+	/* 0x31 01 AA01：格式化 HSE 密钥目录，然后导入
+	 *   - 两个 AES-128 密钥（group 0, slot 0/1），供 0x27 使用；
+	 *   - RSA-2048 公钥（group 1, slot 0），供 0x31 01 02 02 使用。
+	 * 密钥保存在 HSE NVM，掉电保持，后续服务直接使用。
 	 * 参考 Chery C0V bootloader 的 HSE_Crypto_Init 流程。 */
-	*status = (0U == HseAes_ProgramKeys()) ? 0U : 1U;
+	err = HseAes_ProgramKeys();
+	if (0U != err)
+	{
+		*status = 1U;
+		return 0U;
+	}
+
+	err = HseRsa_ProgramPublicKey();
+	*status = (0U == err) ? 0U : 2U;
 	return 0U;
 }
 

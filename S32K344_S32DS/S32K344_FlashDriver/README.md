@@ -76,7 +76,9 @@ Project_Settings/Linker_Files/
 `S32K3_HSE_DemoExamples` 的 `hse_host_hash.c`），不再使用软件 CRC32：
 
 - `0x37` 正响应：`77 <SHA-256:32>`；
-- `31 01 02 02`：`31 01 02 02 <SHA-256:32>`，与最后一次 `0x37` 的摘要比较；
+- `31 01 02 02`：`31 01 02 02 <RSA-2048 签名:256>`，用 AA01 安装到 HSE 的
+  RSA 公钥解出 SHA-256，再与最后一次 `0x37` 的摘要比较（旧 32 字节明文摘要
+  仍由 `BOOT_RSA_ALLOW_PLAIN_HASH` 兼容开关控制）；
 - `FF01`：对备份区重新计算 SHA-256；
 - `FF02`：对运行区重新计算 SHA-256。
 

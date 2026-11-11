@@ -33,5 +33,6 @@ This project is demo code for the NXP S32K344 Automotive Grade MCU. It includes 
 ###ASIL
 - **HSE TRNG**
 - **HSE AES128 for UDS 27 service**
-- **HSE SHA-256 for flashing image integrity (0x37 / 31 01 02 02 / FF01 / FF02)**
+- **HSE SHA-256 for flashing image integrity (0x37 / FF01 / FF02)**
+- **HSE RSA-2048 public key for 31 01 02 02 image signature check (installed by 31 01 AA01)**
 

@@ -567,6 +567,9 @@ static const Boot_FlashDriverType *BootFlashHeader(void)
 0x31 01 02 02: 31 01 02 02 <SHA-256:32> -> 71 01 02 02 <status>
 ```
 
+> 注：`31 01 02 02` 后续已升级为 RSA-2048 签名校验，见 9.8；上面的 32 字节
+> 明文摘要格式仅作为 `BOOT_RSA_ALLOW_PLAIN_HASH=1` 时的兼容路径保留。
+
 `FF01` / `FF02` 的 result 码含义不变（只把 CRC 换成 SHA-256），并新增
 `0x14`（FF01：HSE 计算失败）与 `0x06`（FF02：HSE 计算失败）用于区分
 “摘要不一致”和“HSE 服务失败”。
@@ -601,6 +604,57 @@ $env:PATH = 'D:\NXP\S32DS\build_tools\gcc_v10.2\gcc-10.2-arm32-eabi\bin;' +
 编译无警告；`arm-none-eabi-size` 结果 `text 110584 / data 6568 / bss 32048`。
 HSE 序列与摘要值需要在实板上用总线工具确认（`0x37` 的 32 字节摘要应与上位机
 对同一 `.bin` 计算的 SHA-256 完全一致）。
+
+### 9.8 0x31 01 02 02 改为 RSA-2048 公钥验签
+
+需求：把 `.ssh/S32K344_RSA.pub` 对应的 RSA-2048 公钥装入 bootloader，并通过
+`31 01 AA01` 安装到 HSE；刷写时 `31 01 02 02` 用该公钥解出上位机送来的
+SHA-256，再与 `0x37` 计算出的摘要比较。私钥只在上位机使用，不进入 ECU。
+
+**改动文件**
+
+| 文件 | 内容 |
+| --- | --- |
+| `MCAL/HSE/hse_rsa_key.c/.h` | 新增：RSA-2048 模数（256 字节大端）+ e=65537 数组 |
+| `MCAL/HSE/hse_rsa.c/.h` | 新增：HSE 公钥导入、RSA 解密/验签、PKCS#1 v1.5 去填充 |
+| `MCAL/HSE/hse_aes.c` | NVM/RAM key catalog 增加 group 1（RSA_PUB，2048 bit） |
+| `UDS/UDS_DcmCfg.c` | AA01 格式化后导入 AES + RSA 公钥；0202 按报文长度分发 |
+| `ASW/UserCode/Boot_Program.c/.h` | 新增 `BootProg_CheckIntegritySignature()` 与 `BOOT_ST_CHK_RSA` |
+
+**UDS 报文变化**
+
+```
+31 01 AA01                         -> 71 01 AA01 <status>
+                                      0 = 成功；1 = AES/格式化失败；2 = RSA 公钥导入失败
+31 01 02 02 <RSA-2048 签名:256>    -> 71 01 02 02 <status>
+                                      0 = 校验通过；1 = 摘要不一致；2 = 无下载；3 = RSA/HSE 失败
+```
+
+**实现要点**
+
+1. HSE key catalog 布局：
+   - NVM group 0：AES-128 slot 0/1（0x27 level 1/2）；
+   - NVM group 1：RSA_PUB slot 0（2048 bit）。
+   RAM catalog 保持相同 group 结构（RSA 槽不使用）。
+2. RSA 公钥以 `HSE_KEY_TYPE_RSA_PUB` 导入，`keyFlags = ENCRYPT | VERIFY`，
+   `keyCounter = 1`（AA01 刚格式化过 catalog）。
+3. `HseRsa_VerifyDigest()` 依次尝试三条 HSE 路径，覆盖常见上位机实现：
+   - RSAES-PKCS1-v1_5 解密（公钥直接解出 32 字节 SHA-256）；
+   - RSA NO_PADDING 解密 + 软件去 PKCS#1 v1.5 填充（兼容 OpenSSL
+     `RSA_private_encrypt()`，type 1/type 2 都支持）；
+   - HSE SIGN / VERIFY（`bInputIsHashed=TRUE`，标准 RSASSA-PKCS1-v1_5）。
+   注意：部分 HSE 固件不允许用 RSA 公钥做 RSA CIPHER 解密（公钥只支持
+   encrypt/verify）。如果实板返回 `HSE_SRV_RSP_KEY_INVALID`，上位机应改用
+   标准 `RSA_sign(SHA-256)`（带 DigestInfo 的 RSASSA-PKCS1-v1_5），第三条
+   路径即可完成校验。
+4. 解出的明文既可以是裸 SHA-256（32 字节），也可以是带
+   `30 31 30 0D ... 04 20` DigestInfo 前缀的 51 字节标准签名内容。
+5. 为兼容当前仍发送 32 字节明文摘要的上位机，`Boot_Program.h` 提供
+   `BOOT_RSA_ALLOW_PLAIN_HASH`（默认 1）；量产时应改为 0，只接受 RSA 签名。
+6. `hse_rsa.c` 的共享缓冲全部放在 `.non_cacheable_data`，与 `hse_aes.c` /
+   `hse_hash.c` 一致；HSE 不能访问 M7 DTCM。
+
+**编译验证**：`Debug_FLASH` 下 `make all` 通过（GCC 10.2，无警告）。
 
 
 
