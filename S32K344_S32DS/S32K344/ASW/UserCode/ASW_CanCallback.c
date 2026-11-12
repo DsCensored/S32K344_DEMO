@@ -56,11 +56,95 @@ CAN_TXStr CAN_CHN1_TX[CAN_CHN1_TX_COUNT] =
 	}
 };
 
-/* QCC 04.172 28h: disable only the normal application frames; the UDS CAN-TP
- * has its own transmit path and stays available for diagnostics. */
-void ASW_SetNormalCommEnabled(unsigned char enabled)
+/*
+ * 0x28 CommunicationControl.
+ *
+ * The diagnostic transport (UDS CAN-TP) is never switched off: it has its
+ * own transmit path and must stay available so the tester can re-enable
+ * communication.  Only the application frames and, for communication type
+ * 0x02/0x03, the network management frames are gated here.
+ *
+ * CommCtrlDisabled is a separate field from Enable so the AutoSarNm state
+ * machine can keep controlling Enable without undoing a diagnostic request.
+ */
+
+static CAN_TXStr *ASW_FindTxEntry(unsigned int canId)
 {
-	CAN_CHN1_TX[0].Enable = (0U != enabled) ? 1U : 0U;
+	unsigned int i;
+
+	for (i = 0U; i < CAN_CHN1_TX_COUNT; i++)
+	{
+		if ((NULL_PTR != CAN_CHN1_TX[i].Data) &&
+		    (CAN_CHN1_TX[i].Data->ID == canId))
+		{
+			return &CAN_CHN1_TX[i];
+		}
+	}
+
+	return NULL_PTR;
+}
+
+static CAN_RXStr *ASW_FindRxEntry(unsigned int canId)
+{
+	unsigned int i;
+
+	for (i = 0U; i < CAN_CHN1_RX_COUNT; i++)
+	{
+		if (CAN_CHN1_RX[i].canid == canId)
+		{
+			return &CAN_CHN1_RX[i];
+		}
+	}
+
+	return NULL_PTR;
+}
+
+static unsigned char ASW_IsDiagnosticRxId(unsigned int canId)
+{
+	return ((canId == (unsigned int)UDS_FUNREQ_ADDR) ||
+	        (canId == (unsigned int)UDS_PHYREQ_ADDR) ||
+	        (canId == (unsigned int)UDS_RESP_ADDR)) ? 1U : 0U;
+}
+
+void ASW_SetNormalCommEnabled(unsigned char rxEnabled, unsigned char txEnabled)
+{
+	unsigned int i;
+
+	/* Normal application transmit frames: everything except the NM frame. */
+	for (i = 0U; i < CAN_CHN1_TX_COUNT; i++)
+	{
+		if ((NULL_PTR != CAN_CHN1_TX[i].Data) &&
+		    (CAN_CHN1_TX[i].Data->ID != (uint32_T)CAN_ID_VEH_TX_NM))
+		{
+			CAN_CHN1_TX[i].CommCtrlDisabled = (0U == txEnabled) ? 1U : 0U;
+		}
+	}
+
+	/* Normal application receive frames: neither diagnostic nor NM. */
+	for (i = 0U; i < CAN_CHN1_RX_COUNT; i++)
+	{
+		if ((0U == ASW_IsDiagnosticRxId(CAN_CHN1_RX[i].canid)) &&
+		    (CAN_CHN1_RX[i].canid != (unsigned int)CAN_ID_VEH_RX_NM))
+		{
+			CAN_CHN1_RX[i].CommCtrlDisabled = (0U == rxEnabled) ? 1U : 0U;
+		}
+	}
+}
+
+void ASW_SetNmCommEnabled(unsigned char rxEnabled, unsigned char txEnabled)
+{
+	CAN_TXStr *txEntry = ASW_FindTxEntry((unsigned int)CAN_ID_VEH_TX_NM);
+	CAN_RXStr *rxEntry = ASW_FindRxEntry((unsigned int)CAN_ID_VEH_RX_NM);
+
+	if (NULL_PTR != txEntry)
+	{
+		txEntry->CommCtrlDisabled = (0U == txEnabled) ? 1U : 0U;
+	}
+
+	if (NULL_PTR != rxEntry)
+	{
+		rxEntry->CommCtrlDisabled = (0U == rxEnabled) ? 1U : 0U;
+	}
 }
 
 void ASW_CanInit(void)

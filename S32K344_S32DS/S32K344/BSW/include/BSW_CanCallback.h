@@ -21,6 +21,9 @@ struct CAN_RXStr
 	unsigned int overtime;
 	CAN_RX_CallbackType Callback;
 	volatile unsigned char *timeout_flag;
+	/* 0x28 CommunicationControl override: 1 = reception of this frame is
+	 * disabled.  Zero-initialised, so every existing entry stays enabled. */
+	unsigned char CommCtrlDisabled;
 };
 
 typedef struct
@@ -38,6 +41,10 @@ struct CAN_TXStr
 	unsigned int last_send_tick;
 	CAN_TX_CallbackType Callback;
 	unsigned char Enable;
+	/* 0x28 CommunicationControl override: 1 = transmission of this frame is
+	 * disabled.  Kept separate from Enable so the NM state machine can keep
+	 * updating Enable without overriding the diagnostic request. */
+	unsigned char CommCtrlDisabled;
 };
 
 void BSW_CANRX_INIT(CAN_RXStr* str, unsigned char len);

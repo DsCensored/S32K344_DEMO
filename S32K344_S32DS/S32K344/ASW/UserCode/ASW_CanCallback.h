@@ -20,4 +20,11 @@ extern CAN_TXStr CAN_CHN1_TX[CAN_CHN1_TX_COUNT];
 
 void ASW_CanInit(void);
 
+/*
+ * 0x28 CommunicationControl hooks.  Each direction is switched separately;
+ * the UDS transport itself is not affected.
+ */
+void ASW_SetNormalCommEnabled(unsigned char rxEnabled, unsigned char txEnabled);
+void ASW_SetNmCommEnabled(unsigned char rxEnabled, unsigned char txEnabled);
+
 #endif /* USERCODE_ASW_CANCALLBACK_H_ */

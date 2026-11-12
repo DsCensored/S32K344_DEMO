@@ -246,6 +246,12 @@ boolean BSW_CanRxCallout
         return FALSE;
     }
 
+    /* 0x28 CommunicationControl: drop frames whose reception is disabled. */
+    if (0U != rxEntry->CommCtrlDisabled)
+    {
+        return FALSE;
+    }
+
     now = BSW_GetSystemTick();
     rxEntry->get_time_tick = now;
     BSW_cntCan0RxCnt++;
@@ -330,6 +336,7 @@ void BSW_CANTX_POLL(void)
 
             if ((NULL_PTR == txEntry->Data) ||
                 (0U == txEntry->Enable) ||
+                (0U != txEntry->CommCtrlDisabled) ||
                 (0U == txEntry->send_period))
             {
                 continue;

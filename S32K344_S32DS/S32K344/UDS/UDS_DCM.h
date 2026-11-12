@@ -42,6 +42,12 @@ void UDS_DCM_Poll(void);
 UDS_DcmSessionType UDS_DCM_GetSession(void);
 unsigned char UDS_DCM_IsSecurityUnlocked(void);
 
+/*
+ * 0x28 CommunicationControl status.  Returns non-zero when normal
+ * application communication is disabled in both directions.
+ */
+unsigned char UDS_DcmIsCommunicationDisabled(void);
+
 /* Can be overridden by the application. */
 void UDS_DCM_ResetHook(void);
 

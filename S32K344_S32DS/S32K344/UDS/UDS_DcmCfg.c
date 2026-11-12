@@ -12,6 +12,7 @@
 
 #include "UDS_DcmCfg.h"
 #include "UDS_CanTp.h"
+#include "ASW_CanCallback.h"
 #include "UserOS.h"
 #include "Mcu.h"
 #include "Gpt.h"
@@ -26,6 +27,40 @@
 #include "hse_aes.h"      /* HSE 硬件 TRNG，供 UDS 0x27 取随机种子 */
 
 UDS_DcmContextType UDS_DcmCtx;
+
+/*
+ * 0x28 CommunicationControl state.
+ *
+ * One entry per ISO 14229-1 communication type.  The type value is used as
+ * a bit mask in this table (bit 0 = normal communication, bit 1 = network
+ * management), so communicationType 0x03 updates both entries in one loop.
+ */
+#define UDS_DCM_COMM_TYPE_NORMAL   0x01U
+#define UDS_DCM_COMM_TYPE_NM       0x02U
+#define UDS_DCM_COMM_TYPE_ALL      (UDS_DCM_COMM_TYPE_NORMAL | UDS_DCM_COMM_TYPE_NM)
+#define UDS_DCM_COMM_COUNT         2U
+
+static unsigned char UDS_DcmCommRxEnabled[UDS_DCM_COMM_COUNT] = {1U, 1U};
+static unsigned char UDS_DcmCommTxEnabled[UDS_DCM_COMM_COUNT] = {1U, 1U};
+
+static void UDS_DcmApplyCommunicationControl(void)
+{
+	ASW_SetNormalCommEnabled(UDS_DcmCommRxEnabled[0], UDS_DcmCommTxEnabled[0]);
+	ASW_SetNmCommEnabled(UDS_DcmCommRxEnabled[1], UDS_DcmCommTxEnabled[1]);
+}
+
+static void UDS_DcmResetCommunicationControl(void)
+{
+	unsigned int i;
+
+	for (i = 0U; i < UDS_DCM_COMM_COUNT; i++)
+	{
+		UDS_DcmCommRxEnabled[i] = 1U;
+		UDS_DcmCommTxEnabled[i] = 1U;
+	}
+
+	UDS_DcmApplyCommunicationControl();
+}
 
 /* UDS 0x27：16 字节种子 + AES128 预期密钥（文件内静态，避免改上下文结构体） */
 static unsigned char UDS_Seed16[16];
@@ -45,6 +80,14 @@ static unsigned char UDS_DcmSetSession(UDS_DcmSessionType session, unsigned int 
 	UDS_DcmCtx.Seed = 0U;
 	UDS_DcmCtx.SeedLevel = 0U;
 	UDS_DcmCtx.SecurityFailCount = 0U;
+
+	/* Returning to the default session restores the default communication
+	 * state, so a tester that switched communication off cannot leave the
+	 * ECU silent after the session ends. */
+	if (UDS_DCM_SESSION_DEFAULT == session)
+	{
+		UDS_DcmResetCommunicationControl();
+	}
 
 	UDS_TxBuf[1] = (unsigned char)session;
 	*rspLen = 2U;
@@ -760,37 +803,85 @@ static unsigned char UDS_DcmRoutineControl(const unsigned char *req, unsigned in
 	return 0U;
 }
 
-extern void ASW_SetNormalCommEnabled(unsigned char enabled);
-
-static unsigned char UDS_DcmCommunicationDisabled;
-
 static unsigned char UDS_DcmCommunicationControl(const unsigned char *req,
                                                  unsigned int len,
                                                  unsigned int *rspLen)
 {
 	unsigned char subFn;
+	unsigned char commType;
+	unsigned char rxEnabled;
+	unsigned char txEnabled;
+	unsigned int i;
 
-	if (len < 3U)
+	/* 28 <sub-function> <communicationType>: exactly three bytes. */
+	if (len != 3U)
 	{
 		return (unsigned char)NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
 	}
 
 	subFn = (unsigned char)(req[1] & 0x7FU);
-	if ((0x00U != subFn) && (0x03U != subFn))
+	commType = req[2];
+
+	/* Sub-functions 0x00..0x03 control Rx/Tx.  The enhanced-address
+	 * variants 0x04/0x05 are optional and need an additional address
+	 * parameter, so they are not supported here. */
+	if (subFn > 0x03U)
 	{
 		return (unsigned char)NRC_SUBFUNCTION_NOT_SUPPORTED;
 	}
 
-	if (0x03U != req[2])
+	/* 0x01 normal, 0x02 network management, 0x03 both.  Everything else
+	 * (including the reserved 0x04..0xFF range) is out of range. */
+	if ((commType < UDS_DCM_COMM_TYPE_NORMAL) || (commType > UDS_DCM_COMM_TYPE_ALL))
 	{
 		return (unsigned char)NRC_REQUEST_OUT_OF_RANGE;
 	}
 
-	UDS_DcmCommunicationDisabled = (0x03U == subFn) ? 1U : 0U;
-	ASW_SetNormalCommEnabled((0x03U == subFn) ? 0U : 1U);
+	/*
+	 * ISO 14229-1 sub-function encoding:
+	 *   0x00 enableRxAndTx
+	 *   0x01 enableRxAndDisableTx
+	 *   0x02 disableRxAndEnableTx
+	 *   0x03 disableRxAndTx
+	 */
+	switch (subFn)
+	{
+	case 0x00U:
+		rxEnabled = 1U;
+		txEnabled = 1U;
+		break;
 
+	case 0x01U:
+		rxEnabled = 1U;
+		txEnabled = 0U;
+		break;
+
+	case 0x02U:
+		rxEnabled = 0U;
+		txEnabled = 1U;
+		break;
+
+	default:
+		rxEnabled = 0U;
+		txEnabled = 0U;
+		break;
+	}
+
+	for (i = 0U; i < UDS_DCM_COMM_COUNT; i++)
+	{
+		if (0U != (commType & (unsigned char)(1U << i)))
+		{
+			UDS_DcmCommRxEnabled[i] = rxEnabled;
+			UDS_DcmCommTxEnabled[i] = txEnabled;
+		}
+	}
+
+	UDS_DcmApplyCommunicationControl();
+
+	/* Positive response: 68 <sub-function> <communicationType>. */
 	UDS_TxBuf[1] = subFn;
-	*rspLen = 2U;
+	UDS_TxBuf[2] = commType;
+	*rspLen = 3U;
 	return 0U;
 }
 
@@ -837,7 +928,10 @@ static unsigned char UDS_DcmClearDiagnosticInformation(const unsigned char *req,
 
 unsigned char UDS_DcmIsCommunicationDisabled(void)
 {
-	return UDS_DcmCommunicationDisabled;
+	/* Historical meaning: normal application communication is disabled in
+	 * both directions. */
+	return ((0U == UDS_DcmCommRxEnabled[0]) &&
+	        (0U == UDS_DcmCommTxEnabled[0])) ? 1U : 0U;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -869,6 +963,7 @@ unsigned char UDS_DcmIsCommunicationDisabled(void)
  *   0x11 ECUReset                   all sessions          no security
  *   0x22 ReadDataByIdentifier       all sessions          no security
  *   0x27 SecurityAccess             all sessions          no security
+ *   0x28 CommunicationControl       Extended              no security
  *   0x2E WriteDataByIdentifier      Extended, Programming Level 1
  *   0x31 RoutineControl             Extended, Programming Level 1
  *                                   physical addressing only
@@ -890,6 +985,8 @@ const UDS_DcmServiceType UDS_DcmServices[] =
 	{0x22U, UDS_DCM_NO_SUBFN, UDS_DCM_SESSION_MASK_ALL,                UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmReadDataByIdentifier},
 
 	{0x28U, 0x00U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmCommunicationControl},
+	{0x28U, 0x01U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmCommunicationControl},
+	{0x28U, 0x02U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmCommunicationControl},
 	{0x28U, 0x03U, UDS_DCM_SESSION_MASK_EXTENDED,                      UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmCommunicationControl},
 
 	{0x2EU, UDS_DCM_NO_SUBFN, UDS_DCM_SESSION_MASK_EXTENDED,           UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmWriteDataByIdentifier},
@@ -916,12 +1013,16 @@ const unsigned int UDS_DcmServiceCount =
 
 void UDS_DcmCfgInit(void)
 {
-	/* Add application-specific initialization here. */
+	/* Start with all communication enabled. */
+	UDS_DcmResetCommunicationControl();
 }
 
 void UDS_DcmCfgSessionTimeout(void)
 {
-	/* The application stays in the default session on an S3 timeout. */
+	/* The application stays in the default session on an S3 timeout.  The
+	 * session change also restores the default communication state, so a
+	 * disabled ECU cannot stay silent forever. */
+	UDS_DcmResetCommunicationControl();
 }
 
 void UDS_DcmCfgPoll(void)
