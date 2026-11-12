@@ -390,7 +390,15 @@ static const UDS_DcmFixedDidType UDS_DcmFixedDids[] =
 	{0xF18CU, 0x00448300UL},
 	{0xF191U, 0x00448130UL},
 	{0xF192U, 0x00448160UL},
-	{0xF19EU, 0x00448140UL}
+	{0xF19EU, 0x00448140UL},
+	{0xFE00U, 0x00400100UL},//BOOT 软件版本号
+	{0xFE01U, 0x00448100UL},//APP 软件版本号
+	{0xFE02U, 0x00448110UL},//硬件版型版本号
+	{0xFE03U, 0x00448120UL},//ECU 型号
+	{0xFE04U, 0x00448160UL},//APP 软件编译日期
+	{0xFE05U, 0x00448170UL},//APP 软件编译时间
+	{0xFE06U, 0x00400160UL},//BOOT 软件编译日期
+	{0xFE07U, 0x00400170UL}//BOOT 软件编译时间
 };
 
 static unsigned char UDS_DcmFixedDidRead(const UDS_DcmDidType *did,
@@ -417,67 +425,6 @@ static unsigned char UDS_DcmFixedDidRead(const UDS_DcmDidType *did,
 	}
 
 	return NRC_REQUEST_OUT_OF_RANGE;
-}
-
-static unsigned char UDS_DcmF120Read(const UDS_DcmDidType *did,
-                                     unsigned char *buf,
-                                     unsigned int maxLen,
-                                     unsigned int *outLen)
-{
-	(void)did;
-
-	if (maxLen < 32)
-	{
-		return NRC_RESPONSE_TOO_LONG;
-	}
-
-	memcpy(buf, (const void *)0x00448160, 32);
-	*outLen = 32;
-	return 0U;
-}
-
-/*
- * 0xF121 .. 0xF128: one App_Info block per DID.
- *
- *   F121 -> App_Info_AppVersion        (0x00448100)
- *   F122 -> App_Info_BootVersion       (0x00448110)
- *   F123 -> App_Info_HardwareVersion   (0x00448120)
- *   F124 -> App_Info_OrderCode         (0x00448130)
- *   F125 -> App_Info_SupplierCode      (0x00448140)
- *   F126 -> App_Info_SerialNumber      (0x00448150)
- *   F127 -> App_Info_ProductionDate    (0x00448160)
- *   F128 -> App_Info_UpdateComponent   (0x00448170)
- *
- * Every DID returns APP_INFO_BLOCK_SIZE (16) bytes.  Read only, no 0x2E.
- */
-static unsigned char UDS_DcmAppInfoRead(const UDS_DcmDidType *did,
-                                        unsigned char *buf,
-                                        unsigned int maxLen,
-                                        unsigned int *outLen)
-{
-	const unsigned int len = (unsigned int)APP_INFO_BLOCK_SIZE;
-	unsigned int id;
-
-	/* F121 selects block 0, F122 block 1, ... */
-	if (did->Did < 0xF121U)
-	{
-		return NRC_REQUEST_OUT_OF_RANGE;
-	}
-
-	id = (unsigned int)(did->Did - 0xF121U);
-	if (id >= (unsigned int)APP_INFO_BLOCK_COUNT)
-	{
-		return NRC_REQUEST_OUT_OF_RANGE;
-	}
-
-	if (maxLen < len)
-	{
-		return NRC_RESPONSE_TOO_LONG;
-	}
-
-	memcpy(buf, (const void *)APP_INFO_ADDRESS(id), len);
-	*outLen = len;
-	return 0U;
 }
 
 static unsigned char UDS_DcmF190Read(const UDS_DcmDidType *did,
@@ -527,15 +474,14 @@ const UDS_DcmDidType UDS_DcmDids[] =
 {
 	{0xF190U, UDS_DcmF190Read, UDS_DcmF190Write},
 	{0xF184U, UDS_DcmF184Read, 0},
-	{0xF120U, UDS_DcmF120Read, 0},
-	{0xF121U, UDS_DcmAppInfoRead, 0},
-	{0xF122U, UDS_DcmAppInfoRead, 0},
-	{0xF123U, UDS_DcmAppInfoRead, 0},
-	{0xF124U, UDS_DcmAppInfoRead, 0},
-	{0xF125U, UDS_DcmAppInfoRead, 0},
-	{0xF126U, UDS_DcmAppInfoRead, 0},
-	{0xF127U, UDS_DcmAppInfoRead, 0},
-	{0xF128U, UDS_DcmAppInfoRead, 0},
+	{0xFE00U, UDS_DcmFixedDidRead, 0},
+	{0xFE01U, UDS_DcmFixedDidRead, 0},
+	{0xFE02U, UDS_DcmFixedDidRead, 0},
+	{0xFE03U, UDS_DcmFixedDidRead, 0},
+	{0xFE04U, UDS_DcmFixedDidRead, 0},
+	{0xFE05U, UDS_DcmFixedDidRead, 0},
+	{0xFE06U, UDS_DcmFixedDidRead, 0},
+	{0xFE07U, UDS_DcmFixedDidRead, 0},
 	/* Version / identification DIDs (fixed flash addresses). */
 	{0xF180U, UDS_DcmFixedDidRead, 0},
 	{0xF187U, UDS_DcmFixedDidRead, 0},
