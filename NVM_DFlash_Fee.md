@@ -656,5 +656,296 @@ SHA-256，再与 `0x37` 计算出的摘要比较。私钥只在上位机使用�
 
 **编译验证**：`Debug_FLASH` 下 `make all` 通过（GCC 10.2，无警告）。
 
+### 9.9 启动时校验 APP 的 SHA-256（NVM Block3）
+
+需求：
+
+1. `31 01 FF02`（`BootProg_CopyStep`）**搬运前**，把 APP 的 SHA-256 和文件长度
+   存进 NVM；
+2. 启动时（`Boot_TryJumpToApp`）初始化 NVM、读出 SHA-256 和长度、初始化 HSE，
+   对**运行区**重新计算 SHA-256 并与 NVM 的值比较；一致才允许跳 APP，
+   否则必须留在 boot。
+
+**Block3 布局**（`ASW/UserCode/NvmApp.h`，偏移是块内 payload 偏移）
+
+| 偏移 | 长度 | 枚举 | 内容 |
+| --- | --- | --- | --- |
+| 0 | 32 | `kBlock3_Now_SHAdata` | 当前运行区 APP 的 SHA-256 |
+| 32 | 32 | `kBlock3_Pre_SHAdata` | 备份区 APP 的 SHA-256（本期不使用） |
+| 64 | 4 | `kBlock3_Now_FileSize` | 当前 APP 的文件长度，小端 |
+| 68 | 4 | `kBlock3_Pre_FileSize` | 备份区 APP 的文件长度（本期不使用） |
+
+**改动文件**
+
+| 文件 | 内容 |
+| --- | --- |
+| `ASW/UserCode/Boot_Program.c/.h` | 新增 `BootProg_StoreImageInfo()`：搬运前写 SHA-256 + 长度并 `Nvm_CommitBlock()`；新增结果码 `BOOT_ST_COPY_NVM`(0x07) |
+| `ASW/UserCode/Boot.c` | 新增 `Boot_AppShaVerify()`（NVM+HSE 初始化、读 NVM、哈希运行区、比较）、`Boot_AppShaConfirm()`、诊断数组 `g_bootAppShaDiag[]` |
+| `ASW/UserCode/Boot.h` | 声明 `Boot_AppShaConfirm()` 与 HSE 启动重试参数 |
+| `MCAL/BSW_Init.c/.h` | 新增幂等的 `BSW_EarlyInitClock()` / `BSW_EarlyInitNvm()`，`BSW_Init()` 复用其结果 |
+| `src/main.c` | 改为包含 `BSW_Init.h` |
+
+**`FF02` 的时序（为什么在搬运前写）**
+
+```
+FF02 第 1 帧 : 擦除运行区
+             -> 成功后才写 NVM（SHA-256 + 长度）并 Commit 到 DFlash
+             -> 回答 0x78，继续搬运 8 KB/帧
+FF02 后续帧  : 写运行区
+最后一帧     : 回读运行区算 SHA-256，与下载摘要比较
+             -> 一致：Boot_AppShaConfirm()，允许随后的 10 01 直接跳 APP
+```
+
+- 擦除失败时**不写** NVM：老的 APP 还能继续启动；
+- 写 NVM 之后才开始改运行区：中途掉电/复位时运行区已经和 NVM 不一致，
+  下次启动必然留在 boot，不会跳进半截的镜像。
+
+**启动检查（`Boot_TryJumpToApp`）**
+
+```
+1. BSW_EarlyInitClock()        // PLL 160 MHz，HSE / DFlash 需要
+2. Boot_HseProbe()             // 只读一次 MU 状态：HSE 就绪了没有？不等
+3. BSW_EarlyInitNvm()          // MemAcc -> Fee -> Mem_43_INFLS + RAM 影子
+                               // 这段耗时正好当作 HSE 的启动时间（见 9.11）
+4. 读 Block3 的 SHA-256、长度（长度必须是 0 < len <= BOOT_APP_SIZE）
+5. 第 2 步未就绪时才 Boot_HseWaitReady()：只等剩下的那部分
+6. HseHash_Sha256Region(0x00448000, len) 与 NVM 的摘要比较
+7. 相等 -> 关中断、Boot_FlashWipe()、Mem_43_INFLS_DeInit()/MemAcc_DeInit()、跳 APP
+   否则 -> 直接 return，Boot_AppShaState = BAD
+```
+
+- 状态是**粘滞**的：`Boot_AppShaState = BAD` 之后 `Boot_AppIsValid()` 一律返回 0，
+  因此 `Boot_Init()` 置 `Boot_Stay = 1`，`Boot_Poll()` 的 5 s 超时和 10 01
+  都不会再跳 APP（这是"必须留在 boot"的关键）。
+- 检查是**失效关闭**（fail closed）：NVM 没写过、长度非法、HSE 失败、摘要
+  不一致都算失败。所以升级到本版本后，必须通过 bootloader 走一次
+  `34/36/37 + FF01 + FF02` 才会写入 Block3，之后再上电才能跳 APP。
+- `BSW_EarlyInitClock/Nvm` 是幂等的：检查失败后 `main()` 继续调用 `BSW_Init()`
+  时不会重复初始化内存栈（`Mem_43_INFLS_Init` 只做一次），避免时钟/等待周期
+  被配置两次。
+- `0xFF02` 成功后会调用 `Boot_AppShaConfirm()` 把状态置为 OK，所以刷完写
+  `10 01` 可以立刻跳 APP，不用再复位一次。
+
+**调试**：`g_bootAppShaDiag[]`（`volatile`，J-Link 直接读）
+
+| 下标 | 含义 |
+| --- | --- |
+| [0] | 状态：0 = 未检查，1 = 通过，2 = 失败 |
+| [1] | NVM 里读到的文件长度 |
+| [2] | 失败原因：0x100 块无效 / 0x101 长度非法 / 0x102 HSE 哈希失败 / 0x103 摘要不一致 / 0x104 Nvm_Init 失败 / 0x105 HSE 未就绪 |
+| [3] | `HseHash_GetLastError()` |
+| [4] | `0x53484132`（"SHA2" 标记） |
+
+**实测注意事项**
+
+1. `0x37`（以及 `FF02` 的最终校验）算的是**已落盘镜像**的 SHA-256，长度取
+   `0x34` 报文里的 size，与启动检查用的长度是同一个值；上位机按 `.bin`
+   计算的 SHA-256 也应一致。
+2. Block3 的写入走 `Nvm_Block3_Write_U8()` + `Nvm_UserBlock_Polling_10ms()`
+   （同步等 Fee 作业），与 APP 侧共享同一个 NVM 块；APP 侧目前没有使用
+   Block3 的前 72 字节。
+3. 上电到 APP 的启动时间会增加；为压低这段开销做了两级优化（staging 8 KB +
+   PFlash 直读），见 9.10。
+
+**编译验证**：`Debug_FLASH` 下 `make all` 通过（GCC 10.2，无警告）。
+
+### 9.10 启动哈希提速（staging 8 KB + PFlash 直读）
+
+9.9 的启动校验第一次实测偏慢，原因是 `hse_hash.c` 原来每 2 KB 做一次
+`memcpy` + 一次 HSE MU 往返：1.5 MB 镜像 → 750 次往返 + 1.5 MB 内存拷贝。
+
+**改动（`MCAL/HSE/hse_hash.c`）**
+
+| 项目 | 原来 | 现在 |
+| --- | --- | --- |
+| `HSE_HASH_STAGE_SIZE` | 2 KB | **8 KB**（`s_stage` 位于 `.non_cacheable_data`） |
+| PFlash 镜像 | 经 staging 拷贝，2 KB/次 | **HSE 直接读 PFlash**，64 KB/次（`HSE_HASH_DIRECT_CHUNK`） |
+| 1.5 MB 镜像的 MU 往返次数 | ≈750 | ≈24，且无 memcpy |
+| ITCM/RAM 缓冲区 | 2 KB/次 | 8 KB/次（仍必须走 staging） |
+
+`HseHash_Sha256Region()` 现在先判断区域是否**完全落在 PFlash**
+（`0x00400000..0x007FFFFF`）：
+
+```
+在 PFlash  -> HseHash_UpdateDirect()：pInput 直接指 PFlash，按 64 KB 分块 UPDATE
+否则(ITCM 0x0 / DTCM / SRAM 缓冲) -> 原 staging 路径（8 KB/次）
+直接请求被 HSE 拒绝 -> 自动回退 staging 路径（重新 START，结果仍然正确）
+```
+
+- PFlash 是只读的，不存在脏 cache line，HSE 直接读物理内存与 CPU 看到的内容
+  一致，因此直读路径不需要 cache 维护；
+- ITCM（地址 0 的 RAM 刷写驱动）和栈上的缓冲区 HSE 访问不到，仍走 staging；
+- 64 KB 是 64 的整数倍，满足 SHA-256 流式 UPDATE 的长度约束，也能保证每块
+  的起始地址对齐；
+- 若某颗料/某版 HSE 固件拒绝直读 PFlash，代码会自动回退，日志看
+  `g_hseHashDiag[2]`（先出现错误码，随后被 staging 路径的成功覆盖）。
+
+**RAM 占用**：`.non_cacheable_data` 从 0x20430510 起 `hse_hash.o` 由 0x8a0
+增到 0x20a0（+6 KB），整个非缓存区用到 0x20432b40；该 MPU 区域是 64 KB
+（`0x20430000..0x2043FF00`），还剩约 53 KB，无需改链接脚本。
+`data` 段相应 +6144 B（staging 的初值在 Flash 里）。
+
+**可调项**
+
+- 还嫌 MU 往返多：把 `HSE_HASH_DIRECT_CHUNK` 调到 256 KB（≈6 次往返），
+  代价是单次 HSE 请求变长；
+- 想更省 RAM：把 `HSE_HASH_STAGE_SIZE` 调回 2 KB，只影响 ITCM/RAM 数据的哈希。
+
+**编译验证**：`Debug_FLASH` 下 `make all` 通过（GCC 10.2，无警告）；
+`text 109 152 / data 14 000 / bss 32 088`。
+
+### 9.11 启动顺序：HSE 等待与 NVM 初始化重叠
+
+HSE 上电后由它自己的固件启动，和 M7 是**并行**的；M7 这边只要在发第一条
+HASH 请求之前它准备好就行。原来是「先 Nvm_Init，再 HseHash_Init 死等」，
+等于把两段串行时间加起来；现在改成：
+
+```
+BSW_EarlyInitClock()          // ~1~2 ms（FXOSC + PLL）
+Boot_HseProbe()               // 一次 MU 状态读，几十 ns，不等待
+BSW_EarlyInitNvm()            // ~数 ms（Fee 扫描 + 4 个块读入影子）
+                              //   HSE 在这段时间里继续启动，零成本
+Boot_HseWaitReady()           // 只有 probe 失败才进来，且只等"剩余部分"
+```
+
+效果：
+
+- HSE 在 NVM 初始化期间已经就绪时，delay 循环**一次都不执行**（常见情况）；
+- 只有上电复位、HSE 启动慢于 NVM 初始化时才会补等，预算 200 × 0.12 ms
+  ≈ 25 ms（`BOOT_HSE_INIT_RETRIES` / `BOOT_HSE_INIT_DELAY`），已覆盖
+  HSE 固件的正常启动时间；
+- `Boot_HseProbe()` 只是 `HseHash_Init()`（读 MU FSR），没有副作用。
+
+注意：单核上没法让两个**阻塞**调用真正并行，所以这里利用的是"HSE 启动是硬件
+并行、M7 的空转是纯浪费"这一点。NVM 初始化本身（Fee 内部扫描）仍然串行，
+如果以后还想再快，只能从 Fee 扫描或时钟初始化上下手，不建议在启动路径上
+裁剪（`10 01` 后 APP 侧还要用同一个 NVM 影子）。
+
+**各阶段实测（先量再优化）**
+
+`Boot_AppShaVerify()` 用 Cortex-M7 的 DWT 周期计数器（纯内核寄存器，不需要
+任何驱动/定时器）记录每一阶段，结果放在 `g_bootAppShaTime[]`，J-Link 直接读：
+
+| 下标 | 阶段 | 说明 |
+| --- | --- | --- |
+| [0] | 时钟初始化 | `BSW_EarlyInitClock()`（此刻还在 48 MHz，周期数偏大是正常的） |
+| [1] | HSE 探测 | 一次 MU 状态读 |
+| [2] | NVM 初始化 | `BSW_EarlyInitNvm()`（Fee 扫描 + 4 个块读入影子） |
+| [3] | 读 Block3 | 32 B + 4 B（RAM 影子，µs 级） |
+| [4] | HSE 补等 | 通常为 0 |
+| [5] | SHA-256 + 比较 | HSE 直读 PFlash |
+| [6] | 合计 | 从进入校验到通过的总周期数 |
+| [7] | `0x54494D45` | "TIME" 标记，确认结构体没错位 |
+
+换算：PLL 起来后 160 MHz，**160 个周期 = 1 µs**。例如 `[5] = 2 400 000`
+就是 15 ms，`[6] = 4 800 000` 就是 30 ms。
+
+若 `[5]` 仍然很大，说明直读被拒（看 `g_hseHashDiag[4]` 的 UPDATE 次数：
+≈24 是直读生效，≈750 是退回 staging）；若 `[2]` 很大，则是 Fee 扫描占主导，
+可考虑把 `NVM_BLOCK_ALWAYS_AVAILABLE` / 子区回收等 Fee 特性关掉再试。
+
+### 9.12 APP 启动两阶段 + NVM 切片初始化（目标：150 ms 内出首帧）
+
+需求：上电后 **150 ms 内**必须发出第一帧 CAN。原来 APP 的 `BSW_Init()` 一次性
+做完时钟/Port/Platform/GPT/CAN/UART/NVM/Nm/ICU/WDG，其中 `Nvm_Init()` 一项就
+50 ms，实测整机 360 ms 才出首帧。
+
+**两阶段拆分（`MCAL/BSW_Init.c/.h`）**
+
+| 阶段 | 内容 | 调用点 |
+| --- | --- | --- |
+| `BSW_InitEarly()` | MCU 时钟、Port、Platform(中断)、GPT(1 ms tick)、CAN/CanIf | `main()`，OS 启动前 |
+| `ASW_Init()` | CAN 表、CanTp、DCM、NM 模型、ASP/DSC、任务注册 | `main()` |
+| `BSW_CAN_SendFirstFrame()` | 首帧（`ASW_CanInit()` 已把各 TX 项置为"立即到期"） | `main()`，OS 启动前 |
+| `BSW_InitLateTask()` | 看门狗 → ICU → NVM(切片) → UART/DMA | 1 ms、优先级 254 的任务 |
+
+- 首帧时序：`ASW_CanInit()` 把 `last_send_tick` 置成 `0xFFFF0000`，所以第一次
+  poll 立刻发；发送成功时记录 `now`，**下一帧正好一个周期后到期**，不会因为
+  后面的初始化补发/突发。
+- `AutoSarNm_initialize()` 留在 `ASW_Init()`（纯数据初始化，且必须在 `Icu_Init()`
+  之前取唤醒原因），ICU 初始化放在延后阶段。
+- 依赖延后初始化的任务用 `BSW_IsInitDone()` 门控：2 ms 任务的 UART 轮询、
+  1 s 任务的喂狗与 UART 发送。HSE TRNG 自检移到 1 s 任务做一次（纯诊断）。
+- NVM 在首帧之后才就绪（约再 60~80 ms），期间读 NVM 的 DID 返回"无数据"。
+
+**NVM 切片（`BSW/src/Nvm.c`）**
+
+新增 `Nvm_InitStep()`：把 `MemAcc_Init + Fee_Init + 内部扫描 + 4 个块读` 做成
+状态机，每次调用最多跑 **150 µs**（用 Cortex-M7 的 DWT 周期计数器做时间预算，
+不依赖"单次 poll 多贵"），返回 `NVM_INIT_STEP_BUSY/DONE/ERROR`。原来的
+`Nvm_Init()` 保留为"循环调用 step"的阻塞封装，boot 侧行为不变。
+
+```
+BSW_InitLateTask() 每 1 ms 调一次 Nvm_InitStep()
+  -> 单次 ≤150 µs，2 ms / 5 ms 的 CAN 任务照常被调度
+  -> Fee 扫描的总工作量不变，约 50 ms 分散在 ~60~80 ms 内完成
+```
+
+**任务表改造（`MCAL/UserOS.c/.h`）**
+
+| 接口 | 行为 |
+| --- | --- |
+| `BSW_RegTask()` | **依次扫描空槽**（`fun == NULL && CycleTime == 0`）分配，不再用 `OS_numTolTaskNum`；返回句柄 0..7，失败返回 `BSW_TASK_HANDLE_INVALID`(255) |
+| `BSW_UnregTask(handle)` | 把 `CycleTime` 置 0（tick ISR 不再请求）、清 `Request`、`fun = NULL`、优先级置 255，槽位可被后续 `BSW_RegTask` 复用 |
+| `BSW_IsrPit0Ch0()` | 固定遍历 `MAX_TASK_NUM` 个槽，`CycleTime == 0` 的槽跳过 |
+| `BSW_OsStart()` | 遍历 `MAX_TASK_NUM`，额外检查 `fun != NULL` |
+
+- 表项更新在极短临界区（`mrs primask` / `cpsid i` … `cpsie i`）内完成；
+  `BSW_RegTask` 按 `fun → Priority → LastTime → Request → CycleTime` 的顺序写，
+  `BSW_RegTask/UnregTask` 在运行期调用也安全。
+- 延后初始化做完后**注销自己**：`BSW_InitLateTask()` 在完成最后一步时调用
+  `BSW_UnregTask(BSW_LateTaskHandle)`（调度器已先清 `Request`，且 `CycleTime = 0`
+  不会再被请求，任务内自注销是安全的），槽位可被后续任务复用。
+- 若注册失败（槽位满），`BSW_InitLateStart()` 自动退回
+  `BSW_InitLateBlocking()`，保证 NVM/UART/看门狗仍可用。
+
+**实测预期**
+
+| 阶段 | 之前 | 现在 |
+| --- | --- | --- |
+| Bootloader（时钟 3.4 + NVM 50 + 哈希 1.5） | ~55 ms | ~55 ms（未压缩） |
+| APP 到首帧（时钟/Port/Platform/GPT/CAN + ASW_Init + 首帧） | 计入 305 ms | ~7~11 ms |
+| **上电→首帧** | **360 ms** | **~62~66 ms** + 板级复位释放时间 |
+
+**编译验证**：`S32K344/Debug_FLASH` 下 `make all` 通过（GCC 10.2，无警告）；
+`text 88 204 / data 2 212 / bss 25 400`。
+
+### 9.13 未初始化访问的拦截（BSW 层）
+
+延后初始化带来一个新的窗口：OS 已经跑起来（首帧已发），但 NVM/UART/DMA/
+看门狗还在后台初始化（约 60~80 ms）。这段窗口里任何"用到这些模块"的调用都
+必须在 **BSW 层**被拦住，而不是靠调用方自觉。逐个模块核查结果：
+
+| 模块 | 窗口内可能被调用的地方 | 拦截方式 |
+| --- | --- | --- |
+| NVM 写/提交 | `2E F190`、`Nvm_UserBlock_Polling_10ms()`、NM 睡眠路径 `Nvm_Flush()` | `Nvm.c` 新增 `Nvm_RejectIfNotReady()`：`Nvm_WriteByte` / `CommitBlock` / `Commit` / `StoreBlock` / `MarkBlockDirty` / `InvalidateBlock` / `Flush` / `MainFunction` 未就绪一律 `E_NOT_OK`（或直接返回） |
+| NVM 读 | `22 F190`、其它读块的 DID | `Nvm_Valid[]` 未就绪时为 FALSE → `Nvm_ReadByte()` 返回 `E_NOT_OK`；读出 0xFF 的"未写入"语义由上层区分 |
+| NVM 初始化自身 | `Nvm_InitStep()` 里格式化块后的写 | 走内部 `Nvm_CommitBlockRaw()`，不受拦截 |
+| UART/DMA | 2 ms 任务 `BSW_UART6_RxPoll()`、1 s 任务 `BSW_UART6_Send()` | `BSW_UART.c` 新增 `BSW_UART6_RejectIfNotReady()`：未就绪时轮询直接返回、发送返回 `E_NOT_OK`、`IsTxBusy()` 返回 FALSE、`GetRxPending()` 返回 0；`BSW_UART6_Init()` 末尾才置 ready |
+| 看门狗 | 1 s 任务喂狗 | 新增 `BSW_WDG.c/.h`：`BSW_WDG_Service()` 未就绪时计数并跳过，`BSW_WDG_Init()` 才真正初始化驱动 |
+| ICU | 仅 NM 睡眠路径 `Icu_EnableEdgeDetection()` | 已核实该路径需要 NM 多个超时（秒级）才会走到，晚于初始化完成；`NM_BsmGetWkupMode()` 是**故意**在 `Icu_Init()` 之前读 WKPU 裸寄存器，不依赖 Icu 驱动 |
+| DMA | 只在 `MCAL_UART_Init()` 内部使用 | 与 UART 同生命周期，由 UART 的拦截覆盖 |
+
+**语义变化（都是"更正确"的方向）**
+
+- `22 F190` 在 NVM 未就绪时返回 NRC 0x22（原来会返回 17 个 0xFF，看起来像
+  "VIN 未写入"）；
+- `2E F190` 在 NVM 未就绪时返回 NRC 0x22；
+- UART 发送在驱动未就绪时返回 `E_NOT_OK`（与"上一帧未发完"同一个返回码，
+  调用方本来就要处理）；
+- 喂狗在驱动未就绪时不动作，等 `BSW_WDG_Init()` 之后才真正喂。
+
+**诊断计数**（J-Link 直接读，可用来证明拦截生效）
+
+| 变量 | 含义 | 正常上电时的值 |
+| --- | --- | --- |
+| `g_nvmNotReadyRejects` | NVM 未就绪被拒绝的调用数 | 只有窗口内有 DID 访问时 >0 |
+| `g_uartNotReadyRejects` | UART 未就绪被拒绝的调用数 | ≈40（2 ms 任务轮询 80 ms） |
+| `g_wdgNotReadyRejects` | 看门狗未就绪被跳过的喂狗次数 | 0（1 s 任务晚于初始化完成） |
+
+由于 BSW 层已经是权威拦截，ASW 里原来的 `BSW_IsInitDone()` 门控（2 ms 的
+UART 轮询、1 s 的喂狗/UART 发送）已去掉，避免两处重复判断；`BSW_IsInitDone()`
+保留给需要的应用层使用。
+
 
 

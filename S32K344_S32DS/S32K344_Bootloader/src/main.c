@@ -31,8 +31,7 @@
 #include "UserOs.h"
 #include "UserCode.h"
 #include "Boot.h"
-
-extern void BSW_Init(void);
+#include "BSW_Init.h"
 
 int main(void)
 {
@@ -40,7 +39,10 @@ int main(void)
 	Boot_CaptureMagic();
 
 	/* No programming request and a valid APP: leave the bootloader right away
-	 * without initialising any MCAL driver (max. 50 ms in the bootloader). */
+	 * without initialising the MCAL drivers (max. 50 ms in the bootloader).
+	 * The APP image is verified against the SHA-256 stored by 0xFF02 first;
+	 * on a mismatch the bootloader stays in place (Boot_TryJumpToApp() only
+	 * returns). */
 	Boot_TryJumpToApp();
 
 	BSW_Init();

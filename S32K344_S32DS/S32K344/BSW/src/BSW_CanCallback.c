@@ -384,6 +384,24 @@ void BSW_CANTX_POLL(void)
     }
 }
 
+/*
+ * First frame before the OS is started.
+ *
+ * ASW_CanInit() leaves last_send_tick at 0xFFFF0000 for every entry, so the
+ * first BSW_CANTX_POLL() sees each frame as due and sends it right away; the
+ * timestamp is stored with the same "now" as the periodic poll would use, so
+ * the next frame is scheduled one send_period later (no double frame when the
+ * 5 ms task starts).
+ *
+ * Can_43_FLEXCAN_MainFunction_Write() is called once afterwards to let the
+ * driver process the transmit confirmations of the frames just queued.
+ */
+void BSW_CAN_SendFirstFrame(void)
+{
+    BSW_CANTX_POLL();
+    Can_43_FLEXCAN_MainFunction_Write();
+}
+
 void BSW_CAN_BUSOFF_POLL(void)
 {
     static unsigned int busoffStartTick = 0U;

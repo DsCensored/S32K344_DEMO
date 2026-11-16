@@ -3,8 +3,18 @@
  *
  *  Created on: 2026年10月20日
  *      Author: CENSORED
+ *
+ *  See BSW_Init.h: the start-up is split in an "early" part that makes the
+ *  first CAN frame possible and a "late" part that runs in a low-priority
+ *  1 ms task.  The cooperative OS must never be blocked for several
+ *  milliseconds while the periodic CAN frames are being sent, so the longest
+ *  item (the Fee/NVM start-up scan) is executed slice by slice through
+ *  Nvm_InitStep().
  */
 
+#include "BSW_Init.h"
+
+#include "UserOS.h"      /* BSW_RegTask / BSW_UnregTask / BSW_TASK_HANDLE_INVALID */
 #include "Gpt.h"
 #include "Platform.h"
 #include "Port.h"
@@ -14,18 +24,28 @@
 #include "CDD_Uart.h"
 #include "Dma_Ip.h"
 #include "Dma_Mux_Ip.h"
-#include "S32K344_SWT.h"
 #include "BSW_UART.h"
 #include "Nvm.h"
-#include "hse_trng.h"   /* HSE 硬件 TRNG 自检 / UDS 0x27 种子 */
 #include "AutoSarNm.h"
 #include "Icu.h"
 #include "Icu_PBcfg.h"
-#include "Wdg_CfgExt.h"
-#include "WdgIf_Types.h"
-#include "Wdg_43_Instance0.h"
-#include "Wdg_ChannelTypes.h"
-#include "Wdg_Channel.h"
+#include "BSW_WDG.h"     /* guarded watchdog wrapper                       */
+
+/* Steps of the deferred initialisation.  The watchdog comes first: it is a
+ * safety item and must be re-configured as early as possible, whereas the
+ * NVM scan runs for a few hundred milliseconds and the UART is not needed
+ * until the 1 s task sends its first string. */
+#define BSW_LATE_STEP_WDG       (0U)
+#define BSW_LATE_STEP_ICU       (1U)
+#define BSW_LATE_STEP_NVM       (2U)   /* Nvm_InitStep() until it is done      */
+#define BSW_LATE_STEP_UART      (3U)
+#define BSW_LATE_STEP_DONE      (4U)
+
+static uint8 BSW_LateStep = BSW_LATE_STEP_WDG;
+static uint8 BSW_stInitDone = 0U;
+
+/* Handle of the deferred-init task, so it can remove itself when done. */
+static unsigned char BSW_LateTaskHandle = BSW_TASK_HANDLE_INVALID;
 
 static void MCAL_MCU_Init(void)
 {
@@ -80,12 +100,6 @@ static void MCAL_PORT_Init(void)
 	Port_Init(&Port_Config);
 }
 
-static void MCAL_WDG_Init(void)
-{
-	Wdg_43_Instance0_Init(&Wdg_Config_0);
-	Wdg_43_Instance0_SetMode(WDGIF_SLOW_MODE);
-}
-
 static void MCAL_CAN_Init(void)
 {
 	CanIf_Init(NULL_PTR);
@@ -119,48 +133,91 @@ static void MCAL_UART_Init(void)
 	BSW_UART6_Init();
 }
 
-static void MCAL_NVM_Init(void)
-{
-	/* Fee + MemAcc + Mem_43_INFLS live in the internal data flash.
-	 * Nvm_Init() blocks until Fee has finished its start-up scan and the
-	 * four 256-byte blocks are loaded into RAM. */
-	if (E_NOT_OK == Nvm_Init())
-	{
-		/* The blocks are still usable (zero-filled), but report the issue. */
-	}
-
-	(void)Nvm_GetStatus();
-}
-
 static void MCAL_ICU_Init(void)
 {
 	Icu_Init(&Icu_Config);
 }
 
-static void MCAL_Init(void)
+void BSW_InitEarly(void)
 {
 	MCAL_MCU_Init();
 	MCAL_PORT_Init();
 	MCAL_Platform_Init();
-	MCAL_GPT_Init();
+	MCAL_GPT_Init();   /* 1 ms tick: BSW_GetSystemTick() drives the TX periods */
 	MCAL_CAN_Init();
-	MCAL_UART_Init();
-	MCAL_NVM_Init();
-	AutoSarNm_initialize();//获取ICU唤醒原因需要在ICU初始化之前执行
-	MCAL_ICU_Init();
 }
 
-void BSW_Init(void)
+void BSW_InitLateTask(void)
 {
-	MCAL_Init();
+	switch (BSW_LateStep)
+	{
+	case BSW_LATE_STEP_WDG:
+		/* Guarded wrapper (BSW_WDG.c): after this the cyclic BSW_WDG_Service()
+		 * calls are effective, before it they are counted no-ops. */
+		BSW_WDG_Init();
+		BSW_LateStep = BSW_LATE_STEP_ICU;
+		break;
 
-#if (HSE_TRNG_SELFTEST_ON_BOOT != 0U)
-	/* HSE TRNG 上电自检：结果存入 g_hseTrngSelfTest[]（调试器可直接读），
-	 * 用来确认 HSE 随机数服务可用；量产可把 HSE_TRNG_SELFTEST_ON_BOOT 置 0。 */
-	(void)HseTrng_SelfTest();
-#endif
-	/* Start the watchdog only after all blocking MCAL/NVM initialization is
-	 * complete, so a long startup cannot trip the 10 s timeout. */
-	MCAL_WDG_Init();
+	case BSW_LATE_STEP_ICU:
+		/* AutoSarNm_initialize() already ran in ASW_Init(): the NM wake-up
+		 * reason must be captured before the ICU is initialised. */
+		MCAL_ICU_Init();
+		BSW_LateStep = BSW_LATE_STEP_NVM;
+		break;
+
+	case BSW_LATE_STEP_NVM:
+		/* Non-blocking: one slice per scheduler cycle, ~NVM_INIT_POLLS_PER_STEP
+		 * Fee/MemAcc polls each.  Errors are tolerated (the blocks then read as
+		 * 0xFF), the remaining start-up proceeds either way. */
+		if (NVM_INIT_STEP_BUSY == Nvm_InitStep())
+		{
+			break;
+		}
+		BSW_LateStep = BSW_LATE_STEP_UART;
+		break;
+
+	case BSW_LATE_STEP_UART:
+		MCAL_UART_Init();
+		BSW_LateStep = BSW_LATE_STEP_DONE;
+		BSW_stInitDone = 1U;
+
+		/* One-shot task: give the slot back so it can be reused.  The
+		 * scheduler has already cleared this task's Request and with
+		 * CycleTime = 0 the tick ISR will not request it again, so removing
+		 * ourselves from inside the task is safe. */
+		(void)BSW_UnregTask(BSW_LateTaskHandle);
+		BSW_LateTaskHandle = BSW_TASK_HANDLE_INVALID;
+		break;
+
+	default:
+		break;
+	}
 }
 
+void BSW_InitLateStart(void)
+{
+	BSW_LateTaskHandle = BSW_RegTask(1U, 254U, BSW_InitLateTask);
+
+	if (BSW_TASK_HANDLE_INVALID == BSW_LateTaskHandle)
+	{
+		/* No free task slot: run the sequence in place so NVM, UART and the
+		 * watchdog still become available (the CAN cadence suffers once). */
+		BSW_InitLateBlocking();
+	}
+}
+
+uint8 BSW_IsInitDone(void)
+{
+	return BSW_stInitDone;
+}
+
+void BSW_InitLateBlocking(void)
+{
+	/* Fallback when no task slot was left for BSW_InitLateTask(): run the
+	 * same sequence in place.  The CAN cadence suffers for a few hundred
+	 * milliseconds, but the NVM/UART/watchdog still become available. */
+	while (0U == BSW_stInitDone)
+	{
+		BSW_InitLateTask();
+	}
+}

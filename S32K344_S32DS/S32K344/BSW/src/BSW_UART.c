@@ -44,10 +44,40 @@ static volatile uint32  BSW_u32UART6LastRemaining = BSW_UART6_BUF_SIZE;
 static volatile uint16  BSW_u16UART6IdlePolls     = 0U;
 
 /*------------------------------------------------------------------------------------------------*/
+/* "Driver ready" interlock                                                                        */
+/*                                                                                                */
+/* UART6 + DMA are initialised in the deferred start-up (BSW_InitLateTask),   */
+/* i.e. after the OS has already started and the cyclic tasks are running.    */
+/* Until BSW_UART6_Init() has run, every access to the Uart driver is refused */
+/* here, so neither the 2 ms receive poll nor an application/diagnostic send  */
+/* can start a DMA transfer on an uninitialised driver.                       */
+/*------------------------------------------------------------------------------------------------*/
+static volatile boolean BSW_flgUART6Ready = FALSE;
+
+/* Debug counter: accesses refused because the driver is not initialised yet. */
+volatile uint32 g_uartNotReadyRejects = 0U;
+
+static boolean BSW_UART6_RejectIfNotReady(void)
+{
+    if (FALSE == BSW_flgUART6Ready)
+    {
+        g_uartNotReadyRejects++;
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+/*------------------------------------------------------------------------------------------------*/
 /* 内部函数                                                                                        */
 /*------------------------------------------------------------------------------------------------*/
 static void BSW_UART6_StartRx(void)
 {
+    if (TRUE == BSW_UART6_RejectIfNotReady())
+    {
+        return;
+    }
+
     if (E_OK == Uart_AsyncReceive(BSW_UART6_CHANNEL, BSW_rUART6RxDmaBuf, BSW_UART6_BUF_SIZE))
     {
         BSW_flgUART6RxStarted      = TRUE;
@@ -90,8 +120,17 @@ void BSW_UART6_Init(void)
     BSW_flgUART6RxFrameReady  = FALSE;
     BSW_flgUART6RxStarted    = FALSE;
 
+    /* Uart_Init() has already run (see MCAL_UART_Init): the driver is usable
+     * and the guarded API may be used from now on. */
+    BSW_flgUART6Ready = TRUE;
+
     /* 启动第一次 DMA 接收 */
     BSW_UART6_StartRx();
+}
+
+boolean BSW_UART6_IsReady(void)
+{
+    return BSW_flgUART6Ready;
 }
 
 void BSW_UART6_RxPoll(void)
@@ -100,6 +139,13 @@ void BSW_UART6_RxPoll(void)
     uint32          remaining = BSW_UART6_BUF_SIZE;
     uint32          received;
     Uart_StatusType status;
+
+    /* Not initialised yet (deferred start-up not finished): do not touch the
+     * Uart driver at all. */
+    if (TRUE == BSW_UART6_RejectIfNotReady())
+    {
+        return;
+    }
 
     /* 还没开始（或上次启动失败）就先启动接收 */
     if (FALSE == BSW_flgUART6RxStarted)
@@ -163,6 +209,14 @@ Std_ReturnType BSW_UART6_Send(uint8* data,uint16 Length)
 {
     Std_ReturnType RetVal;
 
+    /* Sending before the driver is up would start a DMA transfer with an
+     * uninitialised channel: refuse it, E_NOT_OK is the normal "busy" answer
+     * the caller already has to handle. */
+    if (TRUE == BSW_UART6_RejectIfNotReady())
+    {
+        return E_NOT_OK;
+    }
+
     if ((0U == Length) || (Length > BSW_UART6_BUF_SIZE) || BSW_UART6_IsTxBusy() == TRUE || data == NULL)
     {
         return E_NOT_OK;
@@ -185,6 +239,11 @@ boolean BSW_UART6_IsTxBusy(void)
 {
     uint32 remaining = 0U;
 
+    if (TRUE == BSW_UART6_RejectIfNotReady())
+    {
+        return FALSE;
+    }
+
     return (UART_STATUS_OPERATION_ONGOING == Uart_GetStatus(BSW_UART6_CHANNEL, &remaining, UART_SEND))
            ? TRUE : FALSE;
 }
@@ -202,6 +261,11 @@ void BSW_UART6_ReleaseRxFrame(void)
 uint16 BSW_UART6_GetRxPending(void)
 {
     uint32 remaining = BSW_UART6_BUF_SIZE;
+
+    if (TRUE == BSW_UART6_RejectIfNotReady())
+    {
+        return 0U;
+    }
 
     /* 只读查询，不影响正在进行的接收 */
     if (UART_STATUS_OPERATION_ONGOING == Uart_GetStatus(BSW_UART6_CHANNEL, &remaining, UART_RECEIVE))

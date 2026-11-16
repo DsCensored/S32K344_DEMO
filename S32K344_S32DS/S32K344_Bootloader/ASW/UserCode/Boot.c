@@ -5,8 +5,11 @@
  *
  * The integrity checks of the programming services (former software CRC32)
  * are now done by the HSE SHA-256 engine; see Boot_Program.c and
- * hse_hash.c.
+ * hse_hash.c.  The same digest is stored in NVM block 3 by the 0xFF02 copy and
+ * verified again at every start (see Boot_AppShaVerify()).
  */
+
+#include <string.h>
 
 #include "Boot.h"
 #include "Boot_Shared.h"
@@ -19,6 +22,10 @@
 #include "CDD_Mcl.h"
 #include "MemAcc.h"
 #include "Mem_43_INFLS.h"
+#include "Nvm.h"
+#include "NvmApp.h"      /* Block3Data: kBlock3_Now_SHAdata / _FileSize */
+#include "hse_hash.h"    /* HSE SHA-256 of the APP image                 */
+#include "BSW_Init.h"    /* BSW_EarlyInitClock() / BSW_EarlyInitNvm()     */
 
 /* Cortex-M7 system registers, addressed directly to avoid pulling in a
  * specific CMSIS header into the bootloader application code. */
@@ -72,6 +79,253 @@ static unsigned int Boot_AppVector(void)
     return *(volatile unsigned int *)(BOOT_APP_BASE + 12UL);
 }
 
+/* ---------------------------------------------------------------------------
+ * APP image integrity check (SHA-256 + length stored in NVM block 3)
+ *
+ * 0xFF02 stores the SHA-256 computed by 0x37 and the length of the image in
+ * NVM block 3 (kBlock3_Now_SHAdata / kBlock3_Now_FileSize) before the run area
+ * is written.  At every start the run area is hashed again with the HSE and
+ * compared with those values; only a match allows the APP to be started.
+ *
+ * Result state.  "Bad" is sticky for the whole power cycle, so Boot_Init(),
+ * Boot_Poll() and the 10 01 handler (which all go through Boot_AppIsValid())
+ * cannot start an image that failed the check.
+ * ------------------------------------------------------------------------- */
+
+#define BOOT_SHA_STATE_UNKNOWN  0U   /* not checked in this power cycle       */
+#define BOOT_SHA_STATE_OK       1U   /* run area matches the NVM values       */
+#define BOOT_SHA_STATE_BAD      2U   /* mismatch / no value: never start      */
+
+/* Failure reasons of g_bootAppShaDiag[2]. */
+#define BOOT_SHA_ERR_BLOCK      0x100U   /* NVM block 3 invalid / unreadable  */
+#define BOOT_SHA_ERR_SIZE       0x101U   /* stored length 0 or > APP size     */
+#define BOOT_SHA_ERR_HSE_HASH   0x102U   /* HSE SHA-256 failed                */
+#define BOOT_SHA_ERR_MISMATCH   0x103U   /* digest differs from the NVM value */
+#define BOOT_SHA_ERR_NVM_INIT   0x104U   /* Nvm_Init() failed                 */
+#define BOOT_SHA_ERR_HSE_INIT   0x105U   /* HSE not ready                     */
+
+static unsigned char Boot_AppShaState = BOOT_SHA_STATE_UNKNOWN;
+
+/* Debug view for the J-Link (the two digests are kept in the stack only while
+ * the check runs, so they are not kept in RAM afterwards):
+ *   [0] state (0/1/2)         [1] length stored in NVM
+ *   [2] failure reason        [3] HseHash_GetLastError()
+ *   [4] 0x53484132 ("SHA2" marker) */
+volatile unsigned int g_bootAppShaDiag[5] = {
+    0xFFFFFFFFUL, 0U, 0U, 0U, 0x53484132UL
+};
+
+/* Reset-time delay: no timer is running on the fast path. */
+static void Boot_DelayLoop(unsigned int loops)
+{
+    volatile unsigned int i;
+
+    for (i = 0U; i < loops; i++)
+    {
+        /* wait */
+    }
+}
+
+/* ---------------------------------------------------------------------------
+ * Phase timing of the start-up check.
+ *
+ * The DWT cycle counter of the Cortex-M7 needs no driver (PPB registers), so
+ * the duration of every phase can be read with the debugger even on the fast
+ * path.  g_bootAppShaTime[] holds core cycles; after the PLL is up (160 MHz)
+ * 160 cycles = 1 us (the clock initialisation itself is counted at the reset
+ * clock, i.e. ~48 MHz).
+ *   [0] clock init   [1] HSE probe   [2] NVM init    [3] Block3 read
+ *   [4] HSE wait     [5] hash+compare               [6] total
+ *   [7] 0x54494D45 ("TIME" marker)
+ * ------------------------------------------------------------------------- */
+
+#define BOOT_DEMCR          (*(volatile unsigned int *)0xE000EDFCUL)
+#define BOOT_DWT_CTRL       (*(volatile unsigned int *)0xE0001000UL)
+#define BOOT_DWT_CYCCNT     (*(volatile unsigned int *)0xE0001004UL)
+#define BOOT_DEMCR_TRCENA   (1UL << 24U)
+#define BOOT_DWT_CYCCNTENA  (1UL << 0U)
+
+volatile unsigned int g_bootAppShaTime[8] = {
+    0U, 0U, 0U, 0U, 0U, 0U, 0U, 0x54494D45UL
+};
+
+static void Boot_TimeInit(void)
+{
+    BOOT_DEMCR      |= BOOT_DEMCR_TRCENA;
+    BOOT_DWT_CYCCNT  = 0U;
+    BOOT_DWT_CTRL   |= BOOT_DWT_CYCCNTENA;
+    __asm volatile ("dsb" ::: "memory");
+}
+
+static unsigned int Boot_TimeGet(void)
+{
+    return BOOT_DWT_CYCCNT;
+}
+
+/* Non-blocking HSE readiness probe: one MU status register read.
+ * Returns 1 when the HSE already answers, 0 when it is still booting. */
+static unsigned char Boot_HseProbe(void)
+{
+    return (HSE_HASH_OK == HseHash_Init()) ? 1U : 0U;
+}
+
+/* Wait for the HSE, only used when Boot_HseProbe() failed before the NVM
+ * initialisation.  The budget covers the *remaining* part of the HSE boot
+ * (the HSE boots in parallel with the M7, and the Fee/DFlash start-up below
+ * already gives it ~10 ms), so this loop normally runs zero times. */
+static unsigned char Boot_HseWaitReady(void)
+{
+    unsigned int retry;
+
+    for (retry = 0U; retry < BOOT_HSE_INIT_RETRIES; retry++)
+    {
+        if (0U != Boot_HseProbe())
+        {
+            return 1U;
+        }
+
+        Boot_DelayLoop(BOOT_HSE_INIT_DELAY);
+    }
+
+    return 0U;
+}
+
+/* Little-endian 32-bit value from NVM block 3 (see BootProg_StoreImageInfo). */
+static unsigned int Boot_NvmReadU32(unsigned int offset)
+{
+    unsigned int i;
+    unsigned int value = 0U;
+
+    for (i = 0U; i < 4U; i++)
+    {
+        value |= ((unsigned int)Nvm_Block3_Read_U8((Block3Data)(offset + i)))
+                 << (8U * i);
+    }
+
+    return value;
+}
+
+/* Hash the run area and compare it with the values stored by 0xFF02.
+ * @return 1 = the APP may be started, 0 = stay in the bootloader. */
+static unsigned char Boot_AppShaVerify(void)
+{
+    unsigned char stored[HSE_HASH_SHA256_SIZE];
+    unsigned char digest[HSE_HASH_SHA256_SIZE];
+    unsigned char hseReady;
+    unsigned int last;
+    unsigned int now;
+    unsigned int size;
+    unsigned int i;
+
+    /* Fail closed: only the path below that proves integrity opens the APP. */
+    Boot_AppShaState    = BOOT_SHA_STATE_BAD;
+    g_bootAppShaDiag[0] = (unsigned int)BOOT_SHA_STATE_BAD;
+    g_bootAppShaDiag[2] = 0U;
+    g_bootAppShaDiag[3] = 0U;
+
+    /* Phase timing for the debugger (see g_bootAppShaTime[]). */
+    Boot_TimeInit();
+    last = Boot_TimeGet();
+
+    /* No MCAL driver is initialised when the fast path runs: the NVM stack
+     * needs the DFlash driver and the HSE its clock.  Both helpers mirror the
+     * BSW_Init() bring-up and are idempotent, so the normal boot continues
+     * with whatever is already initialised. */
+    (void)BSW_EarlyInitClock();
+
+    now = Boot_TimeGet();
+    g_bootAppShaTime[0] = now - last;
+    last = now;
+
+    /* The HSE firmware boots in parallel with the M7 after a power-on.  Probe
+     * it here (one MU status read, no waiting) and let the NVM start-up below
+     * serve as its boot time instead of idling in a delay loop: the wait only
+     * runs for whatever is left after the Fee/DFlash scan. */
+    hseReady = Boot_HseProbe();
+
+    now = Boot_TimeGet();
+    g_bootAppShaTime[1] = now - last;
+    last = now;
+
+    if (E_OK != BSW_EarlyInitNvm())
+    {
+        g_bootAppShaDiag[2] = BOOT_SHA_ERR_NVM_INIT;
+        return 0U;
+    }
+
+    now = Boot_TimeGet();
+    g_bootAppShaTime[2] = now - last;
+    last = now;
+
+    if (FALSE != Nvm_GetBlock3Invalid())
+    {
+        g_bootAppShaDiag[2] = BOOT_SHA_ERR_BLOCK;
+        return 0U;
+    }
+
+    for (i = 0U; i < HSE_HASH_SHA256_SIZE; i++)
+    {
+        stored[i] = Nvm_Block3_Read_U8((Block3Data)(kBlock3_Now_SHAdata + i));
+    }
+
+    size = Boot_NvmReadU32((unsigned int)kBlock3_Now_FileSize);
+    g_bootAppShaDiag[1] = size;
+
+    if ((0U == size) || (size > BOOT_APP_SIZE))
+    {
+        g_bootAppShaDiag[2] = BOOT_SHA_ERR_SIZE;
+        return 0U;
+    }
+
+    now = Boot_TimeGet();
+    g_bootAppShaTime[3] = now - last;
+    last = now;
+
+    /* Still booting?  Then (and only then) wait, with a budget that covers
+     * the remaining HSE start-up. */
+    if ((0U == hseReady) && (0U == Boot_HseWaitReady()))
+    {
+        g_bootAppShaDiag[2] = BOOT_SHA_ERR_HSE_INIT;
+        return 0U;
+    }
+
+    now = Boot_TimeGet();
+    g_bootAppShaTime[4] = now - last;
+    last = now;
+
+    if (HSE_HASH_OK != HseHash_Sha256Region((const unsigned char *)BOOT_APP_BASE,
+                                            size, digest))
+    {
+        g_bootAppShaDiag[2] = BOOT_SHA_ERR_HSE_HASH;
+        g_bootAppShaDiag[3] = (unsigned int)HseHash_GetLastError();
+        return 0U;
+    }
+
+    if (0 != memcmp(stored, digest, HSE_HASH_SHA256_SIZE))
+    {
+        g_bootAppShaDiag[2] = BOOT_SHA_ERR_MISMATCH;
+        return 0U;
+    }
+
+    now = Boot_TimeGet();
+    g_bootAppShaTime[5] = now - last;
+    g_bootAppShaTime[6] = now;
+
+    Boot_AppShaState    = BOOT_SHA_STATE_OK;
+    g_bootAppShaDiag[0] = (unsigned int)BOOT_SHA_STATE_OK;
+
+    return 1U;
+}
+
+void Boot_AppShaConfirm(void)
+{
+    /* 0xFF02 already compared the freshly written run area with the value it
+     * stored in NVM, so the check does not have to run again for 10 01. */
+    Boot_AppShaState    = BOOT_SHA_STATE_OK;
+    g_bootAppShaDiag[0] = (unsigned int)BOOT_SHA_STATE_OK;
+    g_bootAppShaDiag[2] = 0U;
+}
+
 unsigned char Boot_AppIsValid(void)
 {
     unsigned int magic;
@@ -103,6 +357,13 @@ unsigned char Boot_AppIsValid(void)
 
     if ((reset < BOOT_APP_BASE) || (reset >= (BOOT_APP_BASE + BOOT_APP_SIZE)) ||
         (0U == (reset & 1UL)))
+    {
+        return 0U;
+    }
+
+    /* The SHA-256 stored by 0xFF02 did not match the run area: the header of
+     * the image may look fine, but it must not be started. */
+    if (BOOT_SHA_STATE_BAD == Boot_AppShaState)
     {
         return 0U;
     }
@@ -238,7 +499,13 @@ void Boot_Poll(void)
 
 /* Fast path used before any MCAL initialisation: with no programming request
  * and a valid application, leave the bootloader immediately (no driver init,
- * no CAN, no GPT).  Only the core state needed to start the APP is set up. */
+ * no CAN, no GPT).  Only the core state needed to start the APP is set up.
+ *
+ * The APP may only be started when its SHA-256 matches the value stored in
+ * NVM block 3 by the 0xFF02 copy.  This needs the NVM stack (MemAcc/Fee/
+ * Mem_43_INFLS) and the HSE, i.e. a small part of the BSW bring-up; a check
+ * that fails keeps the bootloader alive (Boot_AppShaState = "bad" makes
+ * Boot_AppIsValid() fail from now on). */
 void Boot_TryJumpToApp(void)
 {
     unsigned int vector;
@@ -257,6 +524,12 @@ void Boot_TryJumpToApp(void)
         return;
     }
 
+    /* Hash the run area with the HSE and compare it with the NVM values. */
+    if (0U == Boot_AppShaVerify())
+    {
+        return;
+    }
+
     vector = Boot_AppVector();
     sp = *(volatile unsigned int *)vector;
     reset = *(volatile unsigned int *)(vector + 4UL);
@@ -267,7 +540,11 @@ void Boot_TryJumpToApp(void)
      * startup copies its own ITCM text over 0x00000000 afterwards. */
     Boot_FlashWipe();
 
-    /* No MCAL driver has been initialised. */
+    /* No MCAL driver has been initialised, except the memory stack that was
+     * needed for the SHA-256 check (see Boot_JumpToApp(), which does the same
+     * after a programming session). */
+    Mem_43_INFLS_DeInit();
+    MemAcc_DeInit();
 
     for (i = 0U; i < 8U; i++)
     {

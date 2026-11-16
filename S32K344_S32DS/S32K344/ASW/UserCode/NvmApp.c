@@ -60,6 +60,14 @@ Std_ReturnType Nvm_F190_Read(uint8 *Vin)
 		return E_NOT_OK;
 	}
 
+	/* The NVM stack is initialised in the deferred start-up: before that the
+	 * shadow still holds 0xFF, so report E_NOT_OK (the DCM then answers
+	 * NRC 0x22) instead of returning a meaningless "empty" VIN. */
+	if (FALSE == Nvm_IsInitialised())
+	{
+		return E_NOT_OK;
+	}
+
 	/* No block check here: an unwritten F190 simply reads as 0xFF. */
 	for(uint8 i = 0; i < NVM_F190_VIN_LEN; i++)
 	{
@@ -74,6 +82,13 @@ Std_ReturnType Nvm_F190_Write(const uint8 *Vin)
 	uint8 i;
 
 	if (NULL_PTR == Vin)
+	{
+		return E_NOT_OK;
+	}
+
+	/* Refuse a write while the NVM stack is not ready (Nvm_WriteByte() would
+	 * refuse it anyway, this keeps the caller's error path obvious). */
+	if (FALSE == Nvm_IsInitialised())
 	{
 		return E_NOT_OK;
 	}
@@ -138,7 +153,9 @@ Std_ReturnType Nvm_Block2_Write_U8(Block2Data Aim, uint8 Data)
 
 Std_ReturnType Nvm_Block3_Write_U8(Block3Data Aim, uint8 Data)
 {
-	return Nvm_AppWrite(NVM_BLOCK_3, (uint16)Aim, Data);
+//	return Nvm_AppWrite(NVM_BLOCK_3, (uint16)Aim, Data);
+//  APP 下不允许操作block3，这个block给boot写校验值
+	return E_NOT_OK;
 }
 
 Std_ReturnType Nvm_UserBlock_Polling_10ms(void)

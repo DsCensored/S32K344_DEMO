@@ -16,6 +16,48 @@
 /* Timeout for a Fee/MemAcc job, in polling cycles. */
 #define NVM_WAIT_CYCLES         (2000000U)
 
+/* ---------------------------------------------------------------------------
+ * Start-up timing (debug aid, no functional effect).
+ *
+ * Nvm_Init() is the dominant cost of the boot-time SHA-256 check
+ * (Boot_TryJumpToApp): the Fee internal scan walks the DFlash block headers.
+ * These counters split the time so the debugger shows where it goes:
+ *
+ *   [0] MemAcc_Init                    [1] Fee_Init + internal scan
+ *   [2] the four block reads           [3] blocks formatted (DFlash writes)
+ *   [4] total Nvm_Init()               [5] poll cycles of the scan
+ *   [6] poll cycles of the block reads [7] 0x4E564D49 ("NVMI" marker)
+ *
+ * The DWT cycle counter is only enabled here, never reset: Boot.c uses the
+ * same counter as its zero point for g_bootAppShaTime[].
+ * ------------------------------------------------------------------------- */
+#define NVM_REG_DEMCR       (*(volatile uint32 *)0xE000EDFCUL)
+#define NVM_REG_DWT_CTRL    (*(volatile uint32 *)0xE0001000UL)
+#define NVM_REG_DWT_CYCCNT  (*(volatile uint32 *)0xE0001004UL)
+#define NVM_DEMCR_TRCENA    (1UL << 24U)
+#define NVM_DWT_CYCCNTENA   (1UL << 0U)
+
+volatile uint32 g_nvmInitDiag[8] = {
+    0U, 0U, 0U, 0U, 0U, 0U, 0U, 0x4E564D49UL
+};
+
+/* Iterations executed by Nvm_WaitIdle(), used by the counters above. */
+static volatile uint32 Nvm_WaitPolls = 0U;
+
+static void Nvm_TimeEnable(void)
+{
+    NVM_REG_DEMCR    |= NVM_DEMCR_TRCENA;
+    NVM_REG_DWT_CTRL |= NVM_DWT_CYCCNTENA;
+}
+
+static void Nvm_TimeSnapshot(uint32 *last, volatile uint32 *out)
+{
+    uint32 now = NVM_REG_DWT_CYCCNT;
+
+    *out  = now - *last;
+    *last = now;
+}
+
 /* RAM shadow of the four NVM blocks. */
 static uint8 Nvm_Shadow[NVM_BLOCK_COUNT][NVM_BLOCK_SIZE];
 
@@ -110,6 +152,8 @@ static boolean Nvm_WaitIdle(void)
         MemAcc_MainFunction();
         status = Fee_GetStatus();
 
+        Nvm_WaitPolls++;
+
         if (guard == 0U)
         {
             return FALSE;
@@ -148,6 +192,10 @@ static Std_ReturnType Nvm_WriteBlockToFee(Nvm_BlockIdType block)
 Std_ReturnType Nvm_Init(void)
 {
     uint32 i;
+    uint32 last;
+    uint32 start;
+    uint32 startPolls;
+    uint32 formatted = 0U;
 
     Nvm_Status = NVM_BUSY;
     Nvm_ChecksumErrorFlags = 0U;
@@ -159,7 +207,15 @@ Std_ReturnType Nvm_Init(void)
         (void)memset(Nvm_Shadow[i], 0, NVM_BLOCK_SIZE);
     }
 
+    /* Timing split for the debugger (see g_nvmInitDiag[]). */
+    Nvm_TimeEnable();
+    Nvm_WaitPolls = 0U;
+    start = NVM_REG_DWT_CYCCNT;
+    last  = start;
+
     MemAcc_Init(NULL_PTR);
+    Nvm_TimeSnapshot(&last, &g_nvmInitDiag[0]);
+
     Fee_Init(NULL_PTR);
 
     if ((FALSE == Nvm_WaitIdle()) || (MEMIF_JOB_OK != Fee_GetJobResult()))
@@ -167,6 +223,10 @@ Std_ReturnType Nvm_Init(void)
         Nvm_Status = NVM_JOB_FAILED;
         return E_NOT_OK;
     }
+
+    Nvm_TimeSnapshot(&last, &g_nvmInitDiag[1]);
+    g_nvmInitDiag[5] = Nvm_WaitPolls;
+    startPolls = Nvm_WaitPolls;
 
     for (i = 0U; i < NVM_BLOCK_COUNT; i++)
     {
@@ -187,6 +247,7 @@ Std_ReturnType Nvm_Init(void)
              * create a brand new block, payload filled with 0xFF. */
             Nvm_FormatBlockRam((Nvm_BlockIdType)i);
             (void)Nvm_CommitBlock((Nvm_BlockIdType)i);
+            formatted++;
         }
         else
         {
@@ -201,6 +262,11 @@ Std_ReturnType Nvm_Init(void)
             Nvm_Valid[i] = TRUE;
         }
     }
+
+    Nvm_TimeSnapshot(&last, &g_nvmInitDiag[2]);
+    g_nvmInitDiag[3] = formatted;
+    g_nvmInitDiag[6] = Nvm_WaitPolls - startPolls;
+    g_nvmInitDiag[4] = last - start;
 
     Nvm_Status = NVM_IDLE;
     return E_OK;

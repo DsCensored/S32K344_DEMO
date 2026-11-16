@@ -26,7 +26,7 @@ static OS_sch OS_sch_buf[MAX_TASK_NUM] =
 {
 	//Task1
 	{
-		.CycleTime = 10,
+		.CycleTime = 0,
 		.LastTime = 0,
 		.Priority = 255,
 		.Request = 0,
@@ -34,7 +34,7 @@ static OS_sch OS_sch_buf[MAX_TASK_NUM] =
 	},
 	//Task2
 	{
-		.CycleTime = 10,
+		.CycleTime = 0,
 		.LastTime = 0,
 		.Priority = 255,
 		.Request = 0,
@@ -42,7 +42,7 @@ static OS_sch OS_sch_buf[MAX_TASK_NUM] =
 	},
 	//Task3
 	{
-		.CycleTime = 10,
+		.CycleTime = 0,
 		.LastTime = 0,
 		.Priority = 255,
 		.Request = 0,
@@ -50,7 +50,7 @@ static OS_sch OS_sch_buf[MAX_TASK_NUM] =
 	},
 	//Task4
 	{
-		.CycleTime = 10,
+		.CycleTime = 0,
 		.LastTime = 0,
 		.Priority = 255,
 		.Request = 0,
@@ -58,7 +58,7 @@ static OS_sch OS_sch_buf[MAX_TASK_NUM] =
 	},
 	//Task5
 	{
-		.CycleTime = 10,
+		.CycleTime = 0,
 		.LastTime = 0,
 		.Priority = 255,
 		.Request = 0,
@@ -66,7 +66,7 @@ static OS_sch OS_sch_buf[MAX_TASK_NUM] =
 	},
 	//Task6
 	{
-		.CycleTime = 10,
+		.CycleTime = 0,
 		.LastTime = 0,
 		.Priority = 255,
 		.Request = 0,
@@ -74,7 +74,7 @@ static OS_sch OS_sch_buf[MAX_TASK_NUM] =
 	},
 	//Task7
 	{
-		.CycleTime = 10,
+		.CycleTime = 0,
 		.LastTime = 0,
 		.Priority = 255,
 		.Request = 0,
@@ -82,7 +82,7 @@ static OS_sch OS_sch_buf[MAX_TASK_NUM] =
 	},
 	//Task8
 	{
-		.CycleTime = 10,
+		.CycleTime = 0,
 		.LastTime = 0,
 		.Priority = 255,
 		.Request = 0,
@@ -90,8 +90,47 @@ static OS_sch OS_sch_buf[MAX_TASK_NUM] =
 	}
 };
 
-static unsigned char OS_numTolTaskNum = 0;
+/* A task slot is "in use" while fun != NULL and CycleTime != 0.  Using a
+ * slot-scan instead of an incrementing counter means a slot freed by
+ * BSW_UnregTask() is reused by the next BSW_RegTask(). */
 static volatile unsigned int OS_tiSystemTick = 0;
+
+/* Short critical section around the task table updates: the 1 ms tick ISR
+ * walks the very same table. */
+static unsigned int OS_EnterCritical(void)
+{
+	unsigned int primask;
+
+	__asm volatile ("mrs %0, primask" : "=r" (primask) :: "memory");
+	__asm volatile ("cpsid i" ::: "memory");
+
+	return primask;
+}
+
+static void OS_ExitCritical(unsigned int primask)
+{
+	/* Only re-enable when the caller had interrupts enabled. */
+	if (0U == (primask & 1U))
+	{
+		__asm volatile ("cpsie i" ::: "memory");
+	}
+}
+
+/* First slot that is not used by a task, BSW_TASK_HANDLE_INVALID if none. */
+static unsigned char OS_FindFreeTaskSlot(void)
+{
+	unsigned char i;
+
+	for (i = 0U; i < MAX_TASK_NUM; i++)
+	{
+		if ((NULL == OS_sch_buf[i].fun) && (0U == OS_sch_buf[i].CycleTime))
+		{
+			return i;
+		}
+	}
+
+	return BSW_TASK_HANDLE_INVALID;
+}
 
 /* ==================== CPU 负载率统计 ==================== */
 /*
@@ -131,7 +170,7 @@ void BSW_IsrPit0Ch0(void)
 
 	OS_tiSystemTick++;
 
-	for (unsigned char i = 0; i < OS_numTolTaskNum; i++)
+	for (unsigned char i = 0; i < MAX_TASK_NUM; i++)
 	{
 		if (OS_tiSystemTick - OS_sch_buf[i].LastTime >= OS_sch_buf[i].CycleTime && OS_sch_buf[i].CycleTime != 0)
 		{
@@ -145,25 +184,69 @@ void BSW_IsrPit0Ch0(void)
 * Name:BSW_RegTask
 * Formal para:fpCycleTime, fpPriority(0~254), fpfun; when cycletime eql 0, this task is a event
 * return value:task handler(0~MAX_TASK_NUM-1), 255 means failure
-* description:register a task
+* description:register a task in the first free slot
 */
 unsigned char BSW_RegTask(unsigned int fpCycleTime, unsigned char fpPriority, void (*fpfun)(void))
 {
-	if (OS_numTolTaskNum >= MAX_TASK_NUM || fpfun == NULL || fpPriority == 255)
+	unsigned char handle;
+	unsigned int  primask;
+
+	if ((NULL == fpfun) || (BSW_TASK_HANDLE_INVALID == fpPriority))
 	{
-		return 255;
+		return BSW_TASK_HANDLE_INVALID;
 	}
 
-	OS_sch_buf[OS_numTolTaskNum].CycleTime = fpCycleTime;
-	OS_sch_buf[OS_numTolTaskNum].LastTime = OS_tiSystemTick;
-	OS_sch_buf[OS_numTolTaskNum].Priority = fpPriority;
-	OS_sch_buf[OS_numTolTaskNum].Request = 0;
-	OS_sch_buf[OS_numTolTaskNum].fun = fpfun;
+	primask = OS_EnterCritical();
 
-	OS_numTolTaskNum++;
+	handle = OS_FindFreeTaskSlot();
+	if (BSW_TASK_HANDLE_INVALID != handle)
+	{
+		/* Handler and priority first, CycleTime last: the tick ISR only starts
+		 * requesting the task once the slot is completely filled in. */
+		OS_sch_buf[handle].fun       = fpfun;
+		OS_sch_buf[handle].Priority  = fpPriority;
+		OS_sch_buf[handle].LastTime  = OS_tiSystemTick;
+		OS_sch_buf[handle].Request   = 0;
+		OS_sch_buf[handle].CycleTime = fpCycleTime;
+	}
 
-	return (OS_numTolTaskNum - 1);
+	OS_ExitCritical(primask);
+
+	return handle;
 }
+
+/*
+* Name:BSW_UnregTask
+* Formal para:handle (value returned by BSW_RegTask)
+* return value:0 = task removed, 255 means invalid handle
+* description:remove a task from the scheduler: its cycle time is set to 0 so
+*             the tick ISR never requests it again, and the slot becomes free
+*             for the next BSW_RegTask
+*/
+unsigned char BSW_UnregTask(unsigned char handle)
+{
+	unsigned int primask;
+
+	if ((handle >= MAX_TASK_NUM) || (NULL == OS_sch_buf[handle].fun))
+	{
+		return BSW_TASK_HANDLE_INVALID;
+	}
+
+	primask = OS_EnterCritical();
+
+	/* Deactivate first (the ISR checks CycleTime), then drop the handler so a
+	 * request that is already pending can never call a NULL pointer. */
+	OS_sch_buf[handle].CycleTime = 0U;
+	OS_sch_buf[handle].Request   = 0U;
+	OS_sch_buf[handle].fun       = NULL;
+	OS_sch_buf[handle].LastTime  = 0U;
+	OS_sch_buf[handle].Priority  = 255U;
+
+	OS_ExitCritical(primask);
+
+	return 0U;
+}
+
 
 /*
 * Name:BSW_GetSystemTick
@@ -214,9 +297,11 @@ void BSW_OsStart(void)
 		LastPriority = 255;
 		k = 255;
 
-		for (i = 0; i < OS_numTolTaskNum; i++)
+		for (i = 0; i < MAX_TASK_NUM; i++)
 		{
-			if (OS_sch_buf[i].Request == 1 && OS_sch_buf[i].Priority < LastPriority)
+			if ((OS_sch_buf[i].Request == 1) &&
+			    (NULL != OS_sch_buf[i].fun) &&
+			    (OS_sch_buf[i].Priority < LastPriority))
 			{
 				LastPriority = OS_sch_buf[i].Priority;
 				k = i;

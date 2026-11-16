@@ -30,15 +30,28 @@
 #include "S32K344.h"
 #include "UserOs.h"
 #include "UserCode.h"
+#include "BSW_Init.h"
+#include "BSW_CanCallback.h"
 #include <stdio.h>
-
-extern void BSW_Init(void);
 
 int main(void)
 {
-	BSW_Init();
-    ASW_Init();
-    BSW_OsStart();
+	/* Only what the first CAN frame needs: clock, Port, interrupts, the 1 ms
+	 * tick and CAN/CanIf.  Everything else (NVM, ICU, watchdog, UART/DMA) is
+	 * done slice by slice in BSW_InitLateTask() while the OS is already
+	 * running, so the start-up does not delay the periodic frames. */
+	BSW_InitEarly();
+
+	/* CAN tables, CAN-TP/DCM, application models and the task registration
+	 * (including the deferred-init task). */
+	ASW_Init();
+
+	/* First frame: ASW_CanInit() left every TX entry due, so this single poll
+	 * puts the periodic frames on the bus before the OS even starts.  The
+	 * period bookkeeping inside BSW_CANTX_POLL() then continues from here. */
+	BSW_CAN_SendFirstFrame();
+
+	BSW_OsStart();
 }
 
 

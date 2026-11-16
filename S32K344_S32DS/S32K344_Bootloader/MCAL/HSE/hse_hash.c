@@ -17,9 +17,14 @@
  *   - UPDATE  : inputLength must be a multiple of 64 and must not be zero,
  *   - FINISH  : inputLength can have any value.
  *
- * HSE cannot read the M7 DTCM (the stack lives there), therefore the caller
- * data is copied into a staging buffer placed in .non_cacheable_data and the
- * D-Cache is cleaned before every request.
+ * HSE cannot read the M7 DTCM/ITCM (the stack lives there and the RAM flash
+ * driver is downloaded to ITCM address 0), therefore data that lives in the
+ * core TCM is copied into a staging buffer placed in .non_cacheable_data.
+ *
+ * Data that lives in PFlash is handed to the HSE directly (it reads the flash
+ * itself): no copy, and one MU round trip per HSE_HASH_DIRECT_CHUNK instead of
+ * per HSE_HASH_STAGE_SIZE bytes.  This is the path used for the APP image at
+ * start-up, where every millisecond counts.
  */
 #include <string.h>
 
@@ -41,9 +46,19 @@
 #define HSE_HASH_STREAM_ID      (0U)
 
 /* Staging buffer size: multiple of the SHA-256 block size, so an UPDATE can
- * always be split into whole blocks.  2 KB keeps the number of MU round
- * trips low while hashing a 1.5 MB application image (~800 requests). */
-#define HSE_HASH_STAGE_SIZE     (2048U)
+ * always be split into whole blocks.  8 KB keeps the number of MU round trips
+ * low for the images that must go through SRAM (ITCM flash driver, RAM
+ * buffers) without using much of the 64 KB non-cacheable SRAM region. */
+#define HSE_HASH_STAGE_SIZE     (8192U)
+
+/* Direct PFlash requests: one MU round trip for this many bytes.  Multiple of
+ * the SHA-256 block size (and of the staging buffer size). */
+#define HSE_HASH_DIRECT_CHUNK   (65536U)
+
+/* S32K344 code flash window (PFlash 0x00400000..0x007FFFFF).  The HSE can read
+ * it, the M7 TCM (ITCM 0x00000000 / DTCM 0x2000xxxx) it cannot. */
+#define HSE_HASH_PFLASH_BASE    (0x00400000UL)
+#define HSE_HASH_PFLASH_END     (0x00800000UL)
 
 /* Buffers shared with the HSE: system SRAM, never the DTCM/stack. */
 static HSE_HASH_SHARED hseSrvDescriptor_t s_desc;
@@ -137,6 +152,68 @@ static void HseHash_BuildRequest(hseAccessMode_t accessMode,
     }
 
     HseTrng_CacheClean(&s_desc, (uint32_t)sizeof(s_desc));
+}
+
+/*---------------------------------------------------------------------------
+ * Local helpers: direct PFlash transfer
+ *-------------------------------------------------------------------------*/
+/* Whole PFlash range?  Only there the HSE may read the caller data directly. */
+static uint8_t HseHash_IsPflash(const uint8_t *pData, uint32_t u32Len)
+{
+    uint32_t base = (uint32_t)pData;
+    uint32_t end  = base + u32Len;
+
+    if ((0U == u32Len) || (end < base))
+    {
+        return 0U;
+    }
+
+    return ((base >= (uint32_t)HSE_HASH_PFLASH_BASE) &&
+            (end  <= (uint32_t)HSE_HASH_PFLASH_END)) ? 1U : 0U;
+}
+
+/* Feed PFlash data without the staging buffer: the HSE reads the flash itself
+ * and only the service descriptor must be visible to it.  The source is
+ * read-only, so no D-Cache maintenance is needed for it. */
+static uint8_t HseHash_UpdateDirect(const uint8_t *pData, uint32_t u32Len)
+{
+    uint8_t  err;
+    uint32_t offset = 0U;
+
+    if (0U == u32Len)
+    {
+        return HSE_HASH_OK;
+    }
+
+    err = HseHash_Init();
+    if (HSE_HASH_OK != err)
+    {
+        return err;
+    }
+
+    while (offset < u32Len)
+    {
+        uint32_t chunk = u32Len - offset;
+
+        if (chunk > (uint32_t)HSE_HASH_DIRECT_CHUNK)
+        {
+            chunk = (uint32_t)HSE_HASH_DIRECT_CHUNK;
+        }
+
+        HseHash_BuildRequest(HSE_ACCESS_MODE_UPDATE, &pData[offset], chunk);
+        HseTrng_Dsb();
+
+        err = HseHash_Send();
+        if (HSE_HASH_OK != err)
+        {
+            return err;
+        }
+
+        g_hseHashDiag[4]++;
+        offset += chunk;
+    }
+
+    return HSE_HASH_OK;
 }
 
 /*---------------------------------------------------------------------------
@@ -288,16 +365,35 @@ uint8_t HseHash_Sha256Region(const uint8_t *pData, uint32_t u32Len,
         return HseHash_Fail(HSE_HASH_ERR_PARAM);
     }
 
-    /* pData is not checked against zero: the ITCM lives at address 0. */
+    /* Whole blocks can be fed with UPDATE; the tail (< 64 bytes) must go
+     * through FINISH. */
+    full = u32Len & ~(uint32_t)(HSE_HASH_SHA256_BLOCK - 1U);
+
+    /* Fast path for a PFlash image (the APP run/backup area): the HSE reads
+     * the flash itself, so the bytes are not copied through SRAM and one MU
+     * round trip covers HSE_HASH_DIRECT_CHUNK instead of HSE_HASH_STAGE_SIZE
+     * bytes.  pData is never tested against zero: address 0 is the ITCM. */
+    if (0U != HseHash_IsPflash(pData, u32Len))
+    {
+        err = HseHash_Start();
+        if (HSE_HASH_OK == err)
+        {
+            err = HseHash_UpdateDirect(pData, full);
+        }
+        if (HSE_HASH_OK == err)
+        {
+            return HseHash_Finish(&pData[full], u32Len - full, pDigest);
+        }
+
+        /* The direct request was refused: START resets the hash context, so
+         * the generic staged path below starts from a clean stream. */
+    }
+
     err = HseHash_Start();
     if (HSE_HASH_OK != err)
     {
         return err;
     }
-
-    /* Whole blocks can be fed with UPDATE; the tail (< 64 bytes) must go
-     * through FINISH. */
-    full = u32Len & ~(uint32_t)(HSE_HASH_SHA256_BLOCK - 1U);
 
     err = HseHash_Update(pData, full);
     if (HSE_HASH_OK != err)

@@ -18,10 +18,36 @@
 #endif
 #endif
 
+#define BSW_TASK_HANDLE_INVALID     255U
+
 void BSW_IsrPit0Ch0(void);
 unsigned int BSW_GetSystemTick(void);
 unsigned int BSW_GetElapsedTime(unsigned int LastTime);
+
+/**
+ * @brief Register a task in the first free slot of the scheduler table.
+ *
+ * @param fpCycleTime Period in system ticks (0 = event task, never requested
+ *                    by the tick ISR).
+ * @param fpPriority  0..254, lower value = higher priority.
+ * @param fpfun       Task function, must not be NULL.
+ * @return Task handle (0..MAX_TASK_NUM-1) or BSW_TASK_HANDLE_INVALID (255).
+ */
 unsigned char BSW_RegTask(unsigned int fpCycleTime, unsigned char fpPriority, void (*fpfun)(void));
+
+/**
+ * @brief Remove a task from the scheduler table.
+ *
+ * The cycle time is set to 0 (the tick ISR stops requesting the task) and the
+ * slot becomes free for the next BSW_RegTask().  Safe to call from the task
+ * itself, e.g. a one-shot initialisation task that removes itself when done.
+ *
+ * @param handle Value returned by BSW_RegTask().
+ * @return 0 when the task was removed, BSW_TASK_HANDLE_INVALID for an invalid
+ *         (or already removed) handle.
+ */
+unsigned char BSW_UnregTask(unsigned char handle);
+
 void BSW_OsStart(void);
 
 unsigned char BSW_GetCpuLoad(void);

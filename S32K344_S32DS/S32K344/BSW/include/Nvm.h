@@ -125,6 +125,52 @@ typedef enum
 Std_ReturnType Nvm_Init(void);
 
 /**
+ * @brief TRUE once the start-up sequence has loaded the four blocks.
+ *
+ * Until then every API that would touch the Fee/MemAcc stack (write, commit,
+ * flush, invalidate) is refused with E_NOT_OK, so a task or a diagnostic
+ * request that runs during the deferred initialisation can never drive an
+ * uninitialised memory stack.  Reads fail as well (Nvm_ReadByte() returns
+ * E_NOT_OK, the NvmApp helpers then report 0xFF), which lets the upper layer
+ * distinguish "not ready yet" from "programmed to 0xFF".
+ */
+boolean Nvm_IsInitialised(void);
+
+/** Number of API calls refused because the module was not initialised yet. */
+extern volatile uint32 g_nvmNotReadyRejects;
+
+/** Result of one slice of the non-blocking initialisation (Nvm_InitStep). */
+typedef enum
+{
+    NVM_INIT_STEP_BUSY = 0,   /**< more work to do: call again                  */
+    NVM_INIT_STEP_DONE,       /**< the four blocks are loaded                   */
+    NVM_INIT_STEP_ERROR       /**< the memory stack failed                      */
+} Nvm_InitStepType;
+
+/**
+ * @brief Non-blocking start-up: advance the initialisation by one small slice.
+ *
+ * Nvm_Init() does the whole job in one blocking call (~50 ms, dominated by the
+ * Fee internal DFlash scan of the 32 KB Fee area).  A cooperative scheduler
+ * cannot afford that: the 2 ms / 5 ms CAN tasks would be delayed and the
+ * periodic frames would bunch up.
+ *
+ * The application therefore calls Nvm_InitStep() from a low-priority task
+ * until it returns NVM_INIT_STEP_DONE.  One call issues/advances at most
+ * NVM_INIT_POLLS_PER_STEP Fee/MemAcc poll cycles, so the caller stays in the
+ * sub-millisecond range and the CAN cadence is not disturbed.  The sequence is
+ * exactly the one of Nvm_Init():
+ *
+ *      MemAcc_Init + Fee_Init -> internal scan -> four block reads
+ *
+ * Nvm_Init() itself is implemented on top of this function.
+ *
+ * @return NVM_INIT_STEP_BUSY while work remains, NVM_INIT_STEP_DONE when the
+ *         RAM shadow is ready, NVM_INIT_STEP_ERROR if the memory stack failed.
+ */
+Nvm_InitStepType Nvm_InitStep(void);
+
+/**
  * @brief Returns one bit per block, set at init when the block checksum did
  *        not match the block content (bit 0 = block 0 ... bit 3 = block 3).
  *

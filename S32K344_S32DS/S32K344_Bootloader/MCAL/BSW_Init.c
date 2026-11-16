@@ -5,6 +5,8 @@
  *      Author: CENSORED
  */
 
+#include "BSW_Init.h"
+
 #include "Gpt.h"
 #include "Platform.h"
 #include "Port.h"
@@ -13,6 +15,12 @@
 #include "CanIf.h"
 #include "Nvm.h"
 #include "hse_trng.h"   /* HSE 硬件 TRNG 自检 / UDS 0x27 种子 */
+
+/* Set by the early entry points below, so BSW_Init() does not initialise the
+ * clock / the NVM stack a second time when Boot_TryJumpToApp() already did it
+ * for the SHA-256 check of the APP image. */
+static boolean BSW_ClockReady = FALSE;
+static boolean BSW_NvmReady   = FALSE;
 
 static void MCAL_MCU_Init(void)
 {
@@ -74,25 +82,54 @@ static void MCAL_CAN_Init(void)
     Can_43_FLEXCAN_SetControllerMode(Can_43_FLEXCANConf_CanController_CanController_0, CAN_CS_STARTED);
 }
 
-static void MCAL_NVM_Init(void)
+/* ---------------------------------------------------------------------------
+ * Early entry points used by the boot-time SHA-256 check (Boot.c).
+ * See BSW_Init.h: both are idempotent.
+ * ------------------------------------------------------------------------- */
+Std_ReturnType BSW_EarlyInitClock(void)
 {
-	/* Shared NVM area in the internal data flash (4 x 256 bytes). */
+	if (TRUE == BSW_ClockReady)
+	{
+		return E_OK;
+	}
+
+	MCAL_MCU_Init();
+	BSW_ClockReady = TRUE;
+
+	return E_OK;
+}
+
+Std_ReturnType BSW_EarlyInitNvm(void)
+{
+	Std_ReturnType ret = E_OK;
+
+	if (TRUE == BSW_NvmReady)
+	{
+		return E_OK;
+	}
+
+	/* Shared NVM area in the internal data flash (4 x 256 bytes).  A failure
+	 * is not retried: the blocks then read as 0xFF ("not programmed"), which
+	 * the integrity check reports as a mismatch. */
 	if (E_NOT_OK == Nvm_Init())
 	{
-		/* Blocks stay usable (zero-filled) even if the Fee start-up failed. */
+		ret = E_NOT_OK;
 	}
 
 	(void)Nvm_GetStatus();
+	BSW_NvmReady = TRUE;
+
+	return ret;
 }
 
 static void MCAL_Init(void)
 {
-	MCAL_MCU_Init();
+	(void)BSW_EarlyInitClock();
 	MCAL_PORT_Init();
 	MCAL_Platform_Init();
 	MCAL_GPT_Init();
 	MCAL_CAN_Init();
-	MCAL_NVM_Init();
+	(void)BSW_EarlyInitNvm();
 }
 
 void BSW_Init(void)

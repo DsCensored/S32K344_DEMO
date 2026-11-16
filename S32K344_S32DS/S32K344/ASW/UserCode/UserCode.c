@@ -23,6 +23,9 @@
 #include "Wdg_43_Instance0.h"
 #include "ASP.h"
 #include "DSC.h"
+#include "BSW_Init.h"      /* two-phase start-up                            */
+#include "BSW_WDG.h"       /* guarded watchdog service                     */
+#include "hse_trng.h"      /* deferred HSE TRNG self-test                   */
 
 /* -------------------------------------------------------------------------
  * Simple NVM demo: keep a power-up counter in NVM block 3.
@@ -56,6 +59,9 @@ static void ASW_userTask2ms(void)
 	Can_43_FLEXCAN_MainFunction_Read();
 	Can_43_FLEXCAN_MainFunction_Write();
 	Can_43_FLEXCAN_MainFunction_Mode();
+
+	/* BSW_UART6_RxPoll() refuses to touch the Uart driver until the deferred
+	 * start-up has initialised UART6/DMA (BSW_UART.c guard). */
 	BSW_UART6_RxPoll();
 }
 static void ASW_userTask5ms(void)
@@ -88,10 +94,26 @@ static void ASW_userTask100ms(void)
 }
 static void ASW_userTask1000ms(void)
 {
-	Wdg_43_Instance0_Service();//feed dog
+	static unsigned char trngSelfTestDone = 0U;
+
+	/* Watchdog: BSW_WDG_Service() is a counted no-op until the deferred
+	 * start-up has initialised the Wdg driver, so no gate is needed here. */
+	BSW_WDG_Service();
 
 	unsigned char data[] = "Hallo world";
-	BSW_UART6_Send(data,sizeof(data));
+	(void)BSW_UART6_Send(data,sizeof(data));
+
+	/* HSE TRNG self-test: was part of the blocking start-up.  It is a pure
+	 * diagnostic (result in g_hseTrngSelfTest[]), so it runs once a second
+	 * after power-up instead of delaying the CAN start.  Each request can take
+	 * a few ms; this one-off jitter is acceptable after the start-up phase. */
+#if (HSE_TRNG_SELFTEST_ON_BOOT != 0U)
+	if (0U == trngSelfTestDone)
+	{
+		trngSelfTestDone = 1U;
+		(void)HseTrng_SelfTest();
+	}
+#endif
 
 //	ASW_stLEDR1Ctrl = !ASW_stLEDR1Ctrl;
 //	ASW_stLEDG1Ctrl = !ASW_stLEDG1Ctrl;
@@ -107,6 +129,11 @@ void ASW_Init(void)
 	UDS_DCM_Init();
 	ASW_CanInit();
 
+	/* Pure data initialisation of the NM model.  It has to run before
+	 * Icu_Init() (which reads the wake-up reason), so it stays here and not in
+	 * the deferred start-up. */
+	AutoSarNm_initialize();
+
 	ASP_initialize();
 	DSC_initialize();
 
@@ -117,6 +144,12 @@ void ASW_Init(void)
 	BSW_RegTask(50, 3, ASW_userTask50ms);
 	BSW_RegTask(100, 3, ASW_userTask100ms);
 	BSW_RegTask(1000, 4, ASW_userTask1000ms);
+
+	/* Deferred start-up (watchdog, ICU, NVM, UART) at the lowest priority:
+	 * it runs only when no CAN/diagnostic task is pending, advances one slice
+	 * per millisecond and unregisters itself when it is done, so the periodic
+	 * frames keep their timing and the task slot is reused afterwards. */
+	BSW_InitLateStart();
 
 #if (ASW_NVM_DEMO_ENABLE == 1)
 	ASW_NvmBootCounter();

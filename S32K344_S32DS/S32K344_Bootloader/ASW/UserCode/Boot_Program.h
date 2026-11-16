@@ -74,6 +74,7 @@
 #define BOOT_ST_COPY_WRITE          0x04U   /* 写入失败 */
 #define BOOT_ST_COPY_HASH           0x05U   /* 拷贝后 SHA-256 不一致 */
 #define BOOT_ST_COPY_HSE            0x06U   /* HSE SHA-256 计算失败 */
+#define BOOT_ST_COPY_NVM            0x07U   /* SHA-256/长度写入 NVM 失败 */
 
 unsigned char BootProg_RequestDownload(unsigned int addr, unsigned int size,
                                        unsigned int *maxBlock);
@@ -93,7 +94,12 @@ unsigned char BootProg_EraseStep(unsigned int addr, unsigned int len,
  * version policy is skipped when the last download was the flash driver (fs). */
 unsigned char BootProg_DependencyCheck(unsigned int *status);
 /* Copy 8 KB per call; *more is set when the DCM must call again.  The result
- * is reported in *status (BOOT_ST_COPY_xxx); the function always returns 0. */
+ * is reported in *status (BOOT_ST_COPY_xxx); the function always returns 0.
+ *
+ * Before the first chunk is written the SHA-256 computed by 0x37 and the
+ * image length are stored in NVM block 3 (kBlock3_Now_SHAdata /
+ * kBlock3_Now_FileSize) and committed, so the start-up check of Boot.c can
+ * verify the run area at the next reset. */
 unsigned char BootProg_CopyStep(unsigned int *status, unsigned char *more);
 
 /* QCC 04.171 31 01 02 02: compare the tester SHA-256 with the digest of the

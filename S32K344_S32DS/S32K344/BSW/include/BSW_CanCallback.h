@@ -52,4 +52,17 @@ void BSW_CANRX_TIMEOUT_POLL(void);
 void BSW_CANTX_POLL(void);
 void BSW_CAN_BUSOFF_POLL(void);
 
+/**
+ * @brief Transmit the first periodic frame(s) before the OS is started.
+ *
+ * ASW_CanInit() sets last_send_tick to an "old" value, so every TX entry is
+ * due on the first poll: the periodic frames leave the ECU immediately after
+ * the CAN controller has been started, without waiting for the first 5 ms
+ * task.  The period bookkeeping continues from this timestamp, i.e. the next
+ * frame is due one send_period later (no burst when the task loop starts).
+ *
+ * Must be called after BSW_InitEarly() and ASW_Init().
+ */
+void BSW_CAN_SendFirstFrame(void);
+
 #endif /* INCLUDE_BSW_CANCALLBACK_H_ */

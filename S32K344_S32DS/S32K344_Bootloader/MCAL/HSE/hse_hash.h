@@ -12,15 +12,21 @@
  *   - 0xFF02 copy              : SHA-256 of the run area read back from flash.
  *
  * Only the streaming mode (START / UPDATE / FINISH) is used, so the image is
- * fed to the HSE in 2 KB pieces and never has to be contiguous in HSE-visible
+ * fed to the HSE in pieces and never has to be contiguous in HSE-visible
  * memory.  Streaming hashing of SHA2_256 requires the UPDATE length to be a
  * multiple of 64 bytes (the SHA-256 block size); the API hides this.
+ *
+ * Two transfer paths are used:
+ *   - PFlash regions (APP run / backup area): the HSE reads the flash itself,
+ *     one UPDATE per 64 KB.  No copy, this is the start-up verification path.
+ *   - Anything else (ITCM flash driver, RAM buffers): the bytes are copied to
+ *     an 8 KB staging buffer in .non_cacheable_data and fed from there.
  *
  * Reference: S32K3_HSE_DemoExamples .../framework/host_crypto_helper/
  *            hse_host_hash.c (HashDataStreamStart/Update/Finish).
  *
  * All shared buffers live in .non_cacheable_data: the HSE is a separate core
- * and cannot access the M7 DTCM (where the stack is).
+ * and cannot access the M7 DTCM/ITCM (where the stack lives).
  *
  * The public header only depends on <stdint.h> so it can be included by the
  * AUTOSAR-style UDS code without colliding with Std_Types.
@@ -84,7 +90,9 @@ uint8_t HseHash_Finish(const uint8_t *pData, uint32_t u32Len,
  * @brief  Compute the SHA-256 of a memory region in one call.
  *
  * Uses START + UPDATE(s) + FINISH internally; the region can have any length
- * and can live in PFlash, ITCM or SRAM.
+ * and can live in PFlash, ITCM or SRAM.  A region that lies completely inside
+ * the PFlash window is passed to the HSE without a staging copy (fastest); any
+ * other region is streamed through the staging buffer.
  *
  * @param  pData    Region base.
  * @param  u32Len   Region length in bytes (0 allowed, yields the SHA-256 of

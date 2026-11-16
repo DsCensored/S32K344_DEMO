@@ -13,6 +13,8 @@
 #include <stdio.h>
 #include "App_Info.h"
 #include "hse_hash.h"     /* HSE SHA-256 used for the image integrity checks */
+#include "Nvm.h"          /* Nvm_CommitBlock() / NVM_BLOCK_3 */
+#include "NvmApp.h"       /* Block3Data layout: kBlock3_Now_SHAdata / _FileSize */
 
 #define BOOT_PROG_MODE_NONE     0U
 #define BOOT_PROG_MODE_RAM      1U
@@ -601,6 +603,71 @@ unsigned char BootProg_DependencyCheck(unsigned int *status)
     return 0U;
 }
 
+/* ---------------------------------------------------------------------------
+ * 0xFF02: identity of the image that is going to be copied.
+ *
+ * The SHA-256 computed by 0x37 and the length of the image are stored in NVM
+ * block 3 (kBlock3_Now_SHAdata / kBlock3_Now_FileSize) *before* the run area is
+ * written.  Boot_TryJumpToApp() hashes the run area again at every start and
+ * only starts the APP when it matches these values.
+ *
+ * Writing them before the copy is intentional: if the copy is interrupted
+ * (power loss, reset, erase/write error) the run area no longer matches the
+ * stored digest and the bootloader stays in programming mode instead of
+ * starting a partial image.  The backup area (kBlock3_Pre_*) is not used yet.
+ *
+ * The block is committed immediately (Nvm_UserBlock_Polling_10ms() waits for
+ * the Fee job) so the values are in the DFlash before the first APP sector is
+ * touched.
+ *
+ * @return 0 = stored, 1 = NVM/Fee failure
+ * ------------------------------------------------------------------------- */
+static unsigned char BootProg_StoreImageInfo(void)
+{
+    unsigned int i;
+    unsigned int size = g_prog.AppSize;
+
+    if (0U == g_prog.AppHashValid)
+    {
+        return 1U;
+    }
+
+    /* NvmApp accepts only one block waiting for its DFlash commit: push a
+     * pending write of another block (e.g. a DID written earlier in the
+     * session) out first. */
+    (void)Nvm_UserBlock_Polling_10ms();
+
+    for (i = 0U; i < HSE_HASH_SHA256_SIZE; i++)
+    {
+        if (E_OK != Nvm_Block3_Write_U8((Block3Data)(kBlock3_Now_SHAdata + i),
+                                        g_prog.AppHash[i]))
+        {
+            return 1U;
+        }
+    }
+
+    /* Little-endian, i.e. the byte order of the value written by the APP-side
+     * tools; the boot-time check reads it back in the same order. */
+    for (i = 0U; i < 4U; i++)
+    {
+        if (E_OK != Nvm_Block3_Write_U8((Block3Data)(kBlock3_Now_FileSize + i),
+                                        (uint8)((size >> (8U * i)) & 0xFFU)))
+        {
+            return 1U;
+        }
+    }
+
+    /* Block 3 is the block waiting for its commit now: write it to the DFlash
+     * and wait for the Fee job, so the values are stored before the run area
+     * is touched. */
+    if (E_OK != Nvm_UserBlock_Polling_10ms())
+    {
+        return 1U;
+    }
+
+    return 0U;
+}
+
 unsigned char BootProg_CopyStep(unsigned int *status, unsigned char *more)
 {
     unsigned int chunk;
@@ -626,6 +693,16 @@ unsigned char BootProg_CopyStep(unsigned int *status, unsigned char *more)
                                   ~(BOOT_APP_ERASE_UNIT - 1U)))
         {
             *status = BOOT_ST_COPY_ERASE;
+            return 0U;
+        }
+
+        /* The run area is erased: store the identity of the image that is
+         * about to be copied.  Doing it here (and not after the copy) keeps
+         * the old APP bootable when the erase itself failed, while a copy
+         * that is interrupted afterwards can never be started. */
+        if (0U != BootProg_StoreImageInfo())
+        {
+            *status = BOOT_ST_COPY_NVM;
             return 0U;
         }
 
@@ -677,6 +754,11 @@ unsigned char BootProg_CopyStep(unsigned int *status, unsigned char *more)
             return 0U;
         }
     }
+
+    /* The run area now matches the SHA-256 that BootProg_StoreImageInfo()
+     * stored before the copy: the boot-time check accepts the image and a
+     * following 10 01 may start it without waiting for the next reset. */
+    Boot_AppShaConfirm();
 
     return 0U;
 }

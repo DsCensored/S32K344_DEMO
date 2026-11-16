@@ -61,7 +61,10 @@ typedef enum{
 
 typedef enum{
 	kBlock3_DataStart = 0,
-	kBlock3_Resv = kBlock3_DataStart,
+	kBlock3_Now_SHAdata = kBlock3_DataStart,
+	kBlock3_Pre_SHAdata = kBlock3_Now_SHAdata + 32,
+	kBlock3_Now_FileSize = kBlock3_Pre_SHAdata + 32,
+	kBlock3_Pre_FileSize = kBlock3_Now_FileSize + 4,
 	kBlock3_End = MAX_NVM_LEN - 1
 }Block3Data;
 

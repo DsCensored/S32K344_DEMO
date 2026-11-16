@@ -49,6 +49,14 @@ extern volatile uint32 BSW_u32UART6RxStartErrCnt;
 /* 初始化：启动第一次 DMA 接收（在 Uart_Init() 之后调用） */
 void BSW_UART6_Init(void);
 
+/* UART6/DMA 在延后启动阶段（BSW_InitLateTask）才初始化，所以本模块的其余
+ * 接口在初始化完成前一律被拦截：轮询直接返回、发送返回 E_NOT_OK、调试查询
+ * 返回 FALSE/0。调用方不需要再自己判断"初始化完成没有"。 */
+boolean BSW_UART6_IsReady(void);
+
+/* 因"驱动尚未初始化"而被拒绝的访问次数（调试用） */
+extern volatile uint32 g_uartNotReadyRejects;
+
 /* 接收轮询：周期调用（例如 2 ms），完成一帧后拷贝到 BSW_rUART6RxBuf，
  * 并自动重新启动下一次接收。 */
 void BSW_UART6_RxPoll(void);
