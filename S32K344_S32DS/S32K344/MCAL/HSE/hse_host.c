@@ -383,6 +383,72 @@ void HSE_RegisterGeneralPurposeCallback(uint8_t u8MuInstance, uint32_t u32Errors
     }
 }
 
+/*==================================================================================================
+ * HSE information services used by the UDS 0x22 DIDs.
+ * All buffers shared with HSE are placed in .non_cacheable_data and aligned
+ * to a cache line, because HSE cannot access the M7 DTCM (the stack lives
+ * there) and writes the results directly into these buffers.
+ *=================================================================================================*/
+#if defined(__GNUC__)
+#define HSE_INFO_SHARED __attribute__((section(".non_cacheable_data"), aligned(32)))
+#else
+#define HSE_INFO_SHARED
+#endif
+
+static HSE_INFO_SHARED hseSrvDescriptor_t  s_hseInfoDesc;
+static HSE_INFO_SHARED hseAttrFwVersion_t  s_hseFwVersion;
+
+static hseSrvResponse_t HSE_InfoSend(uint8_t u8Channel)
+{
+    HseTrng_CacheClean(&s_hseInfoDesc, (uint32_t)sizeof(s_hseInfoDesc));
+    HseTrng_Dsb();
+
+    return HSE_Send(HSE_TRNG_MU_INSTANCE, u8Channel, gSyncTxOption, &s_hseInfoDesc);
+}
+
+hseSrvResponse_t HSE_GetFwVersion(hseAttrFwVersion_t *pVersion)
+{
+    hseSrvResponse_t srvResponse;
+    uint8_t u8Channel;
+
+    if(NULL == pVersion)
+    {
+        return HSE_SRV_RSP_GENERAL_ERROR;
+    }
+
+    if(0U == (HSE_MU_GetHseStatus(HSE_TRNG_MU_INSTANCE) & (uint16_t)HSE_STATUS_INIT_OK))
+    {
+        return HSE_SRV_RSP_GENERAL_ERROR;
+    }
+
+    u8Channel = (uint8_t)HSE_MU_GetFreeChannel(HSE_TRNG_MU_INSTANCE);
+    if(HSE_INVALID_CHANNEL == u8Channel)
+    {
+        return HSE_SRV_RSP_GENERAL_ERROR;
+    }
+
+    (void)memset(&s_hseInfoDesc, 0, sizeof(s_hseInfoDesc));
+    (void)memset(&s_hseFwVersion, 0, sizeof(s_hseFwVersion));
+
+    s_hseInfoDesc.srvId = HSE_SRV_ID_GET_ATTR;
+    s_hseInfoDesc.hseSrv.getAttrReq.attrId  = HSE_FW_VERSION_ATTR_ID;
+    s_hseInfoDesc.hseSrv.getAttrReq.attrLen = (uint32_t)sizeof(hseAttrFwVersion_t);
+    s_hseInfoDesc.hseSrv.getAttrReq.pAttr   = (HOST_ADDR)&s_hseFwVersion;
+
+    HseTrng_CacheClean(&s_hseFwVersion, (uint32_t)sizeof(s_hseFwVersion));
+
+    srvResponse = HSE_InfoSend(u8Channel);
+    if(HSE_SRV_RSP_OK == srvResponse)
+    {
+        HseTrng_CacheInvalidate(&s_hseFwVersion, (uint32_t)sizeof(s_hseFwVersion));
+        HseTrng_Dsb();
+
+        *pVersion = s_hseFwVersion;
+    }
+
+    return srvResponse;
+}
+
 #ifdef __cplusplus
 }
 #endif

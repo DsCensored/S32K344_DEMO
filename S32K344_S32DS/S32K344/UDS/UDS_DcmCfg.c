@@ -25,6 +25,7 @@
 #include <string.h>
 #include "hse_trng.h"
 #include "hse_aes.h"      /* HSE 硬件 TRNG，供 UDS 0x27 取随机种子 */
+#include "hse_host.h"     /* HSE GetAttr，供 UDS 0x22 FE08 */
 
 UDS_DcmContextType UDS_DcmCtx;
 
@@ -359,6 +360,100 @@ static unsigned char UDS_DcmF184Read(const UDS_DcmDidType *did,
 	return 0U;
 }
 
+/* -------------------------------------------------------------------------
+ * FE08 / FE09: HSE / MCU identification DIDs
+ *
+ *   FE08  HSE firmware version, returned as a zero padded ASCII string
+ *         "major.minor.patch" in a 16-byte block (same layout as FE00..FE07).
+ *   FE09  S32K3 MCU unique ID, 8 bytes read from the UTEST UID area at
+ *         0x1B000040.  This value is programmed by NXP and does not depend
+ *         on the HSE key catalog, so it also works before/without a SHE
+ *         MASTER_ECU_KEY.
+ *
+ * Note: the HSE SHE Get ID service returns the 120-bit SHE UID, but it
+ * requires a provisioned SHE MASTER_ECU_KEY (NVM catalog group 0 slot 0).
+ * This project uses that catalog slot for the 0x27 AES keys, so SHE Get ID
+ * answers HSE_SRV_RSP_KEY_INVALID and is not used here.
+ * ---------------------------------------------------------------------- */
+#define UDS_DCM_HSE_VERSION_LEN  16U
+#define UDS_DCM_S32K3_UID_ADDR   0x1B000040UL
+#define UDS_DCM_S32K3_UID_LEN    8U
+
+static unsigned int UDS_DcmAppendDec(unsigned char *buf, unsigned int pos,
+                                     unsigned int value)
+{
+	unsigned char digits[10];
+	unsigned int count = 0U;
+
+	do
+	{
+		digits[count] = (unsigned char)('0' + (value % 10U));
+		count++;
+		value /= 10U;
+	} while (0U != value);
+
+	while (0U != count)
+	{
+		count--;
+		buf[pos] = digits[count];
+		pos++;
+	}
+
+	return pos;
+}
+
+static unsigned char UDS_DcmHseVersionRead(const UDS_DcmDidType *did,
+                                           unsigned char *buf,
+                                           unsigned int maxLen,
+                                           unsigned int *outLen)
+{
+	hseAttrFwVersion_t version;
+	unsigned int pos = 0U;
+
+	(void)did;
+
+	if (maxLen < UDS_DCM_HSE_VERSION_LEN)
+	{
+		return NRC_RESPONSE_TOO_LONG;
+	}
+
+	if (HSE_SRV_RSP_OK != HSE_GetFwVersion(&version))
+	{
+		return NRC_CONDITIONS_NOT_CORRECT;
+	}
+
+	memset(buf, 0, UDS_DCM_HSE_VERSION_LEN);
+	pos = UDS_DcmAppendDec(buf, pos, (unsigned int)version.majorVersion);
+	buf[pos] = '.';
+	pos++;
+	pos = UDS_DcmAppendDec(buf, pos, (unsigned int)version.minorVersion);
+	buf[pos] = '.';
+	pos++;
+	(void)UDS_DcmAppendDec(buf, pos, (unsigned int)version.patchVersion);
+
+	*outLen = UDS_DCM_HSE_VERSION_LEN;
+	return 0U;
+}
+
+static unsigned char UDS_DcmS32K3UidRead(const UDS_DcmDidType *did,
+                                         unsigned char *buf,
+                                         unsigned int maxLen,
+                                         unsigned int *outLen)
+{
+	const unsigned char *uid = (const unsigned char *)UDS_DCM_S32K3_UID_ADDR;
+
+	(void)did;
+
+	if (maxLen < UDS_DCM_S32K3_UID_LEN)
+	{
+		return NRC_RESPONSE_TOO_LONG;
+	}
+
+	memcpy(buf, uid, UDS_DCM_S32K3_UID_LEN);
+	*outLen = UDS_DCM_S32K3_UID_LEN;
+	return 0U;
+}
+
 /*
  * Version / identification DIDs.
  *
@@ -374,6 +469,9 @@ static unsigned char UDS_DcmF184Read(const UDS_DcmDidType *did,
  *   F191  hardware part number     0x00448130 (app  App_Info block 3)
  *   F192  production / build date  0x00448160 (app  App_Info block 6)
  *   F19E  supplier code            0x00448140 (app  App_Info block 4)
+ *
+ * FE08 is read from the HSE at run time; FE09 is the 8-byte MCU UID
+ * programmed by NXP in the UTEST area at 0x1B000040.
  */
 typedef struct
 {
@@ -482,6 +580,8 @@ const UDS_DcmDidType UDS_DcmDids[] =
 	{0xFE05U, UDS_DcmFixedDidRead, 0},
 	{0xFE06U, UDS_DcmFixedDidRead, 0},
 	{0xFE07U, UDS_DcmFixedDidRead, 0},
+	{0xFE08U, UDS_DcmHseVersionRead, 0},
+	{0xFE09U, UDS_DcmS32K3UidRead, 0},
 	/* Version / identification DIDs (fixed flash addresses). */
 	{0xF180U, UDS_DcmFixedDidRead, 0},
 	{0xF187U, UDS_DcmFixedDidRead, 0},

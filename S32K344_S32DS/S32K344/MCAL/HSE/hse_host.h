@@ -173,6 +173,16 @@ void HSE_GeneralPurposeInterruptHandler(uint8_t u8MuInstance);
 void HSE_RegisterGeneralPurposeCallback(uint8_t u8MuInstance, uint32_t u32ErrorsMask,
     pfGeneralPurposeCallback_t pfGeneralPurposeCallback);
 
+/**
+* @brief        Read the HSE firmware version.
+* @details      Issues HSE_SRV_ID_GET_ATTR with HSE_FW_VERSION_ATTR_ID.
+*
+* @param[out]   pVersion    Filled with the 8-byte hseAttrFwVersion_t.
+*
+* @return       HSE_SRV_RSP_OK on success, another hseSrvResponse_t on error.
+*/
+hseSrvResponse_t HSE_GetFwVersion(hseAttrFwVersion_t *pVersion);
+
 #ifdef __cplusplus
 }
 #endif
