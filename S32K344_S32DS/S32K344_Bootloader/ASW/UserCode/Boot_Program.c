@@ -8,11 +8,14 @@
 #include "Boot_Program.h"
 #include "Boot_Flash.h"
 #include "Boot.h"
+#include "Boot_Shared.h"  /* RAM hand-shake for the reset that swaps the banks */
 #include "UDS_CanTp.h"
 #include <string.h>
 #include <stdio.h>
 #include "App_Info.h"
 #include "hse_hash.h"     /* HSE SHA-256 used for the image integrity checks */
+#include "hse_host.h"     /* HSE_ActivatePassiveBlock() (AB swap)          */
+#include "hse_trng_cfg.h" /* HSE_TRNG_MU_INSTANCE                          */
 #include "Nvm.h"          /* Nvm_CommitBlock() / NVM_BLOCK_3 */
 #include "NvmApp.h"       /* Block3Data layout: kBlock3_Now_SHAdata / _FileSize */
 
@@ -23,23 +26,38 @@
 #define BOOT_FLASH_WRITE_UNIT   128U      /* Mem_43_INFLS write page size */
 #define BOOT_APP_ERASE_UNIT     0x2000U
 
+/* Kind of the image of the running download (in the passive partition). */
+#define BOOT_PROG_IMG_NONE      0U
+#define BOOT_PROG_IMG_APP       1U
+#define BOOT_PROG_IMG_BOOT      2U
+
+/* SHA-256 + length of one image, as returned by 0x37.  The two images are
+ * tracked independently so a BOOT and an APP download can be combined in one
+ * programming session regardless of their order. */
+typedef struct
+{
+    unsigned char Valid;
+    unsigned int Size;
+    unsigned char Hash[HSE_HASH_SHA256_SIZE];
+} BootProg_ImageInfoType;
+
 typedef struct
 {
     unsigned char Mode;
-    unsigned int Target;
+    unsigned int Target;               /* mapped address (passive partition) */
     unsigned int Size;
     unsigned int Received;
     unsigned char Seq;
     unsigned char Buf[BOOT_PROG_BUF_SIZE] __attribute__((aligned(4)));
     unsigned int BufLen;
-    unsigned char AppHashValid;
-    unsigned char AppHash[HSE_HASH_SHA256_SIZE];   /* SHA-256 of the APP image */
-    unsigned int AppSize;
-    unsigned char LastHashValid;           /* result of the last 0x37 (APP or fs) */
+    unsigned char ImageKind;           /* BOOT_PROG_IMG_xxx */
+    unsigned char LastHashValid;       /* result of the last 0x37 (APP, BOOT or fs) */
     unsigned char LastHash[HSE_HASH_SHA256_SIZE];
 } Boot_ProgType;
 
 static Boot_ProgType g_prog;
+static BootProg_ImageInfoType g_appImage;
+static BootProg_ImageInfoType g_bootImage;
 
 static unsigned char g_flashReady;
 static unsigned char g_fingerprint[9];
@@ -49,8 +67,21 @@ static unsigned char g_fingerprint[9];
  * dependency check must not run check_version() while fs was the last image. */
 static unsigned char g_progImageIsDriver;
 
-/* Set by 0xFF01 only when every APP dependency check passed; it authorises
- * the 0xFF02 copy.  Defined below. */
+/* Set after 0xFF02 / 0x31 01 AC C1 requested the HSE swap.  A second swap
+ * before the reset must be refused: two consecutive
+ * HSE_SRV_ID_ACTIVATE_PASSIVE_BLOCK requests less than about 1 s apart are
+ * known to hang the device. */
+static unsigned char g_abSwapDone;
+
+/* Debug view for the J-Link:
+ *   [0] last 0xFF02 / 0xACC1 status   [1] last raw HSE response
+ *   [2] 1 = 0xFF02, 2 = 0xACC1        [3] 0x41425357 ("ABSW" marker) */
+volatile unsigned int g_bootAbSwapDiag[4] = {
+    0xFFFFFFFFUL, 0U, 0U, 0x41425357UL
+};
+
+/* Set by 0xFF01 only when every dependency check passed; it authorises
+ * the 0xFF02 swap.  Defined below. */
 extern unsigned char BSW_stUpdateVerValid;
 
 static unsigned char BootProg_InitFlash(void)
@@ -68,11 +99,6 @@ static unsigned char BootProg_InitFlash(void)
     g_flashReady = 1U;
     return 0U;
 }
-
-static unsigned char g_copyState;
-static unsigned int g_copyOffset;
-static unsigned char g_copyBuf[BOOT_PROG_COPY_CHUNK + BOOT_FLASH_WRITE_UNIT]
-    __attribute__((aligned(4)));
 
 /* SHA-256 of [base, base + size), computed by the HSE while streaming the
  * bytes through its non-cacheable staging buffer.  The region may live in
@@ -101,6 +127,10 @@ static unsigned int g_eraseLen;
 static unsigned int g_eraseNext;
 static unsigned int g_eraseEnd;
 
+/* Only the passive partition may be erased / programmed: the active partition
+ * is the one the bootloader itself is executing from.  Programming the active
+ * partition would also be pointless, because the HSE swap would replace it
+ * with the passive one at the next reset. */
 static unsigned char BootProg_IsRangeAllowed(unsigned int addr, unsigned int len)
 {
     unsigned int end = addr + len;
@@ -110,19 +140,33 @@ static unsigned char BootProg_IsRangeAllowed(unsigned int addr, unsigned int len
         return 0U;
     }
 
-    if ((addr >= BOOT_APP_BASE) && (end <= (BOOT_APP_BASE + BOOT_APP_SIZE)))
-    {
-        return 1U;
-    }
-
-    if ((addr >= BOOT_APP_BACKUP_BASE) &&
+    /* The whole passive partition (BOOT + flag sector + APP, without the HSE
+     * firmware at the end) may be erased in one FF00 request. */
+    if ((addr >= BOOT_CODE_BACKUP_BASE) &&
         (end <= (BOOT_APP_BACKUP_BASE + BOOT_APP_BACKUP_SIZE)))
     {
         return 1U;
     }
 
-    if ((addr >= BOOT_FLAG_SECTOR_BASE) &&
-        (end <= (BOOT_FLAG_SECTOR_BASE + BOOT_FLAG_SECTOR_SIZE)))
+    /* Passive BOOT space: 0x00600000..0x0063FFFF. */
+    if ((addr >= BOOT_CODE_BACKUP_BASE) &&
+        (end <= (BOOT_CODE_BACKUP_BASE + BOOT_CODE_BACKUP_SIZE)))
+    {
+        return 1U;
+    }
+
+    /* Passive flag sector: 0x00640000..0x00641FFF. */
+    if ((addr >= BOOT_FLAG_BACKUP_BASE) &&
+        (end <= (BOOT_FLAG_BACKUP_BASE + BOOT_FLAG_BACKUP_SIZE)))
+    {
+        return 1U;
+    }
+
+    /* Passive APP area: 0x00648000..0x007D3FFF.  The last 176 KB of the
+     * partition (0x007D4000..0x007FFFFF) belong to the HSE firmware and are
+     * therefore not writable. */
+    if ((addr >= BOOT_APP_BACKUP_BASE) &&
+        (end <= (BOOT_APP_BACKUP_BASE + BOOT_APP_BACKUP_SIZE)))
     {
         return 1U;
     }
@@ -130,14 +174,48 @@ static unsigned char BootProg_IsRangeAllowed(unsigned int addr, unsigned int len
     return 0U;
 }
 
+/* Translate a run address into the passive copy the tester is programming.
+ * The tester keeps sending the linked addresses (BOOT 0x00400000, APP
+ * 0x00448000); direct passive addresses are accepted unchanged. */
 static unsigned int BootProg_MapAddress(unsigned int addr)
 {
+    if ((addr >= BOOT_CODE_BASE) && (addr < (BOOT_CODE_BASE + BOOT_CODE_SIZE)))
+    {
+        return addr + BOOT_PASSIVE_OFFSET;
+    }
+
+    if ((addr >= BOOT_FLAG_SECTOR_BASE) &&
+        (addr < (BOOT_FLAG_SECTOR_BASE + BOOT_FLAG_SECTOR_SIZE)))
+    {
+        return addr + BOOT_PASSIVE_OFFSET;
+    }
+
     if ((addr >= BOOT_APP_BASE) && (addr < (BOOT_APP_BASE + BOOT_APP_SIZE)))
     {
-        return BOOT_APP_BACKUP_BASE + (addr - BOOT_APP_BASE);
+        return addr + BOOT_PASSIVE_OFFSET;
     }
 
     return addr;
+}
+
+/* Which image is being downloaded, based on the mapped (passive) address. */
+static unsigned char BootProg_ImageKind(unsigned int addr, unsigned int len)
+{
+    unsigned int end = addr + len;
+
+    if ((addr >= BOOT_CODE_BACKUP_BASE) &&
+        (end <= (BOOT_CODE_BACKUP_BASE + BOOT_CODE_BACKUP_SIZE)))
+    {
+        return BOOT_PROG_IMG_BOOT;
+    }
+
+    if ((addr >= BOOT_APP_BACKUP_BASE) &&
+        (end <= (BOOT_APP_BACKUP_BASE + BOOT_APP_BACKUP_SIZE)))
+    {
+        return BOOT_PROG_IMG_APP;
+    }
+
+    return BOOT_PROG_IMG_NONE;
 }
 
 unsigned char BootProg_RequestDownload(unsigned int addr, unsigned int size,
@@ -150,9 +228,9 @@ unsigned char BootProg_RequestDownload(unsigned int addr, unsigned int size,
 
     memset(&g_prog, 0, sizeof(g_prog));
 
-    /* A new download invalidates any erase/copy state of a previous one, and
-     * the dependency check of the previous image no longer applies. */
-    g_copyState = 0U;
+    /* A new download invalidates the dependency check of the previous image.
+     * The SHA-256 of the other image (BOOT vs APP) is kept, so a BOOT and an
+     * APP download can be combined in one session. */
     BSW_stUpdateVerValid = 0U;
 
     if (0U == addr)
@@ -163,6 +241,7 @@ unsigned char BootProg_RequestDownload(unsigned int addr, unsigned int size,
         }
         g_prog.Mode = BOOT_PROG_MODE_RAM;
         g_prog.Target = (unsigned int)Boot_FlashRamBase();
+        g_prog.ImageKind = BOOT_PROG_IMG_NONE;
         g_progImageIsDriver = 1U;
 
         /* The ITCM image is about to be replaced: run INIT again before the
@@ -172,8 +251,10 @@ unsigned char BootProg_RequestDownload(unsigned int addr, unsigned int size,
     else
     {
         unsigned int target = BootProg_MapAddress(addr);
+        unsigned char kind = BootProg_ImageKind(target, size);
 
         if ((0U == BootProg_IsRangeAllowed(target, size)) ||
+            (BOOT_PROG_IMG_NONE == kind) ||
             (0U != (target & (BOOT_FLASH_WRITE_UNIT - 1U))))
         {
             return (unsigned char)NRC_REQUEST_OUT_OF_RANGE;
@@ -191,7 +272,18 @@ unsigned char BootProg_RequestDownload(unsigned int addr, unsigned int size,
 
         g_prog.Mode = BOOT_PROG_MODE_FLASH;
         g_prog.Target = target;
+        g_prog.ImageKind = kind;
         g_progImageIsDriver = 0U;
+
+        /* A new image of this kind replaces the previous one. */
+        if (BOOT_PROG_IMG_BOOT == kind)
+        {
+            memset(&g_bootImage, 0, sizeof(g_bootImage));
+        }
+        else
+        {
+            memset(&g_appImage, 0, sizeof(g_appImage));
+        }
     }
 
     g_prog.Size = size;
@@ -338,8 +430,8 @@ unsigned char BootProg_TransferExit(unsigned char *hash)
     }
 
     /* SHA-256 of the image as it is stored: ITCM for the flash driver, the
-     * backup area for the APP.  The 0xFF padding of the last 128-byte write
-     * page is outside g_prog.Size and is therefore not hashed. */
+     * passive partition for the BOOT/APP image.  The 0xFF padding of the last
+     * 128-byte write page is outside g_prog.Size and is not hashed. */
     if ((0U == nrc) &&
         (0U != BootProg_HashRegion(imageBase, g_prog.Size, digest)))
     {
@@ -352,19 +444,17 @@ unsigned char BootProg_TransferExit(unsigned char *hash)
          * job (and the I-cache must be invalidated). */
         g_flashReady = 0U;
     }
-    else
-    {
-        /* A new APP image invalidates a previous copy progress. */
-        g_copyState = 0U;
-    }
 
     if (0U == nrc)
     {
         if (BOOT_PROG_MODE_RAM != g_prog.Mode)
         {
-            (void)memcpy(g_prog.AppHash, digest, sizeof(g_prog.AppHash));
-            g_prog.AppSize = g_prog.Size;
-            g_prog.AppHashValid = 1U;
+            BootProg_ImageInfoType *image = (BOOT_PROG_IMG_BOOT == g_prog.ImageKind)
+                ? &g_bootImage : &g_appImage;
+
+            (void)memcpy(image->Hash, digest, sizeof(image->Hash));
+            image->Size = g_prog.Size;
+            image->Valid = 1U;
         }
 
         /* 0x0202 compares the tester digest with this value: keep the SHA-256
@@ -385,6 +475,7 @@ unsigned char BootProg_EraseStep(unsigned int addr, unsigned int len,
 {
     unsigned int start;
     unsigned int end;
+    unsigned int target;
 
     *status = BOOT_ST_ERASE_OK;
     *more = 0U;
@@ -395,14 +486,18 @@ unsigned char BootProg_EraseStep(unsigned int addr, unsigned int len,
         return 0U;
     }
 
+    /* FF00 usually uses the same run address as 0x34: erase the passive copy
+     * of the requested range. */
+    target = BootProg_MapAddress(addr);
+
     /* A different request (or a stale state after a session change) restarts
      * the range.  The DCM calls this function again with the same request
      * while it answers NRC 0x78. */
     if ((0U == g_eraseActive) || (g_eraseAddr != addr) ||
         (g_eraseLen != len))
     {
-        start = addr & ~(BOOT_APP_ERASE_UNIT - 1U);
-        end   = (addr + len + BOOT_APP_ERASE_UNIT - 1U) &
+        start = target & ~(BOOT_APP_ERASE_UNIT - 1U);
+        end   = (target + len + BOOT_APP_ERASE_UNIT - 1U) &
                 ~(BOOT_APP_ERASE_UNIT - 1U);
 
         if ((end < start) ||
@@ -541,12 +636,20 @@ static unsigned char check_version(unsigned int *status)
     return 0;
 }
 
+/* Defined below (NVM block 3 helpers); used by the BOOT-only 0xFF01 path. */
+static unsigned char BootProg_Block3Read(unsigned int shaOffset,
+                                         unsigned int sizeOffset,
+                                         unsigned char *sha,
+                                         unsigned int *size);
+
 unsigned char BSW_stUpdateVerValid = 0;
 unsigned char BootProg_DependencyCheck(unsigned int *status)
 {
+    unsigned char digest[HSE_HASH_SHA256_SIZE];
+
     *status = BOOT_ST_DEP_OK;
 
-    /* 只有本次校验全部通过才允许 0xFF02 拷贝。 */
+    /* 只有本次校验全部通过才允许 0xFF02 切区。 */
     BSW_stUpdateVerValid = 0U;
 
     if (0U == Boot_FlashDriverValid())
@@ -562,39 +665,102 @@ unsigned char BootProg_DependencyCheck(unsigned int *status)
         return 0U;
     }
 
-    if (check_version(status) != 0U)
+    if (0U != g_appImage.Valid)
     {
-        return 0U;
-    }
+        /* New APP: normal forward-only version policy + passive APP check. */
+        if (check_version(status) != 0U)
+        {
+            return 0U;
+        }
 
-    /* The downloaded image lives in the backup area: check its header. */
-    if (BOOT_APP_HEADER_MAGIC != *(volatile unsigned int *)BOOT_APP_BACKUP_BASE)
-    {
-        *status = BOOT_ST_DEP_APP_HEADER;
-        return 0U;
-    }
+        /* The downloaded APP image lives in the passive area: check its
+         * header.  Its vector table is still linked at 0x0044A000, so the
+         * passive copy is found at 0x0064A000 (see Boot_ImageHeaderValid()). */
+        if (0U == Boot_ImageHeaderValid(BOOT_APP_BACKUP_BASE, BOOT_APP_BASE,
+                                        BOOT_APP_SIZE))
+        {
+            *status = BOOT_ST_DEP_APP_HEADER;
+            return 0U;
+        }
 
-    if (0U == g_prog.AppHashValid)
-    {
-        *status = BOOT_ST_DEP_APP_INCOMPLETE;
-        return 0U;
-    }
-
-    /* Re-read the backup area and hash it again: this also catches a flash
-     * programming error that the CAN reception obviously cannot see. */
-    {
-        unsigned char digest[HSE_HASH_SHA256_SIZE];
-
-        if (0U != BootProg_HashRegion(BOOT_APP_BACKUP_BASE, g_prog.AppSize,
+        /* Re-read the passive area and hash it again: this also catches a
+         * flash programming error that the CAN reception cannot see. */
+        if (0U != BootProg_HashRegion(BOOT_APP_BACKUP_BASE, g_appImage.Size,
                                       digest))
         {
             *status = BOOT_ST_DEP_HSE;
             return 0U;
         }
 
-        if (0 != memcmp(digest, g_prog.AppHash, HSE_HASH_SHA256_SIZE))
+        if (0 != memcmp(digest, g_appImage.Hash, HSE_HASH_SHA256_SIZE))
         {
             *status = BOOT_ST_DEP_APP_HASH;
+            return 0U;
+        }
+    }
+    else if (0U != g_bootImage.Valid)
+    {
+        /* BOOT-only update: the APP in the passive partition is not changed
+         * and becomes the active one after the swap.  Verify it against the
+         * SHA-256 stored for it by the previous 0xFF02 / 0xACC1
+         * (kBlock3_Pre_*).  The APP version policy is skipped: no new APP. */
+        unsigned char preSha[HSE_HASH_SHA256_SIZE];
+        unsigned int preSize = 0U;
+
+        if ((0U != BootProg_Block3Read(kBlock3_Pre_SHAdata,
+                                       kBlock3_Pre_FileSize,
+                                       preSha, &preSize)) ||
+            (0U == preSize) || (preSize > BOOT_APP_SIZE))
+        {
+            *status = BOOT_ST_DEP_PRE_INVALID;
+            return 0U;
+        }
+
+        if (0U == Boot_ImageHeaderValid(BOOT_APP_BACKUP_BASE, BOOT_APP_BASE,
+                                        BOOT_APP_SIZE))
+        {
+            *status = BOOT_ST_DEP_APP_HEADER;
+            return 0U;
+        }
+
+        if (0U != BootProg_HashRegion(BOOT_APP_BACKUP_BASE, preSize, digest))
+        {
+            *status = BOOT_ST_DEP_HSE;
+            return 0U;
+        }
+
+        if (0 != memcmp(digest, preSha, HSE_HASH_SHA256_SIZE))
+        {
+            *status = BOOT_ST_DEP_PRE_INVALID;
+            return 0U;
+        }
+    }
+    else
+    {
+        *status = BOOT_ST_DEP_APP_INCOMPLETE;
+        return 0U;
+    }
+
+    /* A BOOT image downloaded in the same session is verified as well. */
+    if (0U != g_bootImage.Valid)
+    {
+        if (0U == Boot_ImageHeaderValid(BOOT_CODE_BACKUP_BASE, BOOT_CODE_BASE,
+                                        BOOT_CODE_BACKUP_SIZE))
+        {
+            *status = BOOT_ST_DEP_BOOT_HEADER;
+            return 0U;
+        }
+
+        if (0U != BootProg_HashRegion(BOOT_CODE_BACKUP_BASE, g_bootImage.Size,
+                                      digest))
+        {
+            *status = BOOT_ST_DEP_HSE;
+            return 0U;
+        }
+
+        if (0 != memcmp(digest, g_bootImage.Hash, HSE_HASH_SHA256_SIZE))
+        {
+            *status = BOOT_ST_DEP_BOOT_HASH;
             return 0U;
         }
     }
@@ -604,161 +770,390 @@ unsigned char BootProg_DependencyCheck(unsigned int *status)
 }
 
 /* ---------------------------------------------------------------------------
- * 0xFF02: identity of the image that is going to be copied.
+ * NVM block 3: SHA-256 and length of the two images
  *
- * The SHA-256 computed by 0x37 and the length of the image are stored in NVM
- * block 3 (kBlock3_Now_SHAdata / kBlock3_Now_FileSize) *before* the run area is
- * written.  Boot_TryJumpToApp() hashes the run area again at every start and
- * only starts the APP when it matches these values.
+ *   kBlock3_Now_SHAdata / kBlock3_Now_FileSize : active image
+ *   kBlock3_Pre_SHAdata / kBlock3_Pre_FileSize : passive image
  *
- * Writing them before the copy is intentional: if the copy is interrupted
- * (power loss, reset, erase/write error) the run area no longer matches the
- * stored digest and the bootloader stays in programming mode instead of
- * starting a partial image.  The backup area (kBlock3_Pre_*) is not used yet.
- *
- * The block is committed immediately (Nvm_UserBlock_Polling_10ms() waits for
- * the Fee job) so the values are in the DFlash before the first APP sector is
- * touched.
- *
- * @return 0 = stored, 1 = NVM/Fee failure
+ * The invariant is maintained by the two swap paths below:
+ *   - 0xFF02 (a new APP was downloaded): Pre <- Now, Now <- new APP
+ *   - 0xACC1 (no new APP):               Pre <- Now, Now <- old Pre
+ * so after every AB swap kBlock3_Now_* describes the image that is running.
  * ------------------------------------------------------------------------- */
-static unsigned char BootProg_StoreImageInfo(void)
+
+static unsigned char BootProg_Block3Read(unsigned int shaOffset,
+                                         unsigned int sizeOffset,
+                                         unsigned char *sha,
+                                         unsigned int *size)
 {
     unsigned int i;
-    unsigned int size = g_prog.AppSize;
+    unsigned int value = 0U;
 
-    if (0U == g_prog.AppHashValid)
+    if ((0 == sha) || (0 == size))
     {
         return 1U;
     }
 
-    /* NvmApp accepts only one block waiting for its DFlash commit: push a
-     * pending write of another block (e.g. a DID written earlier in the
-     * session) out first. */
-    (void)Nvm_UserBlock_Polling_10ms();
+    for (i = 0U; i < HSE_HASH_SHA256_SIZE; i++)
+    {
+        sha[i] = Nvm_Block3_Read_U8((Block3Data)(shaOffset + i));
+    }
+
+    /* Little-endian, the byte order used by Boot.c at start-up. */
+    for (i = 0U; i < 4U; i++)
+    {
+        value |= ((unsigned int)Nvm_Block3_Read_U8((Block3Data)(sizeOffset + i)))
+                 << (8U * i);
+    }
+
+    *size = value;
+    return 0U;
+}
+
+static unsigned char BootProg_Block3Write(unsigned int shaOffset,
+                                          unsigned int sizeOffset,
+                                          const unsigned char *sha,
+                                          unsigned int size)
+{
+    unsigned int i;
 
     for (i = 0U; i < HSE_HASH_SHA256_SIZE; i++)
     {
-        if (E_OK != Nvm_Block3_Write_U8((Block3Data)(kBlock3_Now_SHAdata + i),
-                                        g_prog.AppHash[i]))
+        if (E_OK != Nvm_Block3_Write_U8((Block3Data)(shaOffset + i), sha[i]))
         {
             return 1U;
         }
     }
 
-    /* Little-endian, i.e. the byte order of the value written by the APP-side
-     * tools; the boot-time check reads it back in the same order. */
     for (i = 0U; i < 4U; i++)
     {
-        if (E_OK != Nvm_Block3_Write_U8((Block3Data)(kBlock3_Now_FileSize + i),
+        if (E_OK != Nvm_Block3_Write_U8((Block3Data)(sizeOffset + i),
                                         (uint8)((size >> (8U * i)) & 0xFFU)))
         {
             return 1U;
         }
     }
 
-    /* Block 3 is the block waiting for its commit now: write it to the DFlash
-     * and wait for the Fee job, so the values are stored before the run area
-     * is touched. */
-    if (E_OK != Nvm_UserBlock_Polling_10ms())
+    return 0U;
+}
+
+/* Pre <- Now, Now <- newSha/newSize, then commit the block.  0xFF02 passes the
+ * SHA-256 of the image just downloaded; 0xACC1 passes the old Pre value, which
+ * turns the same operation into an exchange of the two entries. */
+static unsigned char BootProg_Block3ShiftNow(const unsigned char *newSha,
+                                             unsigned int newSize)
+{
+    unsigned char oldSha[HSE_HASH_SHA256_SIZE];
+    unsigned int oldSize = 0U;
+
+    if (0 == newSha)
     {
         return 1U;
     }
 
+    (void)BootProg_Block3Read(kBlock3_Now_SHAdata, kBlock3_Now_FileSize,
+                              oldSha, &oldSize);
+
+    /* NvmApp accepts only one block waiting for its DFlash commit: push a
+     * pending write of another block (e.g. a DID written earlier in the
+     * session) out first. */
+    (void)Nvm_UserBlock_Polling_10ms();
+
+    if (0U != BootProg_Block3Write(kBlock3_Pre_SHAdata, kBlock3_Pre_FileSize,
+                                   oldSha, oldSize))
+    {
+        return 1U;
+    }
+
+    if (0U != BootProg_Block3Write(kBlock3_Now_SHAdata, kBlock3_Now_FileSize,
+                                   newSha, newSize))
+    {
+        return 1U;
+    }
+
+    /* Commit synchronously: the values must be in the DFlash before the HSE
+     * swap is requested. */
+    return (E_OK == Nvm_UserBlock_Polling_10ms()) ? 0U : 1U;
+}
+
+/* Put the two entries back after the HSE refused the swap.  Without this the
+ * stored "Now" would describe an image that never became active, and the next
+ * start would refuse to boot the old APP. */
+static void BootProg_Block3Restore(const unsigned char *nowSha,
+                                   unsigned int nowSize,
+                                   const unsigned char *preSha,
+                                   unsigned int preSize)
+{
+    (void)BootProg_Block3Write(kBlock3_Now_SHAdata, kBlock3_Now_FileSize,
+                               nowSha, nowSize);
+    (void)BootProg_Block3Write(kBlock3_Pre_SHAdata, kBlock3_Pre_FileSize,
+                               preSha, preSize);
+    (void)Nvm_UserBlock_Polling_10ms();
+}
+
+/* Ask the HSE to swap the active/passive partition at the next reset.
+ * @return 0 = accepted, 1 = HSE rejected, 2 = HSE not ready */
+static unsigned char BootProg_ActivatePassiveBlock(void)
+{
+    hseSrvResponse_t response;
+
+    /* 0x37/0xFF01 already use the HSE; the probe fails closed when the HSE is
+     * not ready (e.g. still copying its firmware after a previous swap). */
+    if (HSE_HASH_OK != HseHash_Init())
+    {
+        g_bootAbSwapDiag[1] = 0xFFFFFFE1UL;
+        return 2U;
+    }
+
+    response = HSE_ActivatePassiveBlock(HSE_TRNG_MU_INSTANCE);
+    g_bootAbSwapDiag[1] = (unsigned int)response;
+
+    if (HSE_SRV_RSP_OK != response)
+    {
+        return 1U;
+    }
+
+    /* Tell the bootloader that runs after the swap reset that the HSE is
+     * still busy copying its own firmware, see Boot_TryJumpToApp(). */
+    Boot_AbSwapFlagSet();
+    __asm volatile ("dsb" ::: "memory");
+
     return 0U;
 }
 
-unsigned char BootProg_CopyStep(unsigned int *status, unsigned char *more)
+/* Swap to the APP that is already present in the passive partition: verify it
+ * against kBlock3_Pre_*, verify the (new) passive BOOT image, exchange the two
+ * Block3 entries and ask the HSE to activate the passive block.
+ *
+ * Used by 0xFF02 when only a new BOOT was downloaded (the APP does not change,
+ * the passive APP becomes the active one after the swap) and by
+ * 0x31 01 AC C1.
+ *
+ * @return BOOT_ST_AB_xxx status */
+static unsigned int BootProg_SwapToPre(void)
 {
-    unsigned int chunk;
-    unsigned int remaining;
+    unsigned char preSha[HSE_HASH_SHA256_SIZE];
+    unsigned char oldNowSha[HSE_HASH_SHA256_SIZE];
+    unsigned char digest[HSE_HASH_SHA256_SIZE];
+    unsigned int preSize = 0U;
+    unsigned int oldNowSize = 0U;
 
-    *status = BOOT_ST_COPY_OK;
+    if (0U != g_abSwapDone)
+    {
+        return (unsigned int)BOOT_ST_AB_PRECOND;
+    }
+
+    /* The passive image is described by kBlock3_Pre_*.  A never programmed
+     * block reads as 0xFF, so preSize becomes 0xFFFFFFFF and is rejected. */
+    if ((0U != BootProg_Block3Read(kBlock3_Pre_SHAdata, kBlock3_Pre_FileSize,
+                                   preSha, &preSize)) ||
+        (0U == preSize) || (preSize > BOOT_APP_SIZE))
+    {
+        return (unsigned int)BOOT_ST_AB_NO_PRE;
+    }
+
+    /* Refuse to activate a passive partition whose APP does not match the
+     * SHA-256 recorded for it (e.g. an interrupted download). */
+    if (0U == Boot_PassiveAppValid())
+    {
+        return (unsigned int)BOOT_ST_AB_APP_HEADER;
+    }
+
+    if (0U != BootProg_HashRegion(BOOT_APP_BACKUP_BASE, preSize, digest))
+    {
+        return (unsigned int)BOOT_ST_AB_HSE_HASH;
+    }
+
+    if (0 != memcmp(digest, preSha, HSE_HASH_SHA256_SIZE))
+    {
+        return (unsigned int)BOOT_ST_AB_PRE_INVALID;
+    }
+
+    if (0U == Boot_PassiveBootValid())
+    {
+        return (unsigned int)BOOT_ST_AB_NO_BOOT;
+    }
+
+    /* A BOOT image downloaded in this session must be verified before it is
+     * activated. */
+    if (0U != g_bootImage.Valid)
+    {
+        if (0U != BootProg_HashRegion(BOOT_CODE_BACKUP_BASE, g_bootImage.Size,
+                                      digest))
+        {
+            return (unsigned int)BOOT_ST_AB_HSE_HASH;
+        }
+
+        if (0 != memcmp(digest, g_bootImage.Hash, HSE_HASH_SHA256_SIZE))
+        {
+            return (unsigned int)BOOT_ST_AB_BOOT_HASH;
+        }
+    }
+
+    /* Exchange: Pre <- old Now, Now <- old Pre.  After the physical swap the
+     * passive image becomes the active one, so kBlock3_Now_* has to describe
+     * it.  Same helper as 0xFF02, with the old Pre value as "new". */
+    (void)BootProg_Block3Read(kBlock3_Now_SHAdata, kBlock3_Now_FileSize,
+                              oldNowSha, &oldNowSize);
+
+    if (0U != BootProg_Block3ShiftNow(preSha, preSize))
+    {
+        return (unsigned int)BOOT_ST_AB_NVM;
+    }
+
+    if (0U != BootProg_ActivatePassiveBlock())
+    {
+        /* The exchange has to be undone: the passive partition stays
+         * active, so the old Now/Pre values are still the correct ones. */
+        BootProg_Block3Restore(oldNowSha, oldNowSize, preSha, preSize);
+        return (unsigned int)BOOT_ST_AB_HSE;
+    }
+
+    g_abSwapDone = 1U;
+    return (unsigned int)BOOT_ST_AB_OK;
+}
+
+unsigned char BootProg_SwapStep(unsigned int *status, unsigned char *more)
+{
+    unsigned char digest[HSE_HASH_SHA256_SIZE];
+    unsigned char oldNowSha[HSE_HASH_SHA256_SIZE];
+    unsigned char oldPreSha[HSE_HASH_SHA256_SIZE];
+    unsigned int oldNowSize = 0U;
+    unsigned int oldPreSize = 0U;
+
+    *status = (unsigned int)BOOT_ST_AB_OK;
     *more = 0U;
+    g_bootAbSwapDiag[2] = 1U;
 
-    if ((0U == g_prog.AppHashValid) || (0U == Boot_FlashDriverValid()) ||
-        (0U != BootProg_InitFlash()))
+    if (0U == BSW_stUpdateVerValid)
     {
-        g_copyState = 0U;
-        *status = BOOT_ST_COPY_PRECOND;
+        *status = (unsigned int)BOOT_ST_AB_NOT_CHECKED;
+        g_bootAbSwapDiag[0] = *status;
         return 0U;
     }
 
-    if (0U == g_copyState)
+    if (0U != g_abSwapDone)
     {
-        g_copyOffset = 0U;
-
-        if (0U != Boot_FlashErase(BOOT_APP_BASE,
-                                  (g_prog.AppSize + BOOT_APP_ERASE_UNIT - 1U) &
-                                  ~(BOOT_APP_ERASE_UNIT - 1U)))
-        {
-            *status = BOOT_ST_COPY_ERASE;
-            return 0U;
-        }
-
-        /* The run area is erased: store the identity of the image that is
-         * about to be copied.  Doing it here (and not after the copy) keeps
-         * the old APP bootable when the erase itself failed, while a copy
-         * that is interrupted afterwards can never be started. */
-        if (0U != BootProg_StoreImageInfo())
-        {
-            *status = BOOT_ST_COPY_NVM;
-            return 0U;
-        }
-
-        g_copyState = 1U;
-        *more = 1U;
+        *status = (unsigned int)BOOT_ST_AB_PRECOND;
+        g_bootAbSwapDiag[0] = *status;
         return 0U;
     }
 
-    remaining = g_prog.AppSize - g_copyOffset;
-    chunk = (remaining > BOOT_PROG_COPY_CHUNK) ? BOOT_PROG_COPY_CHUNK : remaining;
-
-    memcpy(g_copyBuf, (const unsigned char *)(BOOT_APP_BACKUP_BASE + g_copyOffset),
-           chunk);
-    memset(&g_copyBuf[chunk], 0xFF, BOOT_FLASH_WRITE_UNIT);
-
-    if (0U != Boot_FlashWrite(BOOT_APP_BASE + g_copyOffset, g_copyBuf,
-                              (chunk + BOOT_FLASH_WRITE_UNIT - 1U) &
-                              ~(BOOT_FLASH_WRITE_UNIT - 1U)))
+    if (0U == g_appImage.Valid)
     {
-        *status = BOOT_ST_COPY_WRITE;
-        g_copyState = 0U;
-        return 0U;
-    }
-
-    g_copyOffset += chunk;
-
-    if (g_copyOffset < g_prog.AppSize)
-    {
-        *more = 1U;
-        return 0U;
-    }
-
-    g_copyState = 0U;
-
-    /* The copy is complete: hash the run area as it has been written and
-     * compare it with the digest of the downloaded image. */
-    {
-        unsigned char digest[HSE_HASH_SHA256_SIZE];
-
-        if (0U != BootProg_HashRegion(BOOT_APP_BASE, g_prog.AppSize, digest))
+        if (0U == g_bootImage.Valid)
         {
-            *status = BOOT_ST_COPY_HSE;
+            *status = (unsigned int)BOOT_ST_AB_PRECOND;
+            g_bootAbSwapDiag[0] = *status;
             return 0U;
         }
 
-        if (0 != memcmp(digest, g_prog.AppHash, HSE_HASH_SHA256_SIZE))
+        /* BOOT-only update: the passive APP does not change, so the APP/BOOT
+         * verification and the Block3 exchange are the same as for ACC1. */
+        *status = BootProg_SwapToPre();
+        g_bootAbSwapDiag[0] = *status;
+        return 0U;
+    }
+
+    /* Passive APP: header first, then the SHA-256 read back from flash. */
+    if (0U == Boot_PassiveAppValid())
+    {
+        *status = (unsigned int)BOOT_ST_AB_APP_HEADER;
+        g_bootAbSwapDiag[0] = *status;
+        return 0U;
+    }
+
+    if (0U != BootProg_HashRegion(BOOT_APP_BACKUP_BASE, g_appImage.Size,
+                                  digest))
+    {
+        *status = (unsigned int)BOOT_ST_AB_HSE_HASH;
+        g_bootAbSwapDiag[0] = *status;
+        return 0U;
+    }
+
+    if (0 != memcmp(digest, g_appImage.Hash, HSE_HASH_SHA256_SIZE))
+    {
+        *status = (unsigned int)BOOT_ST_AB_APP_HASH;
+        g_bootAbSwapDiag[0] = *status;
+        return 0U;
+    }
+
+    /* A BOOT image downloaded in the same session must be valid too: the
+     * tester sent it at 0x00400000 and it was programmed at 0x00600000. */
+    if (0U != g_bootImage.Valid)
+    {
+        if (0U == Boot_ImageHeaderValid(BOOT_CODE_BACKUP_BASE, BOOT_CODE_BASE,
+                                        BOOT_CODE_BACKUP_SIZE))
         {
-            *status = BOOT_ST_COPY_HASH;
+            *status = (unsigned int)BOOT_ST_AB_NO_BOOT;
+            g_bootAbSwapDiag[0] = *status;
+            return 0U;
+        }
+
+        if (0U != BootProg_HashRegion(BOOT_CODE_BACKUP_BASE, g_bootImage.Size,
+                                      digest))
+        {
+            *status = (unsigned int)BOOT_ST_AB_HSE_HASH;
+            g_bootAbSwapDiag[0] = *status;
+            return 0U;
+        }
+
+        if (0 != memcmp(digest, g_bootImage.Hash, HSE_HASH_SHA256_SIZE))
+        {
+            *status = (unsigned int)BOOT_ST_AB_BOOT_HASH;
+            g_bootAbSwapDiag[0] = *status;
             return 0U;
         }
     }
 
-    /* The run area now matches the SHA-256 that BootProg_StoreImageInfo()
-     * stored before the copy: the boot-time check accepts the image and a
-     * following 10 01 may start it without waiting for the next reset. */
-    Boot_AppShaConfirm();
+    /* A partition without a valid BOOT image cannot be started after the
+     * swap, so refuse rather than brick the ECU. */
+    if (0U == Boot_PassiveBootValid())
+    {
+        *status = (unsigned int)BOOT_ST_AB_NO_BOOT;
+        g_bootAbSwapDiag[0] = *status;
+        return 0U;
+    }
+
+    /* Block3: Pre <- old Now, Now <- the APP just downloaded into the passive
+     * area.  This is the post-swap state; the HSE swap happens at the reset
+     * that the DCM requests after the positive response. */
+    (void)BootProg_Block3Read(kBlock3_Now_SHAdata, kBlock3_Now_FileSize,
+                              oldNowSha, &oldNowSize);
+    (void)BootProg_Block3Read(kBlock3_Pre_SHAdata, kBlock3_Pre_FileSize,
+                              oldPreSha, &oldPreSize);
+
+    if (0U != BootProg_Block3ShiftNow(g_appImage.Hash, g_appImage.Size))
+    {
+        *status = (unsigned int)BOOT_ST_AB_NVM;
+        g_bootAbSwapDiag[0] = *status;
+        return 0U;
+    }
+
+    if (0U != BootProg_ActivatePassiveBlock())
+    {
+        /* Keep the old image bootable: put the entries back so the start-up
+         * check still matches the still-active partition. */
+        BootProg_Block3Restore(oldNowSha, oldNowSize, oldPreSha, oldPreSize);
+        *status = (unsigned int)BOOT_ST_AB_HSE;
+        g_bootAbSwapDiag[0] = *status;
+        return 0U;
+    }
+
+    g_abSwapDone = 1U;
+    *status = (unsigned int)BOOT_ST_AB_OK;
+    g_bootAbSwapDiag[0] = *status;
+    return 0U;
+}
+
+unsigned char BootProg_AbSwap(unsigned int *status)
+{
+    g_bootAbSwapDiag[2] = 2U;
+
+    /* Rollback with no new image: same "swap to the passive APP" operation as
+     * the BOOT-only 0xFF02 path. */
+    *status = BootProg_SwapToPre();
+    g_bootAbSwapDiag[0] = *status;
 
     return 0U;
 }

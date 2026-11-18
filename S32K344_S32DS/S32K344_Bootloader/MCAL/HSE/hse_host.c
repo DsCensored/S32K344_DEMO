@@ -151,6 +151,17 @@ hseSrvDescriptor_t* const gHseSrvDesc[HSE_NUM_OF_MU_INSTANCES] =
 
 const hseTxOptions_t gSyncTxOption = {HSE_TX_SYNCHRONOUS, NULL, NULL};
 
+/* Descriptor of the AB swap service.  It must be readable by the HSE, i.e.
+ * placed in system SRAM and not in the M7 DTCM/stack; the AB swap
+ * documentation explicitly recommends a non-cacheable location. */
+#if defined(__GNUC__)
+#define HSE_HOST_SHARED  __attribute__((section(".non_cacheable_data"), aligned(16)))
+#else
+#define HSE_HOST_SHARED
+#endif
+
+static HSE_HOST_SHARED hseSrvDescriptor_t s_abSwapDesc;
+
 /*==================================================================================================
 *                                      GLOBAL VARIABLES
 ==================================================================================================*/
@@ -273,6 +284,34 @@ hseSrvResponse_t HSE_Send(uint8_t u8MuInstance, uint8_t u8MuChannel,
 
         sys_enableAllInterrupts();
     }
+
+    return srvResponse;
+}
+
+/*******************************************************************************
+ * Description   : Request the HSE to swap the active/passive flash partition.
+ *                 The swap is executed at the next reset.
+ ******************************************************************************/
+hseSrvResponse_t HSE_ActivatePassiveBlock(uint8_t u8MuInstance)
+{
+    hseSrvResponse_t srvResponse;
+    uint8_t u8Channel;
+
+    u8Channel = HSE_MU_GetFreeChannel(u8MuInstance);
+    if (HSE_INVALID_CHANNEL == u8Channel)
+    {
+        return HSE_SRV_RSP_GENERAL_ERROR;
+    }
+
+    /* HSE_SRV_ID_ACTIVATE_PASSIVE_BLOCK does not use any parameter: only the
+     * service id is needed.  The descriptor is in .non_cacheable_data, so
+     * clean the cache line before the HSE reads it. */
+    (void)memset(&s_abSwapDesc, 0, sizeof(s_abSwapDesc));
+    s_abSwapDesc.srvId = HSE_SRV_ID_ACTIVATE_PASSIVE_BLOCK;
+    HseTrng_CacheClean(&s_abSwapDesc, (uint32_t)sizeof(s_abSwapDesc));
+    HseTrng_Dsb();
+
+    srvResponse = HSE_Send(u8MuInstance, u8Channel, gSyncTxOption, &s_abSwapDesc);
 
     return srvResponse;
 }

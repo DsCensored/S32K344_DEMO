@@ -235,6 +235,27 @@ uint8_t HseHash_Init(void)
     return HSE_HASH_OK;
 }
 
+uint8_t HseHash_WaitReady(uint32_t u32Retries, uint32_t u32Delay)
+{
+    uint32_t retry;
+    volatile uint32_t delay;
+
+    for (retry = 0U; retry < u32Retries; retry++)
+    {
+        if (HSE_HASH_OK == HseHash_Init())
+        {
+            return HSE_HASH_OK;
+        }
+
+        for (delay = 0U; delay < u32Delay; delay++)
+        {
+            /* busy wait */
+        }
+    }
+
+    return HSE_HASH_ERR_NOT_READY;
+}
+
 uint8_t HseHash_Start(void)
 {
     uint8_t err = HseHash_Init();

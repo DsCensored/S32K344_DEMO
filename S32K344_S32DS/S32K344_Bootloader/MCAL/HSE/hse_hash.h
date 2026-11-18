@@ -56,6 +56,20 @@
 uint8_t HseHash_Init(void);
 
 /**
+ * @brief  Blocking wait until the HSE sets HSE_STATUS_INIT_OK.
+ *
+ * Used after an AB swap reset: HSE FW releases up to 0.2.55 copy the HSE
+ * firmware into the new passive partition and are not ready for about 1 s.
+ * The clock tree must not be reconfigured (HSE_CLK) while the HSE is busy,
+ * so the bootloader waits here before the normal clock initialisation.
+ *
+ * @param  u32Retries  Number of probes.
+ * @param  u32Delay    Busy-loop count between two probes.
+ * @return HSE_HASH_OK when the HSE is ready, HSE_HASH_ERR_NOT_READY otherwise.
+ */
+uint8_t HseHash_WaitReady(uint32_t u32Retries, uint32_t u32Delay);
+
+/**
  * @brief  Start a SHA-256 stream (HSE_ACCESS_MODE_START).
  *
  * A previous, unfinished stream on the same stream id is discarded: the new

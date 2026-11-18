@@ -947,5 +947,180 @@ BSW_InitLateTask() 每 1 ms 调一次 Nvm_InitStep()
 UART 轮询、1 s 的喂狗/UART 发送）已去掉，避免两处重复判断；`BSW_IsInitDone()`
 保留给需要的应用层使用。
 
+### 9.14 AB Swap：用 HSE 分区切换替换 0xFF02 搬运
+
+**背景**：本工程安装的是 `HSE_FW_S32K344_0_2_40_4`，该版本**只支持 AB Swap**
+配置（HSE 固件包目录为 `hse_ab_swap`）。AB Swap 下 4 MB 代码 Flash 被 HSE 均分
+为两个 2 MB 分区，M7 永远从 active 分区地址运行，被动分区只能编程、不能执行。
+调用 `HSE_SRV_ID_ACTIVATE_PASSIVE_BLOCK` 后，下一次复位时 HSE 交换
+active/passive 分区。
+
+| 区域 | active 地址 | passive 地址 |
+| --- | --- | --- |
+| BOOT | `0x00400000`（256 KB） | `0x00600000` |
+| BOOT 标志扇区 | `0x00440000` | `0x00640000` |
+| APP | `0x00448000`（`0x18C000`） | `0x00648000` |
+| HSE FW（保留） | `0x005D4000..0x005FFFFF` | `0x007D4000..0x007FFFFF` |
+
+**核心改动**
+
+| 文件 | 内容 |
+| --- | --- |
+| `ASW/UserCode/Boot.h` | 新增 passive 地址宏 `BOOT_CODE_BACKUP_BASE` / `BOOT_APP_BACKUP_BASE`、`BOOT_PASSIVE_OFFSET`；HSE 等待预算从 200×0.12 ms 提高到 20000×0.12 ms（切区复位后 HSE 要把自身固件备份到被动区，约 1 s 才置 `HSE_STATUS_INIT_OK`） |
+| `ASW/UserCode/Boot.c` | `Boot_ImageHeaderValid(imageBase, runBase, size)`：被动区镜像的向量表在 `imageBase + (vector - runBase)`，不能直接用绝对地址；`Boot_PassiveBootValid()` / `Boot_PassiveAppValid()` |
+| `ASW/UserCode/Boot_Program.c/.h` | 地址映射/擦除范围改为只允许 passive 分区；BOOT/APP 两个镜像的 SHA-256 分开跟踪；`BootProg_Block3ShiftNow()`（Pre←Now，Now←新值）、`BootProg_Block3Restore()`；`BootProg_SwapStep()`（0xFF02）；`BootProg_AbSwap()`（0xACC1）；`BootProg_ActivatePassiveBlock()` |
+| `MCAL/HSE/hse_host.c/.h` | 新增 `HSE_ActivatePassiveBlock()`，服务描述符放在 `.non_cacheable_data`（HSE 需要能读到，且切区相关变量不能放在普通可缓存 RAM） |
+| `UDS/UDS_DcmCfg.c` | 0xFF02 改调 `BootProg_SwapStep()`；新增 `31 01 AC C1` 例程；成功后置 `ResetPending`，正响应发出后自动复位 |
+
+**地址映射**：上位机仍按镜像的**运行地址**下发，Boot 内部映射到 passive：
+
+```
+0x00400000 -> 0x00600000   (BOOT)
+0x00440000 -> 0x00640000   (标志扇区)
+0x00448000 -> 0x00648000   (APP)
+```
+
+直接下发 `0x00600000` / `0x00648000` 也可以。`0x005D4000..0x005FFFFF` 与
+`0x007D4000..0x007FFFFF`（HSE FW 区）永远不允许擦写；active 分区也不允许擦写
+（Boot 自己就在 active 分区里执行）。
+
+**0xFF02（APP 升级 + 切区）**
+
+```
+34/36/37  flash driver -> ITCM
+34/36/37  BOOT (0x400000 -> 0x600000，可选)
+34/36/37  APP  (0x448000 -> 0x648000)
+31 01 FF 01   依赖校验：APP 版本（正向升级；可用 2E F7F7 强制）+ APP/BOOT
+              被动区头 + 回读 SHA-256
+31 01 FF 02   1. 被动区 APP 头/向量表检查
+              2. 回读被动区 APP SHA-256，与 0x37 摘要比较
+              3. 若本次下载了 BOOT，回读被动区 BOOT SHA-256 比较
+              4. 被动区 BOOT 头检查（没有有效 BOOT 就拒绝切区，避免变砖）
+              5. Block3：Pre <- old Now，Now <- 新 APP SHA/长度，同步 Commit
+              6. HSE_SRV_ID_ACTIVATE_PASSIVE_BLOCK
+              7. 正响应 71 01 FF 02 00 发出后 100 ms 自动复位
+复位后 HSE 交换分区，新 BOOT/APP 在 0x400000/0x448000 运行
+```
+
+**0xFF02（只刷 BOOT，和 APP 走同一套流程）**
+
+```
+34/36/37  flash driver
+34/36/37  BOOT (0x400000 -> 0x600000)
+31 01 FF 01   BOOT 被动区头 + 回读 SHA 比较；
+              被动区 APP 仍按 Block3 Pre 校验（APP 本次不更新，跳过版本策略）
+31 01 FF 02   1. 被动区 BOOT 头/SHA 检查
+              2. 被动区 APP 与 Block3 Pre 一致
+              3. Block3 交换：Pre <- old Now，Now <- old Pre
+                 （换区后运行的是被动区原有 APP，与 Pre 对应）
+              4. HSE 切区；正响应后自动复位
+复位后新 BOOT + 被动区原 APP 运行
+```
+
+> 只刷 BOOT 时 APP 会随分区一起切到另一区的旧/当前版本，这是允许的。
+> 两个分区都更新到新 BOOT 需要**人工刷两遍**：第一遍更新被动区 BOOT 并切区，
+> 第二遍把 BOOT 刷到另一个（现在是 passive 的）区再切一次。
+
+不再擦除/搬运 active 分区，所以 FF02 失败时旧 APP 仍然完整可启动。
+
+**0x31 01 AC C1（回滚：不上传任何新镜像）**
+
+```
+31 01 AC C1
+    1. 读 Block3 Pre SHA/长度；无效则回 0x0A
+    2. 被动区 APP 头 + 回读 SHA-256 必须与 Pre 一致（否则 0x0B）
+    3. 被动区 BOOT 头检查（否则 0x05）
+    4. Block3 交换：Pre <- old Now，Now <- old Pre
+    5. HSE 切区；正响应后自动复位
+```
+
+**0xFF02 / 0x31 01 AC C1 的 status（`71 <subFn> <RID> <status>`）**
+
+| status | 含义 | 常见原因 |
+| --- | --- | --- |
+| `0x00` | 成功，已请求 HSE 切区 | 正响应后自动复位 |
+| `0x01` | 未通过 0xFF01 | 先执行 `31 01 FF 01` |
+| `0x02` | 下载信息不满足 / 重复切区 | 既没下 APP 也没下 BOOT、已请求过切区 |
+| `0x03` | 被动区 APP 头/向量表非法 | APP 没下完整、地址映射错 |
+| `0x04` | 被动区 APP SHA-256 不一致 | 回读的镜像与 0x37 摘要不同 |
+| `0x05` | 被动区 BOOT 镜像无效 | 先把 BOOT 刷到 `0x00600000` |
+| `0x06` | 新 BOOT SHA-256 不一致 | BOOT 下载/擦除不完整 |
+| `0x07` | Block3 SHA/长度写入失败 | Fee/DFlash 提交失败 |
+| `0x08` | HSE 切区服务失败 | HSE 不是 AB Swap 固件/HSE 忙 |
+| `0x09` | HSE SHA-256 计算失败 | HSE 未就绪 / 地址非法 |
+| `0x0A` | ACC1：Block3 Pre 无效 | 还没通过 FF02 建立被动区 SHA |
+| `0x0B` | ACC1：被动区 APP 与 Pre 不一致 | 被动区 APP 被改过/下载中断 |
+
+FF01（`71 01 FF 01 <status>`）在只刷 BOOT 时新增：`0x17` = Block3 Pre 无效或
+被动区 APP 与 Pre 不一致（需要先跑一次完整的 APP 升级建立 Pre）。
+
+**Block3 不变量**（`ASW/UserCode/NvmApp.h` 偏移不变）
+
+| 偏移 | 内容 |
+| --- | --- |
+| 0..31 | `kBlock3_Now_SHAdata`：当前 active APP 的 SHA-256 |
+| 32..63 | `kBlock3_Pre_SHAdata`：passive APP 的 SHA-256 |
+| 64..67 | `kBlock3_Now_FileSize` |
+| 68..71 | `kBlock3_Pre_FileSize` |
+
+- 0xFF02（有新 APP）：`Pre <- Now`，`Now <- 新 APP`（FF02 与随后的 HSE 切区是一个整体）；
+- 0xFF02（只刷 BOOT）/ 0xACC1：`Pre <- Now`，`Now <- old Pre`（交换，APP 不变）；
+- 两者共用 `BootProg_Block3ShiftNow()`；HSE 拒绝切区时用
+  `BootProg_Block3Restore()` 恢复，保证旧 APP 仍能通过启动校验。
+
+**首次迁移到 AB Swap 的注意事项**
+
+1. 第一次升级必须同时下发新 BOOT 和新 APP（否则被动区 `0x600000` 没有 BOOT，
+   FF02 返回 `0x05` 拒绝切区）。切区成功后，两个分区就都有 BOOT/APP 了；
+2. 如果当前 APP 与升级包版本相同，FF01 会按"只允许严格升级"返回 `0x06`，
+   先发 `2E F7 F7 01` 强制升级；
+3. 切区复位后第一次启动，HSE 约 1 s 才就绪；`Boot_AppShaVerify()` 会等到
+   `HSE_STATUS_INIT_OK` 再算 SHA-256，属正常现象；
+4. 两个分区里的 BOOT 都必须是支持 AB Swap 的版本，否则切到旧 BOOT 后无法再切回。
+
+**切区复位后的时钟顺序**：HSE 在切区复位期间要把自身固件备份到新的被动区，
+这 ~1 s 内不能改 `HSE_CLK`（RTD 的 `Clock_Ip_Divider.c` 会等
+`PRTN0_CORE2_STAT.WFI`，超时 50 ms 就会跳过该分频器）。因此
+`BootProg_ActivatePassiveBlock()` 在 HSE 接受切区后把
+`0x20443FF8 = 0x5A5AAB5A`（`BOOT_RAM_AB_SWAP_MAGIC`，与 0x20443FF0 的
+APP→Boot 握手共用同一个复位保持区）；新的 BOOT 在 `Boot_TryJumpToApp()` 里
+**先** `HseHash_WaitReady()` 等 HSE 就绪、清标志，**再**做 `BSW_EarlyInitClock()`，
+避免在 HSE 忙时配置 HSE_CLK。
+
+**APP 读取当前运行分区：`22 AB CC`**
+
+```
+22 AB CC          -> 62 AB CC <bank>
+  bank 0x41 ('A') = A 区（低地址：BOOT 0x00400000 / APP 0x00448000）
+  bank 0x42 ('B') = B 区（高地址：BOOT 0x00600000 / APP 0x00648000）
+  bank 0xFF = 无法判断（DCM 扫描未完成，或本机不是 AB Swap 配置）
+```
+
+实现：`UDS_DcmCfg.c` 里的 `ASW_GetActiveBank()` 直接读
+DCM 状态寄存器 **DCMSTAT = 0x402A_C000**：
+
+| 位 | 字段 | 用法 |
+| --- | --- | --- |
+| 0 | `DCMDONE` | 必须为 1，后面的字段才有效 |
+| 16 | `DCMOTAA` | `1` = AB Swap/OTA 已启用；`0` 返回 `0xFF` |
+| 17 | `DCMOTAR` | `0` = 低地址（A 区）；`1` = 高地址（B 区） |
+
+> 注意：NXP 例程 `hse_dcm_register.c` 的 `Dcm_ActiveAddressOTARegion()` 把
+> `DCMOTAR` 的 0/1 映射反了，NXP 社区已确认以 AN13465 的
+> “0 = Low address / 1 = High address” 为准（代码里已按 AN13465 实现）。
+> 该寄存器在功能复位后由 DCM 重新扫描，所以切区复位后 APP 立刻能读到新分区。
+
+**诊断**：J-Link 读 `g_bootAbSwapDiag[4]`
+
+| 下标 | 含义 |
+| --- | --- |
+| [0] | 最后一次 0xFF02 / 0xACC1 的 status（`BOOT_ST_AB_xxx`） |
+| [1] | HSE 原始响应（`0x55A5AA33` = OK；`0xAA55A11E` = 不支持，说明装的不是 AB Swap 固件） |
+| [2] | 1 = 0xFF02，2 = 0xACC1 |
+| [3] | `0x41425357`（"ABSW" 标记） |
+
+**编译验证**：`S32K344_Bootloader/Debug_FLASH` 下 `make all` 通过（GCC 10.2，
+无警告）；`text 110368 / data 14192 / bss 23816`，仍远小于 256 KB BOOT 区。
+
 
 

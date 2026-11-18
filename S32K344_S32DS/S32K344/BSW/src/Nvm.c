@@ -211,7 +211,10 @@ static Std_ReturnType Nvm_WriteBlockToFee(Nvm_BlockIdType block)
 #define NVM_ST_DONE       (6U)   /* initialised                                */
 #define NVM_ST_ERROR      (7U)   /* memory stack failure                       */
 
-static uint8   Nvm_InitState  = NVM_ST_DONE;
+/* The very first Nvm_InitStep() call must *start* the sequence, so the state
+ * machine begins at NVM_ST_INIT.  (Nvm_Init() forces the same state, so the
+ * blocking and the sliced start-up behave identically.) */
+static uint8   Nvm_InitState  = NVM_ST_INIT;
 static uint8   Nvm_InitBlock  = 0U;
 static boolean Nvm_InitReadOk = FALSE;
 static uint32  Nvm_InitPolls  = 0U;
@@ -359,6 +362,13 @@ Nvm_InitStepType Nvm_InitStep(void)
         return NVM_INIT_STEP_DONE;
 
     case NVM_ST_DONE:
+        /* Defensive: DONE without Nvm_Initialised must never report success
+         * (it would silently skip the whole start-up).  Restart instead. */
+        if (FALSE == Nvm_Initialised)
+        {
+            Nvm_InitState = NVM_ST_INIT;
+            return NVM_INIT_STEP_BUSY;
+        }
         return NVM_INIT_STEP_DONE;
 
     default:

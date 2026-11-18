@@ -5,8 +5,13 @@
  *
  * The integrity checks of the programming services (former software CRC32)
  * are now done by the HSE SHA-256 engine; see Boot_Program.c and
- * hse_hash.c.  The same digest is stored in NVM block 3 by the 0xFF02 copy and
- * verified again at every start (see Boot_AppShaVerify()).
+ * hse_hash.c.  The digest of the active image is stored in NVM block 3 by
+ * 0xFF02 and verified again at every start (see Boot_AppShaVerify()).
+ *
+ * With the HSE AB swap firmware the active and passive partitions are swapped
+ * by the HSE at reset; the active area (0x00400000 / 0x00448000) is the
+ * address the bootloader and the APP always run from, so the start-up check
+ * below does not have to know which physical partition is active.
  */
 
 #include <string.h>
@@ -54,6 +59,7 @@ static unsigned char Boot_Initialised = 0U;
 static unsigned char Boot_ProgrammingMode = 0U;
 static unsigned int Boot_EarlyMagic = 0U;
 static unsigned int Boot_EarlyMagicAux = 0U;
+static unsigned int Boot_EarlyAbSwap = 0U;
 static unsigned int Boot_StartTick = 0U;
 
 /* The APP requested the programming session via the magic.  The bootloader
@@ -82,10 +88,11 @@ static unsigned int Boot_AppVector(void)
 /* ---------------------------------------------------------------------------
  * APP image integrity check (SHA-256 + length stored in NVM block 3)
  *
- * 0xFF02 stores the SHA-256 computed by 0x37 and the length of the image in
- * NVM block 3 (kBlock3_Now_SHAdata / kBlock3_Now_FileSize) before the run area
- * is written.  At every start the run area is hashed again with the HSE and
- * compared with those values; only a match allows the APP to be started.
+ * 0xFF02 stores the SHA-256 computed by 0x37 and the length of the image that
+ * is going to become active in NVM block 3 (kBlock3_Now_SHAdata /
+ * kBlock3_Now_FileSize).  At every start the active area is hashed again with
+ * the HSE and compared with those values; only a match allows the APP to be
+ * started.
  *
  * Result state.  "Bad" is sticky for the whole power cycle, so Boot_Init(),
  * Boot_Poll() and the 10 01 handler (which all go through Boot_AppIsValid())
@@ -319,44 +326,79 @@ static unsigned char Boot_AppShaVerify(void)
 
 void Boot_AppShaConfirm(void)
 {
-    /* 0xFF02 already compared the freshly written run area with the value it
-     * stored in NVM, so the check does not have to run again for 10 01. */
+    /* Kept for compatibility.  The AB swap flow resets after 0xFF02, so the
+     * check runs again from a clean state at the next boot. */
     Boot_AppShaState    = BOOT_SHA_STATE_OK;
     g_bootAppShaDiag[0] = (unsigned int)BOOT_SHA_STATE_OK;
     g_bootAppShaDiag[2] = 0U;
 }
 
-unsigned char Boot_AppIsValid(void)
+/* ---------------------------------------------------------------------------
+ * Image header / vector table validation.
+ *
+ * The 16-byte header created by ELF2s19 at the image base holds the vector
+ * table address (linked run address).  For a passive copy the image is stored
+ * at a different address (+0x200000) but its content - including the vector
+ * table and the reset handler - still uses the linked addresses, so the
+ * vector table has to be read at (imageBase + vector - runBase).
+ * ------------------------------------------------------------------------- */
+unsigned char Boot_ImageHeaderValid(unsigned int imageBase, unsigned int runBase,
+                                    unsigned int size)
 {
     unsigned int magic;
     unsigned int vector;
+    unsigned int entry;
     unsigned int sp;
     unsigned int reset;
 
-    magic = *(volatile unsigned int *)BOOT_APP_BASE;
+    magic = *(volatile unsigned int *)imageBase;
     if (BOOT_APP_HEADER_MAGIC != magic)
     {
         return 0U;
     }
 
-    vector = Boot_AppVector();
-    if ((vector < (BOOT_APP_BASE + 0x2000UL)) ||
-        (vector >= (BOOT_APP_BASE + BOOT_APP_SIZE)) ||
+    vector = *(volatile unsigned int *)(imageBase + 12UL);
+    if ((vector < (runBase + 0x2000UL)) ||
+        (vector >= (runBase + size)) ||
         (0U != (vector & 3UL)))
     {
         return 0U;
     }
 
-    sp = *(volatile unsigned int *)vector;
-    reset = *(volatile unsigned int *)(vector + 4UL);
+    entry = imageBase + (vector - runBase);
+    sp = *(volatile unsigned int *)entry;
+    reset = *(volatile unsigned int *)(entry + 4UL);
 
     if ((sp < 0x20000000UL) || (sp > 0x20444000UL))
     {
         return 0U;
     }
 
-    if ((reset < BOOT_APP_BASE) || (reset >= (BOOT_APP_BASE + BOOT_APP_SIZE)) ||
+    if ((reset < runBase) || (reset >= (runBase + size)) ||
         (0U == (reset & 1UL)))
+    {
+        return 0U;
+    }
+
+    return 1U;
+}
+
+unsigned char Boot_PassiveBootValid(void)
+{
+    return Boot_ImageHeaderValid(BOOT_CODE_BACKUP_BASE, BOOT_CODE_BASE,
+                                 BOOT_CODE_BACKUP_SIZE);
+}
+
+unsigned char Boot_PassiveAppValid(void)
+{
+    return Boot_ImageHeaderValid(BOOT_APP_BACKUP_BASE, BOOT_APP_BASE,
+                                 BOOT_APP_SIZE);
+}
+
+unsigned char Boot_AppIsValid(void)
+{
+    if (0U == Boot_ImageHeaderValid(BOOT_APP_BASE, BOOT_APP_BASE,
+                                    BOOT_APP_SIZE))
     {
         return 0U;
     }
@@ -400,6 +442,7 @@ void Boot_CaptureMagic(void)
 
     Boot_EarlyMagic = *(volatile unsigned int *)BOOT_RAM_FLAG_ADDR;
     Boot_EarlyMagicAux = *(volatile unsigned int *)BOOT_RAM_FLAG_AUX_ADDR;
+    Boot_EarlyAbSwap = *(volatile unsigned int *)BOOT_RAM_AB_SWAP_ADDR;
 
     __asm volatile ("dsb" ::: "memory");
 }
@@ -502,7 +545,7 @@ void Boot_Poll(void)
  * no CAN, no GPT).  Only the core state needed to start the APP is set up.
  *
  * The APP may only be started when its SHA-256 matches the value stored in
- * NVM block 3 by the 0xFF02 copy.  This needs the NVM stack (MemAcc/Fee/
+ * NVM block 3 by 0xFF02.  This needs the NVM stack (MemAcc/Fee/
  * Mem_43_INFLS) and the HSE, i.e. a small part of the BSW bring-up; a check
  * that fails keeps the bootloader alive (Boot_AppShaState = "bad" makes
  * Boot_AppIsValid() fail from now on). */
@@ -522,6 +565,18 @@ void Boot_TryJumpToApp(void)
     if (0U == Boot_AppIsValid())
     {
         return;
+    }
+
+    /* Reset that follows an AB swap: HSE FW releases up to 0.2.55 copy the
+     * HSE firmware into the new passive partition and need about 1 s before
+     * HSE_STATUS_INIT_OK.  The clock tree must not reconfigure HSE_CLK while
+     * the HSE is busy, so wait here - before Boot_AppShaVerify() runs the
+     * clock initialisation. */
+    if (BOOT_RAM_AB_SWAP_MAGIC == Boot_EarlyAbSwap)
+    {
+        (void)HseHash_WaitReady(BOOT_HSE_SWAP_RETRIES, BOOT_HSE_INIT_DELAY);
+        Boot_AbSwapFlagClear();
+        __asm volatile ("dsb" ::: "memory");
     }
 
     /* Hash the run area with the HSE and compare it with the NVM values. */

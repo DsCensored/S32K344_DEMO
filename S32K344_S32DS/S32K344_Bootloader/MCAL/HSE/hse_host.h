@@ -121,6 +121,21 @@ extern const hseTxOptions_t gSyncTxOption;
 hseSrvResponse_t HSE_Send(uint8_t u8MuInstance, uint8_t u8MuChannel, hseTxOptions_t txOptions, hseSrvDescriptor_t* pHseSrvDesc);
 
 /**
+* @brief        Activate the passive flash block (HSE-B AB swap configuration).
+* @details      Sends HSE_SRV_ID_ACTIVATE_PASSIVE_BLOCK.  The service has no
+*               parameters; after the next reset the active and passive flash
+*               partitions are swapped by the HSE.  The service is only
+*               available on devices running the AB swap HSE firmware; a full
+*               memory firmware answers HSE_SRV_RSP_NOT_SUPPORTED.
+*
+* @param[in]    u8MuInstance    HSE MU Instance.
+*
+* @return       hseSrvResponse_t  HSE_SRV_RSP_OK when the swap was accepted.
+* @pre          HSE is initialised (HSE_STATUS_INIT_OK).
+*/
+hseSrvResponse_t HSE_ActivatePassiveBlock(uint8_t u8MuInstance);
+
+/**
 * @brief        Get a free channel.
 * @details      Returns the next free service channel (ch) available from the HOST point of view.
 *               NOTE: Channel 0 is not returned by this function (it is reserved for administrative services).

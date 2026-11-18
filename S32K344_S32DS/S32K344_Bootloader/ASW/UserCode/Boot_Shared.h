@@ -7,6 +7,11 @@
  * The APP sends 7F 10 78 itself, de-initialises the peripherals, writes
  * 0xA5A5A5A5 to 0x20443FF0 and calls Mcu_PerformReset().  The bootloader
  * reads the same word after the functional reset.
+ *
+ * The same 16-byte preserved area holds the 0xFF02 / 0xACC1 AB swap flag
+ * (0x20443FF8 = BOOT_RAM_AB_SWAP_ADDR): after the swap reset the HSE copies
+ * its own firmware to the new passive partition and needs about 1 s before
+ * HSE_STATUS_INIT_OK, so the bootloader waits before configuring HSE_CLK.
  */
 
 #ifndef BOOT_SHARED_H_
@@ -16,8 +21,10 @@
 
 #define BOOT_RAM_FLAG_ADDR              0x20443FF0UL
 #define BOOT_RAM_FLAG_AUX_ADDR          0x20443FF4UL
+#define BOOT_RAM_AB_SWAP_ADDR           0x20443FF8UL
 #define BOOT_RAM_FLAG_MAGIC             0xA5A5A5A5UL
 #define BOOT_RAM_PRECOND_MAGIC          0x5AA55AA5UL
+#define BOOT_RAM_AB_SWAP_MAGIC          0x5A5AAB5AUL
 
 #define BOOT_RAM_REQUEST_NONE           0x00000000UL
 #define BOOT_RAM_REQUEST_PROGRAMMING    0x00000001UL
@@ -64,6 +71,25 @@ static inline uint32_t Boot_RamFlagGet(void)
     }
 
     return BOOT_RAM_REQUEST_NONE;
+}
+
+/* AB swap hand-shake across the reset that performs the swap.  HSE FW releases
+ * up to 0.2.55 copy the HSE firmware to the new passive partition during that
+ * reset and need about 1 s before HSE_STATUS_INIT_OK; the word lets the new
+ * bootloader wait for the HSE before it reconfigures the clock tree. */
+static inline void Boot_AbSwapFlagSet(void)
+{
+    *(volatile uint32_t *)BOOT_RAM_AB_SWAP_ADDR = BOOT_RAM_AB_SWAP_MAGIC;
+}
+
+static inline uint32_t Boot_AbSwapFlagGet(void)
+{
+    return *(volatile uint32_t *)BOOT_RAM_AB_SWAP_ADDR;
+}
+
+static inline void Boot_AbSwapFlagClear(void)
+{
+    *(volatile uint32_t *)BOOT_RAM_AB_SWAP_ADDR = 0UL;
 }
 
 #endif /* BOOT_SHARED_H_ */

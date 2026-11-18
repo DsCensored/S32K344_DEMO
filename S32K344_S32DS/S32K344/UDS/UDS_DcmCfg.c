@@ -568,10 +568,71 @@ static unsigned char UDS_DcmF190Write(const UDS_DcmDidType *did,
 	return 0U;
 }
 
+/*
+ * 0xABCC：HSE AB Swap 当前运行分区。
+ *
+ *   22 AB CC                -> 62 AB CC <bank>
+ *     bank 0x00 = A 区（低地址：BOOT 0x00400000 / APP 0x00448000）
+ *          0x01 = B 区（高地址：BOOT 0x00600000 / APP 0x00648000）
+ *          0xFF = 无法判断（DCM 扫描未完成，或本机不是 AB Swap 配置）
+ *
+ * 只读 DCMSTAT，不依赖 NVM，所以切区复位后立刻可读。
+ */
+#define ASW_DCMSTAT_ADDR        (0x402AC000UL)
+#define ASW_DCMSTAT_DCMDONE     (1UL << 0U)
+#define ASW_DCMSTAT_DCMOTAA     (1UL << 16U)
+#define ASW_DCMSTAT_DCMOTAR     (1UL << 17U)
+#define ASW_BANK_A              ('A')
+#define ASW_BANK_B              ('B')
+#define ASW_BANK_UNKNOWN        (0xFFU)
+
+static unsigned int ASW_GetDcmStatus(void)
+{
+	return *(volatile unsigned int *)ASW_DCMSTAT_ADDR;
+}
+
+static unsigned char ASW_GetActiveBank(void)
+{
+	unsigned int status = ASW_GetDcmStatus();
+
+	/* DCMOTAA / DCMOTAR are only valid after the DCM scan completed. */
+	if (0U == (status & ASW_DCMSTAT_DCMDONE))
+	{
+		return ASW_BANK_UNKNOWN;
+	}
+
+	/* AB swap not active (full-memory HSE firmware or OTA disabled): the
+	 * device has no A/B partition to report. */
+	if (0U == (status & ASW_DCMSTAT_DCMOTAA))
+	{
+		return ASW_BANK_UNKNOWN;
+	}
+
+	/* AN13465: DCMOTAR 0 = low address (A), 1 = high address (B). */
+	return (0U != (status & ASW_DCMSTAT_DCMOTAR)) ? ASW_BANK_B : ASW_BANK_A;
+}
+static unsigned char UDS_DcmAbccRead(const UDS_DcmDidType *did,
+                                     unsigned char *buf,
+                                     unsigned int maxLen,
+                                     unsigned int *outLen)
+{
+	(void)did;
+
+	if (maxLen < 1U)
+	{
+		return NRC_RESPONSE_TOO_LONG;
+	}
+
+	buf[0] = ASW_GetActiveBank();
+	*outLen = 1U;
+	return 0U;
+}
+
 const UDS_DcmDidType UDS_DcmDids[] =
 {
 	{0xF190U, UDS_DcmF190Read, UDS_DcmF190Write},
 	{0xF184U, UDS_DcmF184Read, 0},
+	{0xABCCU, UDS_DcmAbccRead, 0},
 	{0xFE00U, UDS_DcmFixedDidRead, 0},
 	{0xFE01U, UDS_DcmFixedDidRead, 0},
 	{0xFE02U, UDS_DcmFixedDidRead, 0},

@@ -65,6 +65,17 @@ void BSW_InitLateStart(void);
  */
 uint8 BSW_IsInitDone(void);
 
+/* Debug view of the deferred start-up (see BSW_Init.c):
+ *   g_bswInitLateStep : step currently executed
+ *                       (0 WDG, 1 ICU, 2 NVM, 3 UART, 4 done)
+ *   g_bswInitLateNvm  : 1 once the NVM start-up reported DONE
+ *   g_bswInitDone     : 1 once the whole sequence finished
+ * Watching these in the debugger shows whether e.g. the NVM initialisation
+ * really ran; a step that never changes means the sequence is stuck there. */
+extern volatile uint8 g_bswInitLateStep;
+extern volatile uint8 g_bswInitLateNvm;
+extern volatile uint8 g_bswInitDone;
+
 /**
  * @brief Run the deferred initialisation in place (blocking).
  *

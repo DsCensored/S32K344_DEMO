@@ -44,6 +44,16 @@
 static uint8 BSW_LateStep = BSW_LATE_STEP_WDG;
 static uint8 BSW_stInitDone = 0U;
 
+/* Debug view of the deferred start-up (J-Link watch, no side effects):
+ *   g_bswInitLateStep : current step (0 WDG, 1 ICU, 2 NVM, 3 UART, 4 done)
+ *   g_bswInitLateNvm  : 1 once Nvm_InitStep() reported DONE
+ *   g_bswInitDone     : 1 once the whole sequence (incl. UART) finished
+ * A step that is never reached (e.g. the NVM start-up being skipped) is
+ * visible here instead of staying silently unnoticed. */
+volatile uint8 g_bswInitLateStep = BSW_LATE_STEP_WDG;
+volatile uint8 g_bswInitLateNvm  = 0U;
+volatile uint8 g_bswInitDone     = 0U;
+
 /* Handle of the deferred-init task, so it can remove itself when done. */
 static unsigned char BSW_LateTaskHandle = BSW_TASK_HANDLE_INVALID;
 
@@ -149,6 +159,8 @@ void BSW_InitEarly(void)
 
 void BSW_InitLateTask(void)
 {
+	g_bswInitLateStep = BSW_LateStep;
+
 	switch (BSW_LateStep)
 	{
 	case BSW_LATE_STEP_WDG:
@@ -166,12 +178,16 @@ void BSW_InitLateTask(void)
 		break;
 
 	case BSW_LATE_STEP_NVM:
-		/* Non-blocking: one slice per scheduler cycle, ~NVM_INIT_POLLS_PER_STEP
-		 * Fee/MemAcc polls each.  Errors are tolerated (the blocks then read as
-		 * 0xFF), the remaining start-up proceeds either way. */
+		/* Non-blocking: one slice per scheduler cycle, ~150 us each.  Errors
+		 * are tolerated (the blocks then read as 0xFF), the remaining
+		 * start-up proceeds either way. */
 		if (NVM_INIT_STEP_BUSY == Nvm_InitStep())
 		{
 			break;
+		}
+		if (TRUE == Nvm_IsInitialised())
+		{
+			g_bswInitLateNvm = 1U;
 		}
 		BSW_LateStep = BSW_LATE_STEP_UART;
 		break;
@@ -180,6 +196,7 @@ void BSW_InitLateTask(void)
 		MCAL_UART_Init();
 		BSW_LateStep = BSW_LATE_STEP_DONE;
 		BSW_stInitDone = 1U;
+		g_bswInitDone = 1U;
 
 		/* One-shot task: give the slot back so it can be reused.  The
 		 * scheduler has already cleared this task's Request and with

@@ -715,13 +715,20 @@ static unsigned char UDS_DcmTransferExit(const unsigned char *req,
 /* ------------------------------------------------------------------------- */
 
 /*
- * 例程控制约定（0x0202 / 0x0203 / 0xFF00 / 0xFF01 / 0xFF02）：
+ * 例程控制约定（0x0202 / 0x0203 / 0xFF00 / 0xFF01 / 0xFF02 / 0xACC1）：
  *
  *   71 <subFn> <RID> <status>
  *
  * status = 0 表示成功，非 0 表示失败原因（BOOT_ST_xxx，见 Boot_Program.h）。
  * 例程执行失败不再回 NRC 0x22；只有报文长度、子功能、例程号、安全等级等
- * 协议层错误仍回对应 NRC。0xFF00/0xFF02 每轮询一次返回 0x78，最终仍回正响应。
+ * 协议层错误仍回对应 NRC。0xFF00 每轮询一次返回 0x78，最终仍回正响应。
+ *
+ * AB 切区：
+ *   0xFF02  在 34/36/37 把新 APP（以及可选的新 BOOT）写入被动区之后调用，
+ *           校验通过后更新 Block3 的 Now/Pre SHA-256 并请求 HSE 切区；
+ *   0xACC1  不上传新 APP，直接把 Block3 的 Now/Pre 交换后请求 HSE 切区，
+ *           用于回滚或只刷新 BOOT 的场合。
+ * 两者成功后都会在正响应发出后复位，HSE 在复位时完成 active/passive 交换。
  */
 
 /* 0xFF00: erase [address, address + length), one 8 KB sector per DCM poll.
@@ -760,7 +767,11 @@ static unsigned char UDS_DcmRoutineErase(const unsigned char *req, unsigned int 
 	return 0U;
 }
 
-/* 0xFF01: programming dependency check (APP + flash driver).
+/* 0xFF01: programming dependency check.  Supported combinations:
+ *   - APP + optional BOOT (normal update, forward-only version policy),
+ *   - BOOT only (the passive APP is checked against Block3 Pre, no version
+ *     policy because the APP does not change),
+ *   - flash driver only (no image check).
  * The APP version policy is not evaluated when the last download was the
  * flash driver (fs): fs carries no APP version information. */
 static unsigned char UDS_DcmRoutineDependency(const unsigned char *req,
@@ -773,10 +784,21 @@ static unsigned char UDS_DcmRoutineDependency(const unsigned char *req,
 	return BootProg_DependencyCheck(status);
 }
 
-/* 0xFF02: copy the APP from the backup area to the run area, 8 KB per call.
- * Returning 0x78 makes the DCM call this routine again on its next poll. */
+/* Reset after the positive response of a routine that changed the flash
+ * partition: the HSE swap only takes effect at reset. */
+static void UDS_DcmRequestResetAfterResponse(void)
+{
+	UDS_DcmCtx.ResetPending = 1U;
+	UDS_DcmCtx.ResetTick = BSW_GetSystemTick();
+}
+
+/* 0xFF02: finalise an AB swap after a new APP (and optional BOOT) download.
+ * The tester has programmed the passive partition (0x00648000 / 0x00600000);
+ * this routine verifies the images, shifts the Block3 SHA-256 values
+ * (Pre <- old Now, Now <- new APP) and asks the HSE to activate the passive
+ * block.  Nothing is copied any more. */
 extern unsigned char BSW_stUpdateVerValid;
-static unsigned char UDS_DcmRoutineCopy(const unsigned char *req, unsigned int len,
+static unsigned char UDS_DcmRoutineSwap(const unsigned char *req, unsigned int len,
                                         unsigned int *status)
 {
 	unsigned char more = 0U;
@@ -786,11 +808,11 @@ static unsigned char UDS_DcmRoutineCopy(const unsigned char *req, unsigned int l
 
 	if (0U == BSW_stUpdateVerValid)
 	{
-		*status = BOOT_ST_COPY_NOT_CHECKED;
+		*status = BOOT_ST_AB_NOT_CHECKED;
 		return 0U;
 	}
 
-	(void)BootProg_CopyStep(status, &more);
+	(void)BootProg_SwapStep(status, &more);
 
 	if (0U != more)
 	{
@@ -799,8 +821,36 @@ static unsigned char UDS_DcmRoutineCopy(const unsigned char *req, unsigned int l
 
 	if (0U == *status)
 	{
-		/* Programming complete: do not leave the ITCM driver executable. */
+		/* Do not leave the ITCM driver executable, then reset so the HSE
+		 * performs the partition swap. */
 		BootProg_DestroyFlash();
+		UDS_DcmRequestResetAfterResponse();
+	}
+
+	return 0U;
+}
+
+/* 0xACC1: AB swap without a new APP download (rollback, or a BOOT-only
+ * update).  The two Block3 SHA-256 entries are exchanged (Pre <- Now,
+ * Now <- old Pre) and the HSE is asked to activate the passive block.
+ * Only meaningful in the programming session. */
+static unsigned char UDS_DcmRoutineAbSwap(const unsigned char *req, unsigned int len,
+                                          unsigned int *status)
+{
+	(void)req;
+	(void)len;
+
+	if (UDS_DCM_SESSION_PROGRAMMING != UDS_DcmCtx.Session)
+	{
+		return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+	}
+
+	(void)BootProg_AbSwap(status);
+
+	if (0U == *status)
+	{
+		BootProg_DestroyFlash();
+		UDS_DcmRequestResetAfterResponse();
 	}
 
 	return 0U;
@@ -878,14 +928,17 @@ static unsigned char UDS_DcmRoutineLoadHseKeys(const unsigned char *req, unsigne
 	return 0U;
 }
 
+#define UDS_DCM_RID_AB_SWAP     0xACC1U   /* AB 切区（回滚 / 只刷 BOOT）      */
+
 const UDS_DcmRoutineType UDS_DcmRoutines[] =
 {
 	{0x0202U, UDS_DcmRoutineIntegrity, 0, 0},
 	{0x0203U, UDS_DcmRoutinePrecondition, 0, 0},
 	{0xFF00U, UDS_DcmRoutineErase, 0, 0},
 	{0xFF01U, UDS_DcmRoutineDependency, 0, 0},
-	{0xFF02U, UDS_DcmRoutineCopy, 0, 0},
-	{0xAA01U, UDS_DcmRoutineLoadHseKeys, 0, 0}
+	{0xFF02U, UDS_DcmRoutineSwap, 0, 0},
+	{0xAA01U, UDS_DcmRoutineLoadHseKeys, 0, 0},
+	{UDS_DCM_RID_AB_SWAP, UDS_DcmRoutineAbSwap, 0, 0}
 };
 
 const unsigned int UDS_DcmRoutineCount =
