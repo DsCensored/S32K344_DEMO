@@ -5,7 +5,7 @@
  *
  * Model version                  : 14.387
  * Simulink Coder version         : 9.8 (R2022b) 13-May-2022
- * C/C++ source code generated on : Wed Nov  4 10:57:55 2026
+ * C/C++ source code generated on : Wed Nov 18 15:02:02 2026
  *
  * Target selection: ert.tlc
  * Embedded hardware selection: ARM Compatible->ARM 7
@@ -68,8 +68,8 @@ void ErrDiag_DH(uint8_T rtu_ErrDiag, uint8_T rtu_ErrHeal, uint8_T rtu_ErrEnable,
      case ASP_IN_Error:
       localB->Result = 1U;
 
-      /* :  sf_internal_predicateOutput = ErrDiag ~= 0 && DiagHealType == 0; */
-      if ((rtu_ErrDiag != 0) && (rtp_DiagHealType == 0)) {
+      /* :  sf_internal_predicateOutput = ErrHeal ~= 0 && DiagHealType == 0; */
+      if ((rtu_ErrHeal != 0) && (rtp_DiagHealType == 0)) {
         localDW->is_ALL = ASP_IN_Error1;
       }
       break;
