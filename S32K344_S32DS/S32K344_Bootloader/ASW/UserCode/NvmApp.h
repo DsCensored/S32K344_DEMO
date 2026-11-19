@@ -59,14 +59,46 @@ typedef enum{
 	kBlock2_End = MAX_NVM_LEN - 1
 }Block2Data;
 
+/*
+ * Block 3 payload layout (all values little-endian):
+ *
+ *   offset  len  entry                     meaning
+ *   0       32   kBlock3_Now_SHAdata       SHA-256 of the ACTIVE  APP image
+ *   32      32   kBlock3_Pre_SHAdata       SHA-256 of the PASSIVE APP image
+ *   64      4    kBlock3_Now_FileSize      length of the active  APP image
+ *   68      4    kBlock3_Pre_FileSize      length of the passive APP image
+ *   72      32   kBlock3_NowBootSHAdata    SHA-256 of the ACTIVE  BOOT image
+ *   104     32   kBlock3_PreBootSHAdata    SHA-256 of the PASSIVE BOOT image
+ *   136     4    kBlock3_NowBootSize       length of the active  BOOT image
+ *   140     4    kBlock3_PreBootSize       length of the passive BOOT image
+ *   144     4    kBlock3_program_cnt       successful programming operations
+ *   148     4    kBlock3_program_retry_cnt APP 0x34 requests (programming attempts)
+ *
+ * "Active" is the image the M7 is running from (0x00400000 / 0x00448000),
+ * "passive" the one in the other partition (0x00600000 / 0x00648000).
+ * The HSE AB swap exchanges the two partitions at reset, so every pair is
+ * shifted by the swap paths in Boot_Program.c and Now always describes the
+ * image that is running afterwards.
+ */
 typedef enum{
 	kBlock3_DataStart = 0,
 	kBlock3_Now_SHAdata = kBlock3_DataStart,
 	kBlock3_Pre_SHAdata = kBlock3_Now_SHAdata + 32,
 	kBlock3_Now_FileSize = kBlock3_Pre_SHAdata + 32,
 	kBlock3_Pre_FileSize = kBlock3_Now_FileSize + 4,
+	kBlock3_NowBootSHAdata = kBlock3_Pre_FileSize + 4,
+	kBlock3_PreBootSHAdata = kBlock3_NowBootSHAdata + 32,
+	kBlock3_NowBootSize = kBlock3_PreBootSHAdata + 32,
+	kBlock3_PreBootSize = kBlock3_NowBootSize + 4,
+	kBlock3_program_cnt = kBlock3_PreBootSize + 4,          /* 编程计数器         */
+	kBlock3_program_retry_cnt = kBlock3_program_cnt + 4,    /* 尝试编程计数器     */
 	kBlock3_End = MAX_NVM_LEN - 1
 }Block3Data;
+
+/* Compile-time guard: the layout above must fit into the 251-byte payload and
+ * must not overlap (a negative array size fails the build). */
+typedef char Block3LayoutFitsCheck[
+    ((kBlock3_program_retry_cnt + 4) <= MAX_NVM_LEN) ? 1 : -1];
 
 /* 0xF190 DID: payload offsets inside block 0 */
 #define NVM_F190_VIN_LEN         (17U)

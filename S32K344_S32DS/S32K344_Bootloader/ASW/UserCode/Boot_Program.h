@@ -121,17 +121,19 @@ unsigned char BootProg_DependencyCheck(unsigned int *status);
  * Nothing is copied: the tester has programmed the passive partition, and
  * after the next reset the HSE makes it the active one.
  *
- * APP case: the passive APP is hashed again and compared with the 0x37
- * digest, the passive BOOT image is validated and the SHA-256 / length of the
- * new APP is shifted into NVM block 3:
- *      kBlock3_Pre_SHAdata  <- old kBlock3_Now_SHAdata
- *      kBlock3_Now_SHAdata  <- SHA-256 of the image just downloaded
- * (same for the file lengths).
+ * Both image kinds are tracked in NVM block 3 as a (SHA-256, length) pair:
+ *      APP : kBlock3_Now_SHAdata / kBlock3_Pre_SHAdata (+ the two *FileSize)
+ *      BOOT: kBlock3_NowBootSHAdata / kBlock3_PreBootSHAdata
+ *            (+ the two *BootSize)
+ * "Now" always describes the image that runs after the swap, "Pre" the one in
+ * the other partition.  On success every pair is shifted:
+ *      Pre <- old Now,   Now <- the image just downloaded
+ * A pair whose image was not downloaded in this session is exchanged instead
+ * (Pre <- old Now, Now <- old Pre), because the image already sitting in the
+ * passive partition becomes the active one.  0x31 01 AC C1 uses the same rule.
  *
- * BOOT-only case: the APP in the passive partition does not change, so the
- * two Block3 entries are exchanged (Pre <- Now, Now <- old Pre) - the passive
- * APP becomes the active one after the swap.  This is the same operation as
- * 0x31 01 AC C1; the tester updates the other partition with a second pass.
+ * kBlock3_program_cnt is incremented when the swap request succeeds,
+ * kBlock3_program_retry_cnt when an APP 0x34 is accepted.
  *
  * The result is reported in *status (BOOT_ST_AB_xxx); *more is always 0.  It
  * is kept in the signature so the DCM handler does not have to change if a
@@ -139,11 +141,12 @@ unsigned char BootProg_DependencyCheck(unsigned int *status);
 unsigned char BootProg_SwapStep(unsigned int *status, unsigned char *more);
 
 /* 0x31 01 AC C1: AB swap without a new APP or BOOT download (rollback).
- * The passive APP must still match kBlock3_Pre_SHAdata, the passive BOOT
- * image must be valid, then the two block 3 entries are exchanged
+ * The passive APP must match kBlock3_Pre_SHAdata and the passive BOOT image
+ * must match kBlock3_PreBootSHAdata; then every block 3 pair is exchanged
  * (Pre <- Now, Now <- old Pre) and the HSE is asked to activate the passive
  * block.  The result is reported in *status (BOOT_ST_AB_xxx); the function
- * itself always returns 0. */
+ * itself always returns 0.  No programming counter changes: nothing was
+ * programmed. */
 unsigned char BootProg_AbSwap(unsigned int *status);
 
 /* QCC 04.171 31 01 02 02: compare the tester SHA-256 with the digest of the

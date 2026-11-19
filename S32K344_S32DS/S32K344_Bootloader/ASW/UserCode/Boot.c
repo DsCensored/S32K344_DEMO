@@ -383,10 +383,78 @@ unsigned char Boot_ImageHeaderValid(unsigned int imageBase, unsigned int runBase
     return 1U;
 }
 
+/* Debug view of the passive BOOT check (J-Link):
+ *   [0] result 1 = valid    [1] length stored in NVM (kBlock3_PreBootSize)
+ *   [2] failure reason      [3] 0x50425356 ("PBSV" marker) */
+volatile unsigned int g_bootPassiveBootDiag[4] = {
+    0U, 0U, 0U, 0x50425356UL
+};
+
+/* Reasons of a refused passive BOOT image. */
+#define BOOT_PBSV_ERR_HEADER    0x200U   /* header / vector table invalid      */
+#define BOOT_PBSV_ERR_SIZE      0x201U   /* stored length 0 or too large       */
+#define BOOT_PBSV_ERR_HASH      0x202U   /* HSE SHA-256 failed                 */
+#define BOOT_PBSV_ERR_MISMATCH  0x203U   /* digest differs from the NVM value  */
+
+/* Is the BOOT image in the passive partition the one that was stored in NVM
+ * block 3 (kBlock3_PreBootSHAdata / kBlock3_PreBootSize)?
+ *
+ * 0xFF02 / 0x31 01 AC C1 refuse to swap the partitions unless the BOOT image
+ * that is about to become the running one is the verified one, so a corrupted
+ * or interrupted BOOT download cannot brick the ECU.  A BOOT that was just
+ * downloaded in this session is checked against the 0x37 digest instead (see
+ * BootProg_DependencyCheck / BootProg_SwapStep); this function covers the
+ * "no new BOOT" case (BOOT-only rollback, APP-only update).
+ *
+ * The whole image is hashed with the HSE, so the check also catches a flash
+ * programming error that the in-session digest could not see. */
 unsigned char Boot_PassiveBootValid(void)
 {
-    return Boot_ImageHeaderValid(BOOT_CODE_BACKUP_BASE, BOOT_CODE_BASE,
-                                 BOOT_CODE_BACKUP_SIZE);
+    unsigned char stored[HSE_HASH_SHA256_SIZE];
+    unsigned char digest[HSE_HASH_SHA256_SIZE];
+    unsigned int size;
+    unsigned int i;
+
+    g_bootPassiveBootDiag[0] = 0U;
+    g_bootPassiveBootDiag[2] = 0U;
+
+    if (0U == Boot_ImageHeaderValid(BOOT_CODE_BACKUP_BASE, BOOT_CODE_BASE,
+                                    BOOT_CODE_BACKUP_SIZE))
+    {
+        g_bootPassiveBootDiag[2] = BOOT_PBSV_ERR_HEADER;
+        return 0U;
+    }
+
+    for (i = 0U; i < HSE_HASH_SHA256_SIZE; i++)
+    {
+        stored[i] = Nvm_Block3_Read_U8((Block3Data)(kBlock3_PreBootSHAdata + i));
+    }
+
+    size = Boot_NvmReadU32((unsigned int)kBlock3_PreBootSize);
+    g_bootPassiveBootDiag[1] = size;
+
+    /* A never programmed entry reads as 0xFF, so size becomes 0xFFFFFFFF. */
+    if ((0U == size) || (size > BOOT_CODE_BACKUP_SIZE))
+    {
+        g_bootPassiveBootDiag[2] = BOOT_PBSV_ERR_SIZE;
+        return 0U;
+    }
+
+    if (HSE_HASH_OK != HseHash_Sha256Region(
+            (const unsigned char *)BOOT_CODE_BACKUP_BASE, size, digest))
+    {
+        g_bootPassiveBootDiag[2] = BOOT_PBSV_ERR_HASH;
+        return 0U;
+    }
+
+    if (0 != memcmp(stored, digest, HSE_HASH_SHA256_SIZE))
+    {
+        g_bootPassiveBootDiag[2] = BOOT_PBSV_ERR_MISMATCH;
+        return 0U;
+    }
+
+    g_bootPassiveBootDiag[0] = 1U;
+    return 1U;
 }
 
 unsigned char Boot_PassiveAppValid(void)

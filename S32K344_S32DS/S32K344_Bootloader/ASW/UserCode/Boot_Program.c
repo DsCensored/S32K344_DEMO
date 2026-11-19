@@ -84,6 +84,10 @@ volatile unsigned int g_bootAbSwapDiag[4] = {
  * the 0xFF02 swap.  Defined below. */
 extern unsigned char BSW_stUpdateVerValid;
 
+/* Programming counters (defined with the block 3 helpers below). */
+static void BootProg_CountProgramSuccess(void);
+static void BootProg_CountProgramAttempt(void);
+
 static unsigned char BootProg_InitFlash(void)
 {
     if (0U != g_flashReady)
@@ -283,6 +287,12 @@ unsigned char BootProg_RequestDownload(unsigned int addr, unsigned int size,
         else
         {
             memset(&g_appImage, 0, sizeof(g_appImage));
+
+            /* Programming attempt of the APP: kBlock3_program_retry_cnt++.
+             * Counted when the request is accepted, i.e. the programming
+             * actually starts (a request rejected above is not an attempt of
+             * this ECU). */
+            BootProg_CountProgramAttempt();
         }
     }
 
@@ -609,6 +619,15 @@ static unsigned char check_version(unsigned int *status)
         return 0;
     }
 
+    /* 首次编程（新板子）：当前 active 区根本没有 APP，不存在"当前版本"，
+     * 正向升级策略没有比较对象，直接放行。用镜像头判断（物理事实），
+     * 不依赖 NVM。 */
+    if (0U == Boot_ImageHeaderValid(BOOT_APP_BASE, BOOT_APP_BASE, BOOT_APP_SIZE))
+    {
+        *status = BOOT_ST_DEP_OK;
+        return 0;
+    }
+
     /* 解析当前版本 */
     memcpy(buf, (const void *)0x00448100, APP_INFO_BLOCK_SIZE);
     if (parse_version(buf, sizeof(buf),
@@ -641,6 +660,38 @@ static unsigned char BootProg_Block3Read(unsigned int shaOffset,
                                          unsigned int sizeOffset,
                                          unsigned char *sha,
                                          unsigned int *size);
+
+/* TRUE only when block 3 is readable and *both* APP entries are still in the
+ * erased state, i.e. this is a new board on which no APP has ever been
+ * programmed.
+ *
+ * The BOOT-only paths refuse to activate a passive partition whose APP does
+ * not match the SHA-256 recorded for it - that protects a running product from
+ * activating a half-written APP.  On a new board there is no APP to protect:
+ * after the swap the ECU simply stays in the bootloader (Boot_AppIsValid()
+ * fails), so the check has nothing to verify and the BOOT-only swap is
+ * allowed.  A block 3 that cannot be read keeps the strict behaviour. */
+static unsigned char BootProg_NoAppProgrammed(void)
+{
+    unsigned char sha[HSE_HASH_SHA256_SIZE];
+    unsigned int nowSize = 0U;
+    unsigned int preSize = 0U;
+
+    if (FALSE != Nvm_GetBlock3Invalid())
+    {
+        return 0U;
+    }
+
+    if ((0U != BootProg_Block3Read(kBlock3_Now_SHAdata, kBlock3_Now_FileSize,
+                                   sha, &nowSize)) ||
+        (0U != BootProg_Block3Read(kBlock3_Pre_SHAdata, kBlock3_Pre_FileSize,
+                                   sha, &preSize)))
+    {
+        return 0U;
+    }
+
+    return ((0xFFFFFFFFUL == nowSize) && (0xFFFFFFFFUL == preSize)) ? 1U : 0U;
+}
 
 unsigned char BSW_stUpdateVerValid = 0;
 unsigned char BootProg_DependencyCheck(unsigned int *status)
@@ -703,36 +754,42 @@ unsigned char BootProg_DependencyCheck(unsigned int *status)
         /* BOOT-only update: the APP in the passive partition is not changed
          * and becomes the active one after the swap.  Verify it against the
          * SHA-256 stored for it by the previous 0xFF02 / 0xACC1
-         * (kBlock3_Pre_*).  The APP version policy is skipped: no new APP. */
-        unsigned char preSha[HSE_HASH_SHA256_SIZE];
-        unsigned int preSize = 0U;
-
-        if ((0U != BootProg_Block3Read(kBlock3_Pre_SHAdata,
-                                       kBlock3_Pre_FileSize,
-                                       preSha, &preSize)) ||
-            (0U == preSize) || (preSize > BOOT_APP_SIZE))
+         * (kBlock3_Pre_*).  The APP version policy is skipped: no new APP.
+         *
+         * New board (no APP programmed anywhere): there is nothing to protect,
+         * the BOOT-only swap is allowed - see BootProg_NoAppProgrammed(). */
+        if (0U == BootProg_NoAppProgrammed())
         {
-            *status = BOOT_ST_DEP_PRE_INVALID;
-            return 0U;
-        }
+            unsigned char preSha[HSE_HASH_SHA256_SIZE];
+            unsigned int preSize = 0U;
 
-        if (0U == Boot_ImageHeaderValid(BOOT_APP_BACKUP_BASE, BOOT_APP_BASE,
-                                        BOOT_APP_SIZE))
-        {
-            *status = BOOT_ST_DEP_APP_HEADER;
-            return 0U;
-        }
+            if ((0U != BootProg_Block3Read(kBlock3_Pre_SHAdata,
+                                           kBlock3_Pre_FileSize,
+                                           preSha, &preSize)) ||
+                (0U == preSize) || (preSize > BOOT_APP_SIZE))
+            {
+                *status = BOOT_ST_DEP_PRE_INVALID;
+                return 0U;
+            }
 
-        if (0U != BootProg_HashRegion(BOOT_APP_BACKUP_BASE, preSize, digest))
-        {
-            *status = BOOT_ST_DEP_HSE;
-            return 0U;
-        }
+            if (0U == Boot_ImageHeaderValid(BOOT_APP_BACKUP_BASE, BOOT_APP_BASE,
+                                            BOOT_APP_SIZE))
+            {
+                *status = BOOT_ST_DEP_APP_HEADER;
+                return 0U;
+            }
 
-        if (0 != memcmp(digest, preSha, HSE_HASH_SHA256_SIZE))
-        {
-            *status = BOOT_ST_DEP_PRE_INVALID;
-            return 0U;
+            if (0U != BootProg_HashRegion(BOOT_APP_BACKUP_BASE, preSize, digest))
+            {
+                *status = BOOT_ST_DEP_HSE;
+                return 0U;
+            }
+
+            if (0 != memcmp(digest, preSha, HSE_HASH_SHA256_SIZE))
+            {
+                *status = BOOT_ST_DEP_PRE_INVALID;
+                return 0U;
+            }
         }
     }
     else
@@ -837,11 +894,56 @@ static unsigned char BootProg_Block3Write(unsigned int shaOffset,
     return 0U;
 }
 
-/* Pre <- Now, Now <- newSha/newSize, then commit the block.  0xFF02 passes the
- * SHA-256 of the image just downloaded; 0xACC1 passes the old Pre value, which
- * turns the same operation into an exchange of the two entries. */
-static unsigned char BootProg_Block3ShiftNow(const unsigned char *newSha,
-                                             unsigned int newSize)
+/* One image entry of block 3: SHA-256 + length. */
+typedef struct
+{
+    unsigned char Sha[HSE_HASH_SHA256_SIZE];
+    unsigned int  Size;
+} BootProg_Block3EntryType;
+
+/* All four entries, used to undo a refused HSE swap. */
+typedef struct
+{
+    BootProg_Block3EntryType AppNow;    /* active  APP (running)            */
+    BootProg_Block3EntryType AppPre;    /* passive APP (becomes active)     */
+    BootProg_Block3EntryType BootNow;   /* active  BOOT (running)           */
+    BootProg_Block3EntryType BootPre;   /* passive BOOT (becomes active)    */
+} BootProg_Block3StateType;
+
+static void BootProg_Block3StateRead(BootProg_Block3StateType *state)
+{
+    (void)BootProg_Block3Read(kBlock3_Now_SHAdata, kBlock3_Now_FileSize,
+                              state->AppNow.Sha, &state->AppNow.Size);
+    (void)BootProg_Block3Read(kBlock3_Pre_SHAdata, kBlock3_Pre_FileSize,
+                              state->AppPre.Sha, &state->AppPre.Size);
+    (void)BootProg_Block3Read(kBlock3_NowBootSHAdata, kBlock3_NowBootSize,
+                              state->BootNow.Sha, &state->BootNow.Size);
+    (void)BootProg_Block3Read(kBlock3_PreBootSHAdata, kBlock3_PreBootSize,
+                              state->BootPre.Sha, &state->BootPre.Size);
+}
+
+static void BootProg_Block3StateWrite(const BootProg_Block3StateType *state)
+{
+    (void)BootProg_Block3Write(kBlock3_Now_SHAdata, kBlock3_Now_FileSize,
+                               state->AppNow.Sha, state->AppNow.Size);
+    (void)BootProg_Block3Write(kBlock3_Pre_SHAdata, kBlock3_Pre_FileSize,
+                               state->AppPre.Sha, state->AppPre.Size);
+    (void)BootProg_Block3Write(kBlock3_NowBootSHAdata, kBlock3_NowBootSize,
+                               state->BootNow.Sha, state->BootNow.Size);
+    (void)BootProg_Block3Write(kBlock3_PreBootSHAdata, kBlock3_PreBootSize,
+                               state->BootPre.Sha, state->BootPre.Size);
+    (void)Nvm_UserBlock_Polling_10ms();
+}
+
+/* Shift one image pair: Pre <- old Now, Now <- newSha/newSize.
+ * Not committed here (NvmApp accepts only one pending block, the caller
+ * commits once after both pairs). */
+static unsigned char BootProg_Block3ShiftPair(unsigned int nowShaOffset,
+                                              unsigned int nowSizeOffset,
+                                              unsigned int preShaOffset,
+                                              unsigned int preSizeOffset,
+                                              const unsigned char *newSha,
+                                              unsigned int newSize)
 {
     unsigned char oldSha[HSE_HASH_SHA256_SIZE];
     unsigned int oldSize = 0U;
@@ -851,22 +953,138 @@ static unsigned char BootProg_Block3ShiftNow(const unsigned char *newSha,
         return 1U;
     }
 
-    (void)BootProg_Block3Read(kBlock3_Now_SHAdata, kBlock3_Now_FileSize,
-                              oldSha, &oldSize);
+    (void)BootProg_Block3Read(nowShaOffset, nowSizeOffset, oldSha, &oldSize);
+
+    if (0U != BootProg_Block3Write(preShaOffset, preSizeOffset, oldSha, oldSize))
+    {
+        return 1U;
+    }
+
+    if (0U != BootProg_Block3Write(nowShaOffset, nowSizeOffset, newSha, newSize))
+    {
+        return 1U;
+    }
+
+    return 0U;
+}
+
+/* Resolve the identity of one BOOT window.
+ *
+ * Normally the SHA-256/length pair stored in block 3 describes the image.  On
+ * a new board the BOOT in the active partition came from the debugger and was
+ * never recorded, so the entry holds 0xFF/0xFFFFFFFF.  In that case the whole
+ * BOOT window (image + whatever follows it) is hashed as it is: the value
+ * describes exactly the bytes that will be in that window after the swap, so
+ * Boot_PassiveBootValid() can verify it later with the same length.
+ *
+ * @return 0 = identity available, 1 = HSE failure */
+static unsigned char BootProg_BootIdentity(const BootProg_Block3EntryType *stored,
+                                           unsigned int windowBase,
+                                           unsigned char *sha, unsigned int *size)
+{
+    if ((0xFFFFFFFFUL != stored->Size) && (0U != stored->Size) &&
+        (stored->Size <= BOOT_CODE_SIZE))
+    {
+        (void)memcpy(sha, stored->Sha, HSE_HASH_SHA256_SIZE);
+        *size = stored->Size;
+        return 0U;
+    }
+
+    if (0U != BootProg_HashRegion(windowBase, BOOT_CODE_SIZE, sha))
+    {
+        return 1U;
+    }
+
+    *size = BOOT_CODE_SIZE;
+    return 0U;
+}
+
+/* Bring block 3 to the post-swap state, i.e. Now always describes the image
+ * that will be running after the reset.
+ *
+ * For every pair (APP and BOOT):
+ *      Pre <- old Now                        (the image that becomes passive)
+ *      Now <- the image that becomes active
+ * "The image that becomes active" is the download of this session when one was
+ * made for it (g_appImage / g_bootImage carry the 0x37 digest and length),
+ * otherwise it is the image that already sits in the passive partition - the
+ * shift then degenerates into an exchange of the two entries.
+ *
+ * @return 0 = block 3 updated and committed, 1 = NVM failure */
+static unsigned char BootProg_Block3PrepareSwap(void)
+{
+    BootProg_Block3StateType before;
+    unsigned char failed = 0U;
+
+    BootProg_Block3StateRead(&before);
 
     /* NvmApp accepts only one block waiting for its DFlash commit: push a
      * pending write of another block (e.g. a DID written earlier in the
      * session) out first. */
     (void)Nvm_UserBlock_Polling_10ms();
 
-    if (0U != BootProg_Block3Write(kBlock3_Pre_SHAdata, kBlock3_Pre_FileSize,
-                                   oldSha, oldSize))
+    /* APP pair. */
+    if (0U != g_appImage.Valid)
     {
-        return 1U;
+        failed |= BootProg_Block3ShiftPair(kBlock3_Now_SHAdata,
+                                           kBlock3_Now_FileSize,
+                                           kBlock3_Pre_SHAdata,
+                                           kBlock3_Pre_FileSize,
+                                           g_appImage.Hash, g_appImage.Size);
+    }
+    else
+    {
+        failed |= BootProg_Block3ShiftPair(kBlock3_Now_SHAdata,
+                                           kBlock3_Now_FileSize,
+                                           kBlock3_Pre_SHAdata,
+                                           kBlock3_Pre_FileSize,
+                                           before.AppPre.Sha, before.AppPre.Size);
     }
 
-    if (0U != BootProg_Block3Write(kBlock3_Now_SHAdata, kBlock3_Now_FileSize,
-                                   newSha, newSize))
+    /* BOOT pair.  After the swap "Now" is the BOOT that was in the passive
+     * partition, "Pre" the one that was active.  A BOOT downloaded in this
+     * session is the new "Now"; otherwise the stored passive identity is used.
+     * A side whose identity was never recorded (new board) is derived from the
+     * partition itself, see BootProg_BootIdentity(). */
+    {
+        unsigned char nowSha[HSE_HASH_SHA256_SIZE];
+        unsigned char preSha[HSE_HASH_SHA256_SIZE];
+        unsigned int nowSize = 0U;
+        unsigned int preSize = 0U;
+
+        if (0U != g_bootImage.Valid)
+        {
+            (void)memcpy(nowSha, g_bootImage.Hash, HSE_HASH_SHA256_SIZE);
+            nowSize = g_bootImage.Size;
+        }
+        else
+        {
+            failed |= BootProg_BootIdentity(&before.BootPre, BOOT_CODE_BACKUP_BASE,
+                                            nowSha, &nowSize);
+        }
+
+        /* "Pre" is the BOOT that is active today and becomes passive. */
+        failed |= BootProg_BootIdentity(&before.BootNow, BOOT_CODE_BASE,
+                                        preSha, &preSize);
+
+        if (0U == failed)
+        {
+            if (0U != BootProg_Block3Write(kBlock3_PreBootSHAdata,
+                                           kBlock3_PreBootSize,
+                                           preSha, preSize))
+            {
+                failed = 1U;
+            }
+            else if (0U != BootProg_Block3Write(kBlock3_NowBootSHAdata,
+                                                kBlock3_NowBootSize,
+                                                nowSha, nowSize))
+            {
+                failed = 1U;
+            }
+        }
+    }
+
+    if (0U != failed)
     {
         return 1U;
     }
@@ -876,19 +1094,62 @@ static unsigned char BootProg_Block3ShiftNow(const unsigned char *newSha,
     return (E_OK == Nvm_UserBlock_Polling_10ms()) ? 0U : 1U;
 }
 
-/* Put the two entries back after the HSE refused the swap.  Without this the
- * stored "Now" would describe an image that never became active, and the next
- * start would refuse to boot the old APP. */
-static void BootProg_Block3Restore(const unsigned char *nowSha,
-                                   unsigned int nowSize,
-                                   const unsigned char *preSha,
-                                   unsigned int preSize)
+/* ---------------------------------------------------------------------------
+ * Programming counters, stored in block 3 as little-endian 32-bit values:
+ *   kBlock3_program_cnt       : successful programming operations (0xFF02)
+ *   kBlock3_program_retry_cnt : APP 0x34 requests (programming attempts)
+ * ------------------------------------------------------------------------- */
+
+static unsigned int BootProg_Block3ReadCounter(unsigned int offset)
 {
-    (void)BootProg_Block3Write(kBlock3_Now_SHAdata, kBlock3_Now_FileSize,
-                               nowSha, nowSize);
-    (void)BootProg_Block3Write(kBlock3_Pre_SHAdata, kBlock3_Pre_FileSize,
-                               preSha, preSize);
+    unsigned int i;
+    unsigned int value = 0U;
+
+    for (i = 0U; i < 4U; i++)
+    {
+        value |= ((unsigned int)Nvm_Block3_Read_U8((Block3Data)(offset + i)))
+                 << (8U * i);
+    }
+
+    return value;
+}
+
+/* Read-modify-write one counter and commit the block.  A counter that was
+ * never written reads as 0xFFFFFFFF (erased DFlash) and counts as 0. */
+static void BootProg_Block3BumpCounter(unsigned int offset)
+{
+    unsigned int value = BootProg_Block3ReadCounter(offset);
+    unsigned int i;
+
+    if (0xFFFFFFFFUL == value)
+    {
+        value = 0U;
+    }
+    value++;
+
+    /* Push a pending write of another block out before touching block 3. */
     (void)Nvm_UserBlock_Polling_10ms();
+
+    for (i = 0U; i < 4U; i++)
+    {
+        (void)Nvm_Block3_Write_U8((Block3Data)(offset + i),
+                                  (uint8)((value >> (8U * i)) & 0xFFU));
+    }
+
+    (void)Nvm_UserBlock_Polling_10ms();
+}
+
+/* A programming operation completed: the image was written, verified and the
+ * HSE swap was accepted. */
+static void BootProg_CountProgramSuccess(void)
+{
+    BootProg_Block3BumpCounter((unsigned int)kBlock3_program_cnt);
+}
+
+/* An APP 0x34 (RequestDownload) was accepted: count the attempt. */
+static void BootProg_CountProgramAttempt(void)
+{
+    BootProg_Block3BumpCounter((unsigned int)kBlock3_program_retry_cnt);
 }
 
 /* Ask the HSE to swap the active/passive partition at the next reset.
@@ -921,9 +1182,40 @@ static unsigned char BootProg_ActivatePassiveBlock(void)
     return 0U;
 }
 
+/* Update block 3 for the swap that is about to happen, ask the HSE to activate
+ * the passive block and undo the update when the HSE refuses it.
+ *
+ * @return BOOT_ST_AB_OK / BOOT_ST_AB_NVM / BOOT_ST_AB_HSE */
+static unsigned int BootProg_RequestSwap(void)
+{
+    BootProg_Block3StateType before;
+
+    /* Snapshot first: after a refused swap the two pairs have to be exactly as
+     * they were, otherwise the next start would refuse to boot the still
+     * active APP. */
+    BootProg_Block3StateRead(&before);
+
+    if (0U != BootProg_Block3PrepareSwap())
+    {
+        /* A partial write must not stay behind: without the old entries the
+         * next start could refuse to boot the still active APP. */
+        BootProg_Block3StateWrite(&before);
+        return (unsigned int)BOOT_ST_AB_NVM;
+    }
+
+    if (0U != BootProg_ActivatePassiveBlock())
+    {
+        BootProg_Block3StateWrite(&before);
+        return (unsigned int)BOOT_ST_AB_HSE;
+    }
+
+    g_abSwapDone = 1U;
+    return (unsigned int)BOOT_ST_AB_OK;
+}
+
 /* Swap to the APP that is already present in the passive partition: verify it
- * against kBlock3_Pre_*, verify the (new) passive BOOT image, exchange the two
- * Block3 entries and ask the HSE to activate the passive block.
+ * against kBlock3_Pre_*, verify the passive BOOT image, shift the Block3
+ * entries and ask the HSE to activate the passive block.
  *
  * Used by 0xFF02 when only a new BOOT was downloaded (the APP does not change,
  * the passive APP becomes the active one after the swap) and by
@@ -933,51 +1225,58 @@ static unsigned char BootProg_ActivatePassiveBlock(void)
 static unsigned int BootProg_SwapToPre(void)
 {
     unsigned char preSha[HSE_HASH_SHA256_SIZE];
-    unsigned char oldNowSha[HSE_HASH_SHA256_SIZE];
     unsigned char digest[HSE_HASH_SHA256_SIZE];
     unsigned int preSize = 0U;
-    unsigned int oldNowSize = 0U;
 
     if (0U != g_abSwapDone)
     {
         return (unsigned int)BOOT_ST_AB_PRECOND;
     }
 
-    /* The passive image is described by kBlock3_Pre_*.  A never programmed
-     * block reads as 0xFF, so preSize becomes 0xFFFFFFFF and is rejected. */
-    if ((0U != BootProg_Block3Read(kBlock3_Pre_SHAdata, kBlock3_Pre_FileSize,
-                                   preSha, &preSize)) ||
-        (0U == preSize) || (preSize > BOOT_APP_SIZE))
+    /* The passive APP is described by kBlock3_Pre_*.  A never programmed block
+     * reads as 0xFF, so preSize becomes 0xFFFFFFFF and is rejected.
+     *
+     * New board (no APP programmed anywhere): there is no APP to protect, the
+     * ECU stays in the bootloader after the swap.  The BOOT that is activated
+     * is verified below either way. */
+    if (0U == BootProg_NoAppProgrammed())
     {
-        return (unsigned int)BOOT_ST_AB_NO_PRE;
+        if ((0U != BootProg_Block3Read(kBlock3_Pre_SHAdata, kBlock3_Pre_FileSize,
+                                       preSha, &preSize)) ||
+            (0U == preSize) || (preSize > BOOT_APP_SIZE))
+        {
+            return (unsigned int)BOOT_ST_AB_NO_PRE;
+        }
+
+        /* Refuse to activate a passive partition whose APP does not match the
+         * SHA-256 recorded for it (e.g. an interrupted download). */
+        if (0U == Boot_PassiveAppValid())
+        {
+            return (unsigned int)BOOT_ST_AB_APP_HEADER;
+        }
+
+        if (0U != BootProg_HashRegion(BOOT_APP_BACKUP_BASE, preSize, digest))
+        {
+            return (unsigned int)BOOT_ST_AB_HSE_HASH;
+        }
+
+        if (0 != memcmp(digest, preSha, HSE_HASH_SHA256_SIZE))
+        {
+            return (unsigned int)BOOT_ST_AB_PRE_INVALID;
+        }
     }
 
-    /* Refuse to activate a passive partition whose APP does not match the
-     * SHA-256 recorded for it (e.g. an interrupted download). */
-    if (0U == Boot_PassiveAppValid())
-    {
-        return (unsigned int)BOOT_ST_AB_APP_HEADER;
-    }
-
-    if (0U != BootProg_HashRegion(BOOT_APP_BACKUP_BASE, preSize, digest))
-    {
-        return (unsigned int)BOOT_ST_AB_HSE_HASH;
-    }
-
-    if (0 != memcmp(digest, preSha, HSE_HASH_SHA256_SIZE))
-    {
-        return (unsigned int)BOOT_ST_AB_PRE_INVALID;
-    }
-
-    if (0U == Boot_PassiveBootValid())
-    {
-        return (unsigned int)BOOT_ST_AB_NO_BOOT;
-    }
-
-    /* A BOOT image downloaded in this session must be verified before it is
-     * activated. */
+    /* Passive BOOT: a BOOT downloaded in this session is verified against the
+     * 0x37 digest, otherwise against the SHA-256 stored for the passive image
+     * (kBlock3_PreBootSHAdata).  Both paths fail closed. */
     if (0U != g_bootImage.Valid)
     {
+        if (0U == Boot_ImageHeaderValid(BOOT_CODE_BACKUP_BASE, BOOT_CODE_BASE,
+                                        BOOT_CODE_BACKUP_SIZE))
+        {
+            return (unsigned int)BOOT_ST_AB_NO_BOOT;
+        }
+
         if (0U != BootProg_HashRegion(BOOT_CODE_BACKUP_BASE, g_bootImage.Size,
                                       digest))
         {
@@ -989,37 +1288,17 @@ static unsigned int BootProg_SwapToPre(void)
             return (unsigned int)BOOT_ST_AB_BOOT_HASH;
         }
     }
-
-    /* Exchange: Pre <- old Now, Now <- old Pre.  After the physical swap the
-     * passive image becomes the active one, so kBlock3_Now_* has to describe
-     * it.  Same helper as 0xFF02, with the old Pre value as "new". */
-    (void)BootProg_Block3Read(kBlock3_Now_SHAdata, kBlock3_Now_FileSize,
-                              oldNowSha, &oldNowSize);
-
-    if (0U != BootProg_Block3ShiftNow(preSha, preSize))
+    else if (0U == Boot_PassiveBootValid())
     {
-        return (unsigned int)BOOT_ST_AB_NVM;
+        return (unsigned int)BOOT_ST_AB_NO_BOOT;
     }
 
-    if (0U != BootProg_ActivatePassiveBlock())
-    {
-        /* The exchange has to be undone: the passive partition stays
-         * active, so the old Now/Pre values are still the correct ones. */
-        BootProg_Block3Restore(oldNowSha, oldNowSize, preSha, preSize);
-        return (unsigned int)BOOT_ST_AB_HSE;
-    }
-
-    g_abSwapDone = 1U;
-    return (unsigned int)BOOT_ST_AB_OK;
+    return BootProg_RequestSwap();
 }
 
 unsigned char BootProg_SwapStep(unsigned int *status, unsigned char *more)
 {
     unsigned char digest[HSE_HASH_SHA256_SIZE];
-    unsigned char oldNowSha[HSE_HASH_SHA256_SIZE];
-    unsigned char oldPreSha[HSE_HASH_SHA256_SIZE];
-    unsigned int oldNowSize = 0U;
-    unsigned int oldPreSize = 0U;
 
     *status = (unsigned int)BOOT_ST_AB_OK;
     *more = 0U;
@@ -1049,8 +1328,13 @@ unsigned char BootProg_SwapStep(unsigned int *status, unsigned char *more)
         }
 
         /* BOOT-only update: the passive APP does not change, so the APP/BOOT
-         * verification and the Block3 exchange are the same as for ACC1. */
+         * verification and the Block3 shift are the same as for ACC1 (the two
+         * pairs are exchanged). */
         *status = BootProg_SwapToPre();
+        if ((unsigned int)BOOT_ST_AB_OK == *status)
+        {
+            BootProg_CountProgramSuccess();
+        }
         g_bootAbSwapDiag[0] = *status;
         return 0U;
     }
@@ -1079,7 +1363,9 @@ unsigned char BootProg_SwapStep(unsigned int *status, unsigned char *more)
     }
 
     /* A BOOT image downloaded in the same session must be valid too: the
-     * tester sent it at 0x00400000 and it was programmed at 0x00600000. */
+     * tester sent it at 0x00400000 and it was programmed at 0x00600000.  If no
+     * new BOOT was downloaded, the image already present in the passive
+     * partition has to match the SHA-256 stored for it (kBlock3_PreBoot*). */
     if (0U != g_bootImage.Valid)
     {
         if (0U == Boot_ImageHeaderValid(BOOT_CODE_BACKUP_BASE, BOOT_CODE_BASE,
@@ -1105,43 +1391,23 @@ unsigned char BootProg_SwapStep(unsigned int *status, unsigned char *more)
             return 0U;
         }
     }
-
-    /* A partition without a valid BOOT image cannot be started after the
-     * swap, so refuse rather than brick the ECU. */
-    if (0U == Boot_PassiveBootValid())
+    else if (0U == Boot_PassiveBootValid())
     {
+        /* A partition without a valid BOOT image cannot be started after the
+         * swap, so refuse rather than brick the ECU. */
         *status = (unsigned int)BOOT_ST_AB_NO_BOOT;
         g_bootAbSwapDiag[0] = *status;
         return 0U;
     }
 
-    /* Block3: Pre <- old Now, Now <- the APP just downloaded into the passive
-     * area.  This is the post-swap state; the HSE swap happens at the reset
-     * that the DCM requests after the positive response. */
-    (void)BootProg_Block3Read(kBlock3_Now_SHAdata, kBlock3_Now_FileSize,
-                              oldNowSha, &oldNowSize);
-    (void)BootProg_Block3Read(kBlock3_Pre_SHAdata, kBlock3_Pre_FileSize,
-                              oldPreSha, &oldPreSize);
-
-    if (0U != BootProg_Block3ShiftNow(g_appImage.Hash, g_appImage.Size))
+    /* Block3 (both pairs) + HSE ACTIVATE_PASSIVE_BLOCK, with a rollback of
+     * block 3 when the HSE refuses the swap. */
+    *status = BootProg_RequestSwap();
+    if ((unsigned int)BOOT_ST_AB_OK == *status)
     {
-        *status = (unsigned int)BOOT_ST_AB_NVM;
-        g_bootAbSwapDiag[0] = *status;
-        return 0U;
+        BootProg_CountProgramSuccess();
     }
 
-    if (0U != BootProg_ActivatePassiveBlock())
-    {
-        /* Keep the old image bootable: put the entries back so the start-up
-         * check still matches the still-active partition. */
-        BootProg_Block3Restore(oldNowSha, oldNowSize, oldPreSha, oldPreSize);
-        *status = (unsigned int)BOOT_ST_AB_HSE;
-        g_bootAbSwapDiag[0] = *status;
-        return 0U;
-    }
-
-    g_abSwapDone = 1U;
-    *status = (unsigned int)BOOT_ST_AB_OK;
     g_bootAbSwapDiag[0] = *status;
     return 0U;
 }

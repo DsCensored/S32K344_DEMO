@@ -794,9 +794,10 @@ static void UDS_DcmRequestResetAfterResponse(void)
 
 /* 0xFF02: finalise an AB swap after a new APP (and optional BOOT) download.
  * The tester has programmed the passive partition (0x00648000 / 0x00600000);
- * this routine verifies the images, shifts the Block3 SHA-256 values
- * (Pre <- old Now, Now <- new APP) and asks the HSE to activate the passive
- * block.  Nothing is copied any more. */
+ * this routine verifies the images, shifts both Block3 pairs
+ * (APP and BOOT: Pre <- old Now, Now <- the image just downloaded) and asks
+ * the HSE to activate the passive block.  Nothing is copied any more.
+ * The programming counter is incremented on success. */
 extern unsigned char BSW_stUpdateVerValid;
 static unsigned char UDS_DcmRoutineSwap(const unsigned char *req, unsigned int len,
                                         unsigned int *status)
@@ -831,8 +832,9 @@ static unsigned char UDS_DcmRoutineSwap(const unsigned char *req, unsigned int l
 }
 
 /* 0xACC1: AB swap without a new APP download (rollback, or a BOOT-only
- * update).  The two Block3 SHA-256 entries are exchanged (Pre <- Now,
- * Now <- old Pre) and the HSE is asked to activate the passive block.
+ * update).  Every Block3 pair (APP and BOOT) is exchanged (Pre <- Now,
+ * Now <- old Pre) and the HSE is asked to activate the passive block.  The
+ * passive BOOT image is verified against kBlock3_PreBootSHAdata.
  * Only meaningful in the programming session. */
 static unsigned char UDS_DcmRoutineAbSwap(const unsigned char *req, unsigned int len,
                                           unsigned int *status)

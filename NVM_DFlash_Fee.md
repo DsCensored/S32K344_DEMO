@@ -967,8 +967,8 @@ active/passive 分区。
 | 文件 | 内容 |
 | --- | --- |
 | `ASW/UserCode/Boot.h` | 新增 passive 地址宏 `BOOT_CODE_BACKUP_BASE` / `BOOT_APP_BACKUP_BASE`、`BOOT_PASSIVE_OFFSET`；HSE 等待预算从 200×0.12 ms 提高到 20000×0.12 ms（切区复位后 HSE 要把自身固件备份到被动区，约 1 s 才置 `HSE_STATUS_INIT_OK`） |
-| `ASW/UserCode/Boot.c` | `Boot_ImageHeaderValid(imageBase, runBase, size)`：被动区镜像的向量表在 `imageBase + (vector - runBase)`，不能直接用绝对地址；`Boot_PassiveBootValid()` / `Boot_PassiveAppValid()` |
-| `ASW/UserCode/Boot_Program.c/.h` | 地址映射/擦除范围改为只允许 passive 分区；BOOT/APP 两个镜像的 SHA-256 分开跟踪；`BootProg_Block3ShiftNow()`（Pre←Now，Now←新值）、`BootProg_Block3Restore()`；`BootProg_SwapStep()`（0xFF02）；`BootProg_AbSwap()`（0xACC1）；`BootProg_ActivatePassiveBlock()` |
+| `ASW/UserCode/Boot_Program.c/.h` | 地址映射/擦除范围改为只允许 passive 分区；BOOT/APP 两个镜像的 SHA-256 分开跟踪；`BootProg_Block3ShiftPair()` / `BootProg_Block3PrepareSwap()` / `BootProg_Block3StateRead/Write()`（两对镜像成对 Shift 或交换，失败回滚）；编程计数器 `BootProg_CountProgramSuccess()` / `BootProg_CountProgramAttempt()`；`BootProg_SwapStep()`（0xFF02）；`BootProg_AbSwap()`（0xACC1）；`BootProg_ActivatePassiveBlock()` |
+| `ASW/UserCode/Boot.c` | `Boot_ImageHeaderValid(imageBase, runBase, size)`：被动区镜像的向量表在 `imageBase + (vector - runBase)`，不能直接用绝对地址；`Boot_PassiveBootValid()` 现在还会**回读被动区 BOOT 的 SHA-256 与 `kBlock3_PreBootSHAdata` 比较**（诊断 `g_bootPassiveBootDiag[4]`）；`Boot_PassiveAppValid()` |
 | `MCAL/HSE/hse_host.c/.h` | 新增 `HSE_ActivatePassiveBlock()`，服务描述符放在 `.non_cacheable_data`（HSE 需要能读到，且切区相关变量不能放在普通可缓存 RAM） |
 | `UDS/UDS_DcmCfg.c` | 0xFF02 改调 `BootProg_SwapStep()`；新增 `31 01 AC C1` 例程；成功后置 `ResetPending`，正响应发出后自动复位 |
 
@@ -995,10 +995,16 @@ active/passive 分区。
 31 01 FF 02   1. 被动区 APP 头/向量表检查
               2. 回读被动区 APP SHA-256，与 0x37 摘要比较
               3. 若本次下载了 BOOT，回读被动区 BOOT SHA-256 比较
-              4. 被动区 BOOT 头检查（没有有效 BOOT 就拒绝切区，避免变砖）
-              5. Block3：Pre <- old Now，Now <- 新 APP SHA/长度，同步 Commit
+              4. 本次没下 BOOT 时，被动区 BOOT 必须与 Block3
+                 kBlock3_PreBootSHAdata 一致（头 + 整个镜像 SHA-256，
+                 没有有效 BOOT 就拒绝切区，避免变砖）
+              5. Block3 两对镜像都 Shift（同步 Commit）：
+                 APP ：Pre <- old Now，Now <- 新 APP SHA/长度
+                 BOOT：Pre <- old Now，Now <- 新 BOOT SHA/长度（本次没下
+                 BOOT 时这一对是"交换" Pre <- Now、Now <- old Pre）
               6. HSE_SRV_ID_ACTIVATE_PASSIVE_BLOCK
-              7. 正响应 71 01 FF 02 00 发出后 100 ms 自动复位
+              7. 成功则 kBlock3_program_cnt++（Commit 后再算）
+              8. 正响应 71 01 FF 02 00 发出后 100 ms 自动复位
 复位后 HSE 交换分区，新 BOOT/APP 在 0x400000/0x448000 运行
 ```
 
@@ -1009,11 +1015,12 @@ active/passive 分区。
 34/36/37  BOOT (0x400000 -> 0x600000)
 31 01 FF 01   BOOT 被动区头 + 回读 SHA 比较；
               被动区 APP 仍按 Block3 Pre 校验（APP 本次不更新，跳过版本策略）
-31 01 FF 02   1. 被动区 BOOT 头/SHA 检查
+31 01 FF 02   1. 被动区 BOOT 头/SHA 检查（用本次 0x37 的摘要）
               2. 被动区 APP 与 Block3 Pre 一致
-              3. Block3 交换：Pre <- old Now，Now <- old Pre
-                 （换区后运行的是被动区原有 APP，与 Pre 对应）
-              4. HSE 切区；正响应后自动复位
+              3. Block3 两对镜像都交换：Pre <- old Now，Now <- old Pre
+                 （换区后运行的是被动区原有 APP/BOOT，与 Pre 对应；
+                  本次下载的新 BOOT 已由第 1 步验证，它就是新的 Now）
+              4. HSE 切区；成功则 kBlock3_program_cnt++，正响应后自动复位
 复位后新 BOOT + 被动区原 APP 运行
 ```
 
@@ -1029,9 +1036,10 @@ active/passive 分区。
 31 01 AC C1
     1. 读 Block3 Pre SHA/长度；无效则回 0x0A
     2. 被动区 APP 头 + 回读 SHA-256 必须与 Pre 一致（否则 0x0B）
-    3. 被动区 BOOT 头检查（否则 0x05）
-    4. Block3 交换：Pre <- old Now，Now <- old Pre
-    5. HSE 切区；正响应后自动复位
+    3. 被动区 BOOT：头 + 回读 SHA-256 必须与 kBlock3_PreBootSHAdata
+       一致（否则 0x05）
+    4. Block3 两对镜像都交换：Pre <- old Now，Now <- old Pre
+    5. HSE 切区；正响应后自动复位（ACC1 不计数，因为没有编程动作）
 ```
 
 **0xFF02 / 0x31 01 AC C1 的 status（`71 <subFn> <RID> <status>`）**
@@ -1054,26 +1062,92 @@ active/passive 分区。
 FF01（`71 01 FF 01 <status>`）在只刷 BOOT 时新增：`0x17` = Block3 Pre 无效或
 被动区 APP 与 Pre 不一致（需要先跑一次完整的 APP 升级建立 Pre）。
 
-**Block3 不变量**（`ASW/UserCode/NvmApp.h` 偏移不变）
+**Block3 不变量**（`ASW/UserCode/NvmApp.h`，payload 偏移，全部小端）
 
-| 偏移 | 内容 |
-| --- | --- |
-| 0..31 | `kBlock3_Now_SHAdata`：当前 active APP 的 SHA-256 |
-| 32..63 | `kBlock3_Pre_SHAdata`：passive APP 的 SHA-256 |
-| 64..67 | `kBlock3_Now_FileSize` |
-| 68..71 | `kBlock3_Pre_FileSize` |
+| 偏移 | 长度 | 枚举 | 内容 |
+| --- | --- | --- | --- |
+| 0 | 32 | `kBlock3_Now_SHAdata` | 当前 active APP 的 SHA-256 |
+| 32 | 32 | `kBlock3_Pre_SHAdata` | passive APP 的 SHA-256 |
+| 64 | 4 | `kBlock3_Now_FileSize` | active APP 长度 |
+| 68 | 4 | `kBlock3_Pre_FileSize` | passive APP 长度 |
+| 72 | 32 | `kBlock3_NowBootSHAdata` | 当前 active BOOT 的 SHA-256 |
+| 104 | 32 | `kBlock3_PreBootSHAdata` | passive BOOT 的 SHA-256 |
+| 136 | 4 | `kBlock3_NowBootSize` | active BOOT 长度 |
+| 140 | 4 | `kBlock3_PreBootSize` | passive BOOT 长度 |
+| 144 | 4 | `kBlock3_program_cnt` | 编程计数器（0xFF02 成功 +1） |
+| 148 | 4 | `kBlock3_program_retry_cnt` | 尝试编程计数器（APP 0x34 +1） |
 
-- 0xFF02（有新 APP）：`Pre <- Now`，`Now <- 新 APP`（FF02 与随后的 HSE 切区是一个整体）；
-- 0xFF02（只刷 BOOT）/ 0xACC1：`Pre <- Now`，`Now <- old Pre`（交换，APP 不变）；
-- 两者共用 `BootProg_Block3ShiftNow()`；HSE 拒绝切区时用
-  `BootProg_Block3Restore()` 恢复，保证旧 APP 仍能通过启动校验。
+- `Now` 永远描述"切区后正在运行"的镜像，`Pre` 描述另一个分区里的镜像；
+  `Boot_AppShaVerify()` 只用 `Now` 校验运行中的 APP；
+  `Boot_PassiveBootValid()` 用 `PreBoot` 校验被动区 BOOT。
+- 0xFF02（本次下了该镜像）：`Pre <- Now`，`Now <- 新下载`；
+- 0xFF02（本次没下该镜像）/ 0xACC1：`Pre <- Now`，`Now <- old Pre`（交换）；
+- **APP 和 BOOT 两对都按上面的规则处理**，由
+  `BootProg_Block3PrepareSwap()` 一次完成，`Nvm_UserBlock_Polling_10ms()`
+  同步 Commit；HSE 拒绝切区或写入失败时用 `BootProg_Block3StateWrite(旧快照)`
+  整体恢复，保证旧镜像仍能通过启动校验。
+- 旧固件（只有 APP 那 4 项）升级上来时，BOOT 四项是 0xFF：第一次升级必须
+  同时下发 BOOT+APP，切区后四项就补齐了。
+
+**编程计数器的写入时机**
+
+| 计数器 | 何时 +1 | 说明 |
+| --- | --- | --- |
+| `kBlock3_program_cnt` | 0xFF02 的 HSE 切区被接受之后 | APP 升级、只刷 BOOT 都算；0xACC1 不算（没有编程） |
+| `kBlock3_program_retry_cnt` | `BootProg_RequestDownload()` 接受 APP 的 0x34 时 | 每次 APP 编程尝试 +1，与是否最终成功无关 |
+
+两者都是 4 字节小端、读-改-写后立即 Commit；从未写过的值读作 `0xFFFFFFFF`，
+按 0 处理（第一次 +1 得到 1）。
+
+**新板子产线流程（两个区各刷一次 BOOT，最后只刷一次 APP）**
+
+场景：新板子用 J-Link 往 active 区（`0x400000`）烧第一个 BOOT，之后用刷写流程
+把 BOOT 依次写进两个分区，最后把 APP 刷一次。每一步的 Block3 状态：
+
+| STEP | 报文 | Block3 关键项 | 备注 |
+| --- | --- | --- | --- |
+| 1 | J-Link 烧 `0x400000` 的 BOOT | 全 0xFF | 无 APP → 停在 BOOT |
+| 2 | `34/36/37` BOOT → `0x600000`；`FF01`；`FF02` | `NowBoot={D_boot,S1}`，`PreBoot={D_win1,256K}`，`cnt=1` | `FF01` 走"新板子无 APP"分支；切到第二区 |
+| 3 | `34/36/37` BOOT → `0x600000`；`FF01`；`FF02` | `NowBoot=PreBoot={D_boot,S1}`，`cnt=2` | 两区都是同一个 BOOT；切回第一区 |
+| 4 | `34/36/37` APP → `0x648000`；`FF01`；`FF02` | `NowApp={D_app,S_app}`，`PreApp=0xFF`，`cnt=3`，`retry=1` | 首次编程（active 区无 APP）跳过版本策略；切到第一区后 APP 运行 |
+
+此时两个分区都有 BOOT，**只有 active 区有 APP**（产线只刷一次 APP）。
+
+> 如果之后想把同一个 APP 也写进另一个分区：因为 `FF01` 的正向升级策略要求
+> **严格升级**，同级版本会返回 `0x06`，先发 `2E F7 F7 01` 强制升级即可
+> （`FF02` 随后照常把两区 APP/SHA 对齐）。
+
+关键判定（新板子专用，不影响正常产品升级）：
+
+1. `BootProg_NoAppProgrammed()`：Block3 可读且 `Now_FileSize` 与 `Pre_FileSize`
+   都还是 `0xFFFFFFFF` → 认定"从未编程过 APP"，BOOT-only 的 `0xFF01` / `0xFF02`
+   跳过"被动区 APP 必须与 PreApp 一致"的检查（此时没有 APP 需要保护）；
+2. `check_version()`：active 区 APP 镜像头非法（空区）→ **"首次编程"**，
+   不做版本比较（否则新板子会返回 `0x04` VER_NOW）；
+   其余情况仍按"只允许严格升级"：降级和同级都返回 `0x06`，
+   可用 `2E F7 F7 01` 强制；
+3. `BootProg_BootIdentity()`：某个 BOOT 的 SHA/长度从未记录（新板子 active 区
+   的 BOOT 是 J-Link 烧的）时，**把整个 BOOT 窗口（256 KB）按现状做 SHA-256**
+   作为它的身份，长度记 `BOOT_CODE_SIZE`。这样切区后：
+   - `NowBoot` = 切区后运行的（今天被动区的）BOOT；
+   - `PreBoot` = 切区后被动区的（今天 active 的）BOOT；
+   之后 `Boot_PassiveBootValid()` 用同样的 256 KB 窗口再算一次必然一致，
+   所以 STEP4 的 APP 切区能通过；下一次正常升级（BOOT+APP）后自动回落到
+   "镜像实际长度"的记录方式。
+
+
+> 注意：STEP2/3 用的是"只刷 BOOT"路径，前提是本次**下载了 BOOT**
+> （`g_bootImage.Valid`），被动区 BOOT 用 0x37 摘要校验；STEP4 的
+> `0xFF01` 里 `g_bootImage.Valid = 0`，被动区 BOOT 用 Block3 的 `PreBoot`
+> 校验（即 STEP3 写入的摘要）。
 
 **首次迁移到 AB Swap 的注意事项**
 
-1. 第一次升级必须同时下发新 BOOT 和新 APP（否则被动区 `0x600000` 没有 BOOT，
-   FF02 返回 `0x05` 拒绝切区）。切区成功后，两个分区就都有 BOOT/APP 了；
-2. 如果当前 APP 与升级包版本相同，FF01 会按"只允许严格升级"返回 `0x06`，
-   先发 `2E F7 F7 01` 强制升级；
+1. 现网已量产板（旧固件、Block3 只有 APP 四项）升级时，第一次仍建议同时下发
+   BOOT+APP：虽然新代码允许"只刷 BOOT"，但旧板子两个分区的 BOOT 都不支持
+   AB Swap 时切区后无法再切回（见第 4 条）；
+2. 版本策略仍是"只允许严格升级"：如果当前 APP 与升级包版本相同（含把同一个
+   APP 写进第二个分区），`FF01` 返回 `0x06`，先发 `2E F7 F7 01` 强制升级；
 3. 切区复位后第一次启动，HSE 约 1 s 才就绪；`Boot_AppShaVerify()` 会等到
    `HSE_STATUS_INIT_OK` 再算 SHA-256，属正常现象；
 4. 两个分区里的 BOOT 都必须是支持 AB Swap 的版本，否则切到旧 BOOT 后无法再切回。
@@ -1120,7 +1194,7 @@ DCM 状态寄存器 **DCMSTAT = 0x402A_C000**：
 | [3] | `0x41425357`（"ABSW" 标记） |
 
 **编译验证**：`S32K344_Bootloader/Debug_FLASH` 下 `make all` 通过（GCC 10.2，
-无警告）；`text 110368 / data 14192 / bss 23816`，仍远小于 256 KB BOOT 区。
+无警告）；`text 111 096 / data 14 208 / bss 23 816`，仍远小于 256 KB BOOT 区。
 
 
 
