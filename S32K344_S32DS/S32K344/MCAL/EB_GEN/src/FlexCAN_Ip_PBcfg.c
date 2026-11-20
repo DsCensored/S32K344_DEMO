@@ -135,7 +135,7 @@ const Flexcan_Ip_ConfigType Flexcan_aCtrlConfigPB[1U]=
         /* The number of standard ID filter elements */
         0U,
         /* The number of extended ID filter elements */
-        13U,
+        14U,
         /* The number of enhanced Rx FIFO watermark */
         19U,
         /* The Enhanced Rx FIFO feature is enabled or not. */

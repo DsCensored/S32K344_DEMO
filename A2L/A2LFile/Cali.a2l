@@ -1,0 +1,260 @@
+/******************************************************************************
+ *  generated time :2026/11/20 10:44:42
+******************************************************************************/
+ASAP2_VERSION  1 31     /* Version 1.31 */
+
+/begin PROJECT ProjectName "Project Comment Goes Here"
+
+  /begin HEADER "Header Comments go here"
+  /end HEADER
+
+  /begin MODULE ModuleName  "Module Comment Goes Here"
+
+    /begin MOD_PAR "MOD PAR Comment Goes Here"
+    /end MOD_PAR
+
+    /begin MOD_COMMON  "Mod Common Comment Here"
+      BYTE_ORDER     MSB_LAST
+
+      ALIGNMENT_BYTE 1
+      ALIGNMENT_WORD 2
+      ALIGNMENT_LONG 4
+      ALIGNMENT_FLOAT32_IEEE 4
+      ALIGNMENT_FLOAT64_IEEE 4
+    /end MOD_COMMON
+        /begin RECORD_LAYOUT Scalar_BOOLEAN
+          FNC_VALUES  1 UBYTE COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Scalar_UBYTE
+          FNC_VALUES  1 UBYTE COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Scalar_BYTE
+          FNC_VALUES  1 SBYTE COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Scalar_UWORD
+          FNC_VALUES  1 UWORD COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Scalar_SWORD
+          FNC_VALUES 1 SWORD COLUMN_DIR DIRECT
+        /end RECORD_LAYOUT
+        /begin RECORD_LAYOUT Scalar_ULONG
+          FNC_VALUES  1 ULONG COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Scalar_LONG
+          FNC_VALUES  1 SLONG COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Scalar_FLOAT32_IEEE
+          FNC_VALUES  1 FLOAT32_IEEE COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Scalar_FLOAT64_IEEE
+          FNC_VALUES  1 FLOAT64_IEEE COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup1D_BOOLEAN
+          FNC_VALUES  1 UBYTE COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup1D_X_BOOLEAN
+          AXIS_PTS_X  1 UBYTE INDEX_INCR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup1D_BYTE
+          FNC_VALUES  1 SBYTE COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup1D_X_BYTE
+          AXIS_PTS_X  1 SBYTE INDEX_INCR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup1D_UBYTE
+          FNC_VALUES  1 UBYTE COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup1D_X_UBYTE
+          AXIS_PTS_X  1 UBYTE INDEX_INCR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup1D_UWORD
+          FNC_VALUES  1 UWORD COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup1D_X_UWORD
+          AXIS_PTS_X  1 UWORD INDEX_INCR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup1D_WORD
+          FNC_VALUES  1 SWORD COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup1D_X_WORD
+          AXIS_PTS_X  1 SWORD INDEX_INCR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup1D_ULONG
+          FNC_VALUES  1 ULONG COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup1D_X_ULONG
+          AXIS_PTS_X  1 ULONG INDEX_INCR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup1D_SLONG
+          FNC_VALUES  1 SLONG COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup1D_X_LONG
+          AXIS_PTS_X  1 SLONG INDEX_INCR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup1D_FLOAT32_IEEE
+          FNC_VALUES  1 FLOAT32_IEEE COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup1D_X_FLOAT32_IEEE
+          AXIS_PTS_X  1 FLOAT32_IEEE INDEX_INCR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup1D_FLOAT64_IEEE
+          FNC_VALUES  1 FLOAT64_IEEE COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup1D_X_FLOAT64_IEEE
+          AXIS_PTS_X  1 FLOAT64_IEEE INDEX_INCR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup2D_BOOLEAN
+          FNC_VALUES  1 UBYTE COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup2D_X_BOOLEAN
+          AXIS_PTS_X  1 UBYTE INDEX_INCR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup2D_UBYTE
+          FNC_VALUES  1 UBYTE COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup2D_X_UBYTE
+          AXIS_PTS_X  1 UBYTE INDEX_INCR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup2D_BYTE
+          FNC_VALUES  1 SBYTE COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup2D_X_BYTE
+          AXIS_PTS_X  1 SBYTE INDEX_INCR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup2D_UWORD
+          FNC_VALUES  1 UWORD COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup2D_X_UWORD
+          AXIS_PTS_X  1 UWORD INDEX_INCR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup2D_WORD
+          FNC_VALUES  1 SWORD COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup2D_X_WORD
+          AXIS_PTS_X  1 SWORD INDEX_INCR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup2D_ULONG
+          FNC_VALUES  1 ULONG COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup2D_X_ULONG
+          AXIS_PTS_X  1 ULONG INDEX_INCR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup2D_LONG
+          FNC_VALUES  1 SLONG COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup2D_X_LONG
+          AXIS_PTS_X  1 SLONG INDEX_INCR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup2D_FLOAT32_IEEE
+          FNC_VALUES  1 FLOAT32_IEEE COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup2D_X_FLOAT32_IEEE
+          AXIS_PTS_X 1 FLOAT32_IEEE INDEX_INCR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup2D_FLOAT64_IEEE
+          FNC_VALUES  1  FLOAT64_IEEE COLUMN_DIR DIRECT
+        /end   RECORD_LAYOUT
+        /begin RECORD_LAYOUT Lookup2D_X_FLOAT64_IEEE
+          AXIS_PTS_X 1 FLOAT64_IEEE INDEX_INCR DIRECT
+        /end   RECORD_LAYOUT
+
+/begin CHARACTERISTIC
+ /* Name                   */      XCP_Cal_u8Demo
+ /* Long Identifier        */      ""
+ /* Type                   */      VALUE
+ /* ECU Address            */      0x0000 /* @ECU_Address@XCP_Cal_u8Demo@ */
+ /* Record Layout          */      Scalar_UBYTE
+ /* Maximum Difference     */      0
+ /* Conversion Method      */      A2L_CM_uint8
+ /* Lower Limit            */      0
+ /* Upper Limit            */      255
+/end CHARACTERISTIC
+
+
+/begin CHARACTERISTIC
+ /* Name                   */      XCP_Cal_u16Demo
+ /* Long Identifier        */      ""
+ /* Type                   */      VALUE
+ /* ECU Address            */      0x0000 /* @ECU_Address@XCP_Cal_u16Demo@ */
+ /* Record Layout          */      Scalar_UWORD
+ /* Maximum Difference     */      0
+ /* Conversion Method      */      A2L_CM_uint16
+ /* Lower Limit            */      0
+ /* Upper Limit            */      65535
+/end CHARACTERISTIC
+
+
+/begin CHARACTERISTIC
+ /* Name                   */      XCP_Cal_u32Demo
+ /* Long Identifier        */      ""
+ /* Type                   */      VALUE
+ /* ECU Address            */      0x0000 /* @ECU_Address@XCP_Cal_u32Demo@ */
+ /* Record Layout          */      Scalar_ULONG
+ /* Maximum Difference     */      0
+ /* Conversion Method      */      A2L_CM_uint32
+ /* Lower Limit            */      0
+ /* Upper Limit            */      4294967295
+/end CHARACTERISTIC
+
+
+/begin CHARACTERISTIC
+ /* Name                   */      XCP_Cal_f32Demo
+ /* Long Identifier        */      ""
+ /* Type                   */      VALUE
+ /* ECU Address            */      0x0000 /* @ECU_Address@XCP_Cal_f32Demo@ */
+ /* Record Layout          */      Scalar_FLOAT32_IEEE
+ /* Maximum Difference     */      0
+ /* Conversion Method      */      A2L_CM_single
+ /* Lower Limit            */      -3.4E+38
+ /* Upper Limit            */      3.4E+38
+/end CHARACTERISTIC
+
+
+/begin CHARACTERISTIC
+ /* Name                   */      XCP_Cal_au8Demo
+ /* Long Identifier        */      ""
+ /* Type                   */      VAL_BLK
+ /* ECU Address            */      0x0000 /* @ECU_Address@XCP_Cal_au8Demo@ */
+ /* Record Layout          */      Scalar_UBYTE
+ /* Maximum Difference     */      0
+ /* Conversion Method      */      A2L_CM_uint8
+ /* Lower Limit            */      0
+ /* Upper Limit            */      255
+ MATRIX_DIM                       8 1 1
+/end CHARACTERISTIC
+
+
+  /begin COMPU_METHOD
+    /* Name of CompuMethod    */      A2L_CM_single
+    /* Long identifier        */      "Q = V"
+    /* Conversion Type        */      RAT_FUNC
+    /* Format                 */      "%8.6"
+    /* Units                  */      ""
+    /* Coefficients           */      COEFFS 0 1 0 0 0 1
+  /end COMPU_METHOD
+  /begin COMPU_METHOD
+    /* Name of CompuMethod    */      A2L_CM_uint16
+    /* Long identifier        */      "Q = V"
+    /* Conversion Type        */      RAT_FUNC
+    /* Format                 */      "%5.0"
+    /* Units                  */      ""
+    /* Coefficients           */      COEFFS 0 1 0 0 0 1
+  /end COMPU_METHOD
+  /begin COMPU_METHOD
+    /* Name of CompuMethod    */      A2L_CM_uint32
+    /* Long identifier        */      "Q = V"
+    /* Conversion Type        */      RAT_FUNC
+    /* Format                 */      "%10.0"
+    /* Units                  */      ""
+    /* Coefficients           */      COEFFS 0 1 0 0 0 1
+  /end COMPU_METHOD
+  /begin COMPU_METHOD
+    /* Name of CompuMethod    */      A2L_CM_uint8
+    /* Long identifier        */      "Q = V"
+    /* Conversion Type        */      RAT_FUNC
+    /* Format                 */      "%3.0"
+    /* Units                  */      ""
+    /* Coefficients           */      COEFFS 0 1 0 0 0 1
+  /end COMPU_METHOD
+  /end MODULE
+/end PROJECT

@@ -729,6 +729,12 @@
                         <d:var name="CanHwFilterMask" type="INTEGER" 
                                value="536870911"/>
                       </d:ctr>
+                      <d:ctr name="CanHwFilter_13" type="IDENTIFIABLE">
+                        <d:var name="CanHwFilterCode" type="INTEGER" 
+                               value="410670506"/>
+                        <d:var name="CanHwFilterMask" type="INTEGER" 
+                               value="536870911"/>
+                      </d:ctr>
                     </d:lst>
                     <d:lst name="CanTTHardwareObjectTrigger" type="MAP"/>
                   </d:ctr>

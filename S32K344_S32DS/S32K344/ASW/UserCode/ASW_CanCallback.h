@@ -10,7 +10,8 @@
 
 #include "BSW_CanCallback.h"
 
-#define CAN_CHN1_RX_COUNT 3U
+/* XCP 使能时 RX 表里多一项 XCP_REQ（见 ASW_CanCallback.c），3 -> 4。 */
+#define CAN_CHN1_RX_COUNT 4U
 #define CAN_CHN1_TX_COUNT 2U
 
 extern CAN_FD_MESSAGE TX_DATA1;

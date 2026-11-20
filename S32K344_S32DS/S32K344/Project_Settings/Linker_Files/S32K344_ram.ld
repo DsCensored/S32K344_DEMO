@@ -181,6 +181,19 @@ SECTIONS
         __dtcm_data_start__ = .;
         *(.dtcm_data*)
         . = ALIGN(4);
+        /* ------------------------------------------------------------------
+         * XCP calibration data (all objects defined with XCP_CAL_DATA in
+         * XCP_Para.c).  It lives in DTCM, is part of the .data_tcm_data copy
+         * (initialised from Flash by the start-up code) and defines the only
+         * window that XCP may access:
+         *   SET_MTA / DOWNLOAD / SHORT_UPLOAD reject any other address.
+         * ------------------------------------------------------------------ */
+        __xcp_cal_start__ = .;
+        KEEP(*(.xcp_cal))
+        KEEP(*(.xcp_cal.*))
+        . = ALIGN(4);
+        __xcp_cal_end__ = .;
+        . = ALIGN(4);
         __dtcm_data_end__ = .;
     } > int_dtcm
 
@@ -315,5 +328,10 @@ SECTIONS
     __CORE3_VTOR             = __INIT_INTERRUPT_START;
 
     __INDEX_COPY_CORE2       = 3;    /* This symbol is used to initialize data of ITCM/DTCM for CORE2 */
+
+    /* The XCP calibration window must stay inside DTCM and must not overlap
+     * the DTCM stack. */
+    ASSERT(__xcp_cal_start__ >= ORIGIN(int_dtcm), "XCP calibration data must be in DTCM")
+    ASSERT(__xcp_cal_end__ <= ORIGIN(int_stack_dtcm), "XCP calibration data must be in DTCM")
 
 }

@@ -10,6 +10,9 @@
 #include "NMmain.h"
 #include "MCAL.h"
 #include "UDS_CanTp.h"
+#include "XCP.h"
+#include "XCP_Para.h"
+#include <string.h>
 
 CAN_FD_MESSAGE TX_DATA1 =
 {
@@ -28,6 +31,11 @@ CAN_FD_MESSAGE TX_DATA1 =
 };
 
 
+void TestCAN(CAN_TX_BufType *buf)
+{
+	memcpy(buf->Message.Data,XCP_Cal_au8Demo,8);
+}
+
 /* Storage for the received NM frame (only the CBV byte is evaluated). */
 CAN_FD_MESSAGE CAN_msgAutoSarNmFrameRx = {0U};
 
@@ -35,7 +43,10 @@ CAN_RXStr CAN_CHN1_RX[CAN_CHN1_RX_COUNT] =
 {
 	{UDS_FUNREQ_ADDR, &UDS_FunReq, 0U, 0U, UDS_CanTpRxCallback, NULL_PTR},
 	{UDS_PHYREQ_ADDR, &UDS_PhyReq, 0U, 0U, UDS_CanTpRxCallback, NULL_PTR},
-	{CAN_ID_VEH_RX_NM, &CAN_msgAutoSarNmFrameRx, 0U, 0U, NM_CanNmRecvCallBack, NULL_PTR}
+	{CAN_ID_VEH_RX_NM, &CAN_msgAutoSarNmFrameRx, 0U, 0U, NM_CanNmRecvCallBack, NULL_PTR},
+#if XCP_ENABLE
+	{XCP_RX_ID, &XCP_REQ, 0U, 0U, XCP_CallBack, NULL_PTR}
+#endif
 };
 
 CAN_TXStr CAN_CHN1_TX[CAN_CHN1_TX_COUNT] =
@@ -44,7 +55,7 @@ CAN_TXStr CAN_CHN1_TX[CAN_CHN1_TX_COUNT] =
 		.Data = &TX_DATA1,
 		.send_period = 100U,
 		.last_send_tick = 0U,
-		.Callback = NULL_PTR,
+		.Callback = TestCAN,
 		.Enable = 1U
 	},
 	{
