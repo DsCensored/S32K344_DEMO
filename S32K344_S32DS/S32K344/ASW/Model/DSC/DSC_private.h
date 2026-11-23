@@ -3,9 +3,9 @@
  *
  * Code generated for Simulink model 'DSC'.
  *
- * Model version                  : 14.409
+ * Model version                  : 14.414
  * Simulink Coder version         : 9.8 (R2022b) 13-May-2022
- * C/C++ source code generated on : Fri Nov  6 09:16:18 2026
+ * C/C++ source code generated on : Mon Nov 23 09:12:31 2026
  *
  * Target selection: ert.tlc
  * Embedded hardware selection: ARM Compatible->ARM 7

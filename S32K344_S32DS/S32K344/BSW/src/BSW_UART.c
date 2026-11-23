@@ -279,6 +279,42 @@ uint16 BSW_UART6_GetRxPending(void)
     return 0U;
 }
 
+uint8 BSW_UART6_ClearRxBuf(void)
+{
+    uint16 length;
+
+    if (TRUE == BSW_UART6_RejectIfNotReady())
+    {
+        return BSW_UART6_RX_CLEAR_INVALID;
+    }
+
+    /* 接收仍在进行：当前帧已经有数据进来但还没收完。此时清空会抹掉
+     * 正在接收的数据，直接拒绝，返回无效值。 */
+    if (BSW_UART6_GetRxPending() > 0U)
+    {
+        return BSW_UART6_RX_CLEAR_INVALID;
+    }
+
+    length = BSW_u16UART6RxLen;
+    if (length > BSW_UART6_BUF_SIZE)
+    {
+        length = BSW_UART6_BUF_SIZE;
+    }
+
+    /* 只按接收计数器的长度清零，不清整个 BSW_UART6_BUF_SIZE；
+     * memset 由运行库按字写入，比逐字节循环快。 */
+    if (length > 0U)
+    {
+        (void)memset(BSW_rUART6RxBuf, 0, (size_t)length);
+    }
+
+    /* 数据已清掉，长度和"新帧就绪"标志一起复位，避免上层把全 0 当有效帧 */
+    BSW_u16UART6RxLen        = 0U;
+    BSW_flgUART6RxFrameReady = FALSE;
+
+    return BSW_UART6_RX_CLEAR_OK;
+}
+
 /*
  * Uart 事件回调。
  * 注意：当前 EB 配置中 Uart 回调未使能（Uart_Ipw_xHwConfigPB_0.Callback = NULL_PTR），

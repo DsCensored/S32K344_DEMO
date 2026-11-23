@@ -24,3 +24,4 @@
 # 构建/验证临时目录
 .hse_ws/
 *.bak_hsetrng
+/S32K344_S32DS/S32K344/out

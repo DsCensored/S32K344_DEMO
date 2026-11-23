@@ -77,6 +77,19 @@ void BSW_UART6_ReleaseRxFrame(void);
 /* 当前这一帧已经收到、但还没判定成帧的字节数（调试用，只读，不影响接收） */
 uint16 BSW_UART6_GetRxPending(void);
 
+/* BSW_UART6_ClearRxBuf() 的返回值 */
+#define BSW_UART6_RX_CLEAR_OK           (0x00U)   /* 清空成功 */
+#define BSW_UART6_RX_CLEAR_INVALID      (0xFFU)   /* 无效值：接收仍在进行，拒绝清空 */
+
+/* 清空应用接收缓冲区 BSW_rUART6RxBuf:
+ *   - 接收仍在进行（当前帧已收到、还没收完的字节数 > 0）时拒绝清空，
+ *     返回 BSW_UART6_RX_CLEAR_INVALID，缓冲区内容保持不变；
+ *   - 不在接收时，只把 BSW_u16UART6RxLen 个字节清零（不清整个
+ *     BSW_UART6_BUF_SIZE，速度优先），并把长度计数器和"新帧就绪"标志清零，
+ *     返回 BSW_UART6_RX_CLEAR_OK。
+ * 注意：应与 BSW_UART6_RxPoll() 在同一任务上下文调用，避免与收帧处理并发。 */
+uint8 BSW_UART6_ClearRxBuf(void);
+
 /* Uart 事件回调（当前 EB 配置未使能，预留；见 BSW_UART.c 说明） */
 void BSW_UARTCallback(uint8 Channel, Uart_EventType Event);
 

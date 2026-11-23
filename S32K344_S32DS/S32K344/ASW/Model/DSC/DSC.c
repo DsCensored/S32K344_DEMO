@@ -3,9 +3,9 @@
  *
  * Code generated for Simulink model 'DSC'.
  *
- * Model version                  : 14.409
+ * Model version                  : 14.414
  * Simulink Coder version         : 9.8 (R2022b) 13-May-2022
- * C/C++ source code generated on : Fri Nov  6 09:16:18 2026
+ * C/C++ source code generated on : Mon Nov 23 09:12:31 2026
  *
  * Target selection: ert.tlc
  * Embedded hardware selection: ARM Compatible->ARM 7
@@ -14,15 +14,19 @@
  */
 
 #include "DSC.h"
+#include "Mon3tr_Lib.h"
 #include "rtwtypes.h"
 #include "DSC_private.h"
 #include "BSW_UART.h"
 
 /* Exported block signals */
-uint8_T ASW_stLEDR1Ctrl;               /* '<Root>/Switch1' */
 uint8_T ASW_stLEDG1Ctrl;               /* '<Root>/Gain' */
+uint8_T ASW_stLEDR1Ctrl;               /* '<Root>/Subsystem1' */
 uint8_T ASW_stLEDY1Ctrl;               /* '<Root>/Switch3' */
 uint8_T ASW_stLEDB1Ctrl;               /* '<Root>/Switch5' */
+
+/* Block signals (default storage) */
+B_DSC_T DSC_B;
 
 /* Block states (default storage) */
 DW_DSC_T DSC_DW;
@@ -30,40 +34,25 @@ DW_DSC_T DSC_DW;
 /* Model step function */
 void DSC_step(void)
 {
-  uint32_T rtb_Add2;
-
-  /* Sum: '<Root>/Add' incorporates:
-   *  Constant: '<Root>/Constant1'
-   *  UnitDelay: '<Root>/Unit Delay'
-   */
-  rtb_Add2 = DSC_MODEL_CYCLE + DSC_DW.UnitDelay_DSTATE;
-
-  /* Switch: '<Root>/Switch' incorporates:
-   *  Switch: '<Root>/Switch1'
-   */
-  if (rtb_Add2 >= 1000U) {
-    /* Update for UnitDelay: '<Root>/Unit Delay' incorporates:
-     *  Constant: '<Root>/Constant'
-     */
-    DSC_DW.UnitDelay_DSTATE = 0U;
-
-    /* Switch: '<Root>/Switch1' incorporates:
-     *  DataTypeConversion: '<Root>/Data Type Conversion'
-     *  Logic: '<Root>/Logical Operator'
-     *  UnitDelay: '<Root>/Unit Delay1'
-     */
-    ASW_stLEDR1Ctrl = (uint8_T)(ASW_stLEDR1Ctrl == 0);
-  } else {
-    /* Update for UnitDelay: '<Root>/Unit Delay' */
-    DSC_DW.UnitDelay_DSTATE = rtb_Add2;
-  }
-
-  /* End of Switch: '<Root>/Switch' */
-
   /* Gain: '<Root>/Gain' incorporates:
    *  Inport: '<Root>/Input'
    */
   ASW_stLEDG1Ctrl = ASP_stKL15;
+
+  /* Outputs for Atomic SubSystem: '<Root>/Subsystem1' */
+  /* RelationalOperator: '<S1>/Compare' incorporates:
+   *  Constant: '<Root>/Constant4'
+   *  Constant: '<Root>/Constant5'
+   *  Constant: '<S1>/Constant'
+   *  UnitDelay: '<Root>/Unit Delay6'
+   */
+  ErrDiag_IO((uint8_T)(ASW_stLEDR1Ctrl == 0), 1, 0, 1000U, DSC_MODEL_CYCLE, 0,
+             1000U, &DSC_B.Subsystem1, &DSC_DW.Subsystem1);
+
+  /* End of Outputs for SubSystem: '<Root>/Subsystem1' */
+
+  /* SignalConversion generated from: '<Root>/Subsystem1' */
+  ASW_stLEDR1Ctrl = DSC_B.Subsystem1.Subsystem.Result;
 
   /* Switch: '<Root>/Switch3' incorporates:
    *  Inport: '<Root>/BSW_u32UART6RxFrameCnt'
