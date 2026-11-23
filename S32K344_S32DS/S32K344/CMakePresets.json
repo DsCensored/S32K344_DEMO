@@ -1,0 +1,33 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 20,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "s32ds-base",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/out/build/${presetName}",
+            "toolchainFile": "${sourceDir}/cmake/toolchain-s32ds-arm.cmake",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "s32ds-gcc",
+            "displayName": "S32DS GCC (arm-none-eabi, S32K344)",
+            "description": "Builds S32K344.elf with the NXP S32DS ARM GCC toolchain (same flags as the S32DS project).",
+            "inherits": "s32ds-base"
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "s32ds-gcc",
+            "configurePreset": "s32ds-gcc"
+        }
+    ]
+}
