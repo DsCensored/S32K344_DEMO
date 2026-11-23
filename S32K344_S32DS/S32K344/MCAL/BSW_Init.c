@@ -199,9 +199,9 @@ void BSW_InitLateTask(void)
 		g_bswInitDone = 1U;
 
 		/* One-shot task: give the slot back so it can be reused.  The
-		 * scheduler has already cleared this task's Request and with
-		 * CycleTime = 0 the tick ISR will not request it again, so removing
-		 * ourselves from inside the task is safe. */
+		 * scheduler popped this task from the ready heap before calling it and
+		 * with CycleTime = 0 the tick ISR will not request it again, so
+		 * removing ourselves from inside the task is safe. */
 		(void)BSW_UnregTask(BSW_LateTaskHandle);
 		BSW_LateTaskHandle = BSW_TASK_HANDLE_INVALID;
 		break;

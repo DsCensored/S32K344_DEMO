@@ -885,17 +885,31 @@ BSW_InitLateTask() 每 1 ms 调一次 Nvm_InitStep()
 
 | 接口 | 行为 |
 | --- | --- |
-| `BSW_RegTask()` | **依次扫描空槽**（`fun == NULL && CycleTime == 0`）分配，不再用 `OS_numTolTaskNum`；返回句柄 0..7，失败返回 `BSW_TASK_HANDLE_INVALID`(255) |
-| `BSW_UnregTask(handle)` | 把 `CycleTime` 置 0（tick ISR 不再请求）、清 `Request`、`fun = NULL`、优先级置 255，槽位可被后续 `BSW_RegTask` 复用 |
-| `BSW_IsrPit0Ch0()` | 固定遍历 `MAX_TASK_NUM` 个槽，`CycleTime == 0` 的槽跳过 |
-| `BSW_OsStart()` | 遍历 `MAX_TASK_NUM`，额外检查 `fun != NULL` |
+| `BSW_RegTask()` | **依次扫描空槽**（`fun == NULL && CycleTime == 0`）分配，不再用 `OS_numTolTaskNum`；返回句柄 0..7，失败返回 `BSW_TASK_HANDLE_INVALID`(255)。任务上下文调用 |
+| `BSW_UnregTask(handle)` | 把 `CycleTime` 置 0（tick ISR 不再请求）、清掉待处理就绪字节、从就绪堆中摘除（O(log N)）、`fun = NULL`、优先级置 255，槽位可被后续 `BSW_RegTask` 复用。任务上下文调用 |
+| `BSW_RequestTask(handle)` | 事件任务（`CycleTime == 0`）的唯一入口，也可从 ISR 提前唤醒周期任务；只写两个字节，任务/中断上下文均可 |
+| `BSW_IsrPit0Ch0()` | 固定遍历 `MAX_TASK_NUM` 个槽，`CycleTime == 0` 的槽跳过；到期任务只置一个就绪字节（O(1)，**不入堆、不关中断**） |
+| `BSW_OsStart()` | 有请求时把就绪字节收进堆（每个 O(log N)），再弹出堆顶（最高优先级）运行 |
 
-- 表项更新在极短临界区（`mrs primask` / `cpsid i` … `cpsie i`）内完成；
-  `BSW_RegTask` 按 `fun → Priority → LastTime → Request → CycleTime` 的顺序写，
-  `BSW_RegTask/UnregTask` 在运行期调用也安全。
+- **中断侧与调度侧分离**：ISR 只写 `OS_ReadyFlag[handle] = 1` 和 `OS_ReadyAny = 1`，
+  堆（`OS_heap` / `OS_heapPos`）只由调度器（线程态）修改，所以 **OS 内部没有任何
+  `cpsid i` / `cpsie i`**，不会延迟中断，也不存在边沿事件被合并的问题。
+- **不丢请求**：先写 flag 再写 marker；调度器先清 marker 再扫 flag。因此请求要么被
+  本次扫描看到，要么让 marker 保持为 1，下一次扫描一定看到。
+- 就绪队列是**数组实现的二叉最小堆**（无 malloc）：键为 `Priority`，同优先级按句柄
+  升序——与原"从 0 开始扫描、严格小于才替换"的选择顺序完全一致，任务执行顺序不变。
+  一个任务最多在堆中挂起一次（`OS_heapPos` 去重），重复请求合并为一次执行。
+- `BSW_RegTask` 按 `fun → Priority → LastTime → CycleTime` 的顺序写（`CycleTime` 最后，
+  tick ISR 不会看到半初始化的槽位）；`BSW_RegTask/UnregTask` 会改堆，只能在任务
+  上下文（上电初始化或任务函数里）调用，`BSW_RequestTask` 无此限制。
+- 就绪队列实现可在编译期选择（`UserOS.h` 的 `BSW_OS_PRIO_QUEUE_ENABLE`）：
+  `1`（默认）为上面的二叉最小堆；`0` 回到原来的纯轮询实现——ISR 只置 `Request`
+  字节，调度器每轮扫描全部槽。两者 API、优先级规则和执行顺序完全一致；N=8 时
+  轮询版约省 370 B Flash、26 B RAM。
+- `MAX_TASK_NUM` 默认 8，可用 `-DMAX_TASK_NUM=...` 覆盖（上限 255，句柄为 8 位）。
 - 延后初始化做完后**注销自己**：`BSW_InitLateTask()` 在完成最后一步时调用
-  `BSW_UnregTask(BSW_LateTaskHandle)`（调度器已先清 `Request`，且 `CycleTime = 0`
-  不会再被请求，任务内自注销是安全的），槽位可被后续任务复用。
+  `BSW_UnregTask(BSW_LateTaskHandle)`（调度器调用它之前已把它弹出就绪堆、清掉就绪
+  字节，且 `CycleTime = 0` 不会再被请求，任务内自注销是安全的），槽位可被后续任务复用。
 - 若注册失败（槽位满），`BSW_InitLateStart()` 自动退回
   `BSW_InitLateBlocking()`，保证 NVM/UART/看门狗仍可用。
 
