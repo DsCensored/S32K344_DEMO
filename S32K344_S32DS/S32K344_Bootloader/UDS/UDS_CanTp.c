@@ -21,6 +21,8 @@ UDS_TpStr UDS_RxReq;
 
 #define UDS_TP_HTH              1U
 #define UDS_TP_CAN_EXTENDED     0x80000000UL
+/* CAN FD frame flag of Can_IdType (CAN_43_FLEXCAN_FD_FRAME_U32). */
+#define UDS_TP_CAN_FD           0x40000000UL
 
 #define UDS_TP_TX_IDLE          0U
 #define UDS_TP_TX_SF            1U
@@ -164,6 +166,16 @@ static Std_ReturnType UDS_CanTpWrite(Can_IdType canId, const unsigned char *data
 	Can_PduType pdu;
 
 	pdu.id = (Can_IdType)(canId | UDS_TP_CAN_EXTENDED);
+
+#if (UDS_CANTP_CANFD_ENABLE != 0)
+	if (len > 8U)
+	{
+		/* CAN FD frame: the driver requires the FD flag in the identifier for
+		 * every frame longer than 8 bytes. */
+		pdu.id |= (Can_IdType)UDS_TP_CAN_FD;
+	}
+#endif
+
 	pdu.swPduHandle = 0U;
 	pdu.length = len;
 	pdu.sdu = (uint8 *)data;
@@ -204,7 +216,7 @@ unsigned char UDS_CanTpSend(unsigned int len)
 	UDS_TxSTmin = 0U;
 	UDS_TxBusy = 1U;
 	UDS_TxLastTick = BSW_GetSystemTick();
-	UDS_TxState = (len <= 7U) ? UDS_TP_TX_SF : UDS_TP_TX_FF;
+	UDS_TxState = (len <= UDS_CANTP_SF_MAX) ? UDS_TP_TX_SF : UDS_TP_TX_FF;
 
 	return 1U;
 }
@@ -252,16 +264,23 @@ void UDS_CanTpRxCallback(CAN_FD_MESSAGE *Data)
 	unsigned int now = BSW_GetSystemTick();
 	unsigned int remaining;
 	unsigned int copyLen;
-	unsigned char length;
+	unsigned int frameLen;
+	unsigned int offset;
+	unsigned int length;
 	UDS_FrameType frameType;
 	UDS_DcmAddressType addr = UDS_DCM_ADDRESS_PHYSICAL;
 
-	if ((0U == Data->Length) || (NULL_PTR == Data->Data))
+	if (0U == Data->Length)
 	{
 		return;
 	}
 
 	frameType = (UDS_FrameType)(Data->Data[0] & (unsigned char)kMask);
+
+	/* Received payload length of this frame: 8 bytes for classic CAN, up to
+	 * 64 bytes with CAN FD.  It limits how many diagnostic bytes the frame
+	 * really carries (the PCI byte tells how many are valid). */
+	frameLen = (unsigned int)Data->Length;
 
 	/* Flow control for a response we are transmitting. */
 //	if (UDS_PHYREQ_ADDR == Data->ID)
@@ -294,13 +313,32 @@ void UDS_CanTpRxCallback(CAN_FD_MESSAGE *Data)
 
 	if (kSF == frameType)
 	{
-		length = (unsigned char)(Data->Data[0] & 0x0FU);
-		if ((0U == length) || (length > 7U))
+		if (0U != (unsigned int)(Data->Data[0] & 0x0FU))
+		{
+			/* Short form: SF_DL in the low nibble, data starts at byte 1. */
+			length = (unsigned int)(Data->Data[0] & 0x0FU);
+			offset = 1U;
+		}
+		else
+		{
+			/* Long form (CAN FD): a zero low nibble means that SF_DL is in
+			 * the second PCI byte and the data starts at byte 2. */
+			if (frameLen < 2U)
+			{
+				return;
+			}
+
+			length = (unsigned int)Data->Data[1];
+			offset = 2U;
+		}
+
+		/* The frame has to carry the announced length. */
+		if ((0U == length) || ((length + offset) > frameLen) || (length > UDS_RX_BUF_LEN))
 		{
 			return;
 		}
 
-		memcpy(UDS_RxBuf, &Data->Data[1], length);
+		memcpy(UDS_RxBuf, &Data->Data[offset], length);
 		UDS_RxReq.Len = length;
 		UDS_RxReq.SID = UDS_RxBuf[0];
 		UDS_RxReq.Buf = UDS_RxBuf;
@@ -310,24 +348,48 @@ void UDS_CanTpRxCallback(CAN_FD_MESSAGE *Data)
 	}
 	else if (kFF == frameType)
 	{
-		/* ISO 15765-2 first frame: PCI = 0x1LLL, the 12-bit length is
-		 * (Data[0] & 0x0F) << 8 | Data[1].  The intermediate must not be
-		 * truncated to 8 bits, otherwise every multi-frame request longer
-		 * than 255 bytes is seen with its high nibble dropped (e.g. a
-		 * 502-byte request was taken as 246, so only 244 of the 500 data
-		 * bytes of a 0x36 were stored). */
-		UDS_RxLen = (((unsigned int)(Data->Data[0] & 0x0FU)) << 8) |
-		            (unsigned int)Data->Data[1];
-
-		if ((UDS_RxLen < 8U) || (UDS_RxLen > UDS_RX_BUF_LEN))
+		/* Byte 0 bit 0..3 holds the high nibble of the 12-bit length; a first
+		 * frame with byte 0 = 0x10 and byte 1 = 0x00 carries the 32-bit length
+		 * form (ISO 15765-2:2016, only used above 4095 bytes).  The 12-bit
+		 * intermediate must not be truncated to 8 bits, otherwise every
+		 * multi-frame request longer than 255 bytes is seen with its high
+		 * nibble dropped. */
+		if ((0U == (unsigned int)(Data->Data[0] & 0x0FU)) && (0x00U == Data->Data[1]))
 		{
-			UDS_CanSendNRC(Data->Data[2], NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT);
+			if (frameLen < 6U)
+			{
+				return;
+			}
+
+			offset = 6U;
+			UDS_RxLen = ((unsigned int)Data->Data[2] << 24) |
+			            ((unsigned int)Data->Data[3] << 16) |
+			            ((unsigned int)Data->Data[4] << 8) |
+			             (unsigned int)Data->Data[5];
+		}
+		else
+		{
+			offset = 2U;
+			UDS_RxLen = (((unsigned int)(Data->Data[0] & 0x0FU)) << 8) |
+			            (unsigned int)Data->Data[1];
+		}
+
+		if ((0U == UDS_RxLen) || (UDS_RxLen > UDS_RX_BUF_LEN) || (frameLen <= offset))
+		{
+			UDS_CanSendNRC(Data->Data[offset], NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT);
 			return;
 		}
 
-		/* First frame carries six bytes: SID + five data bytes. */
-		memcpy(UDS_RxBuf, &Data->Data[2], 6U);
-		UDS_RxOffset = 6U;
+		/* Copy what this first frame carries (6 bytes on classic CAN, up to
+		 * 58 bytes on a 64 byte CAN FD frame). */
+		copyLen = frameLen - offset;
+		if (copyLen > UDS_RxLen)
+		{
+			copyLen = UDS_RxLen;
+		}
+
+		memcpy(UDS_RxBuf, &Data->Data[offset], copyLen);
+		UDS_RxOffset = copyLen;
 		UDS_RxSN = 1U;
 		UDS_RxActive = 1U;
 		UDS_RxLastTick = now;
@@ -335,8 +397,18 @@ void UDS_CanTpRxCallback(CAN_FD_MESSAGE *Data)
 		UDS_RxReq.SID = UDS_RxBuf[0];
 		UDS_RxReq.Buf = UDS_RxBuf;
 
-		/* Ask the sender to continue on the request ID. */
-		UDS_CanSendFC();
+		if (UDS_RxOffset >= UDS_RxLen)
+		{
+			/* The first frame already holds the whole message. */
+			UDS_RxActive = 0U;
+			UDS_ReqFlg = 1U;
+			UDS_DCM_RxIndication(UDS_RxBuf, UDS_RxReq.Len, addr);
+		}
+		else
+		{
+			/* Ask the sender to continue on the request ID. */
+			UDS_CanSendFC();
+		}
 	}
 	else if (kCF == frameType)
 	{
@@ -354,8 +426,19 @@ void UDS_CanTpRxCallback(CAN_FD_MESSAGE *Data)
 			return;
 		}
 
+		if (frameLen < 2U)
+		{
+			return;
+		}
+
 		remaining = UDS_RxReq.Len - UDS_RxOffset;
-		copyLen = (remaining > 7U) ? 7U : remaining;
+
+		/* A classic frame carries 7 data bytes, a 64 byte CAN FD frame 63. */
+		copyLen = frameLen - 1U;
+		if (copyLen > remaining)
+		{
+			copyLen = remaining;
+		}
 
 		memcpy(&UDS_RxBuf[UDS_RxOffset], &Data->Data[1], copyLen);
 		UDS_RxOffset += copyLen;
@@ -379,7 +462,10 @@ void UDS_CanTpTxPoll(void)
 	unsigned int now = BSW_GetSystemTick();
 	unsigned int remaining;
 	unsigned int copyLen;
-	unsigned char frame[8];
+	unsigned int offset;
+	/* One transmitted frame: 8 bytes on classic CAN, UDS_CANTP_FD_TX_LEN
+	 * bytes on CAN FD. */
+	unsigned char frame[UDS_CANTP_TX_LEN];
 
 	if (0U != UDS_CtrlPending)
 	{
@@ -401,10 +487,23 @@ void UDS_CanTpTxPoll(void)
 
 	if (UDS_TP_TX_SF == UDS_TxState)
 	{
-		frame[0] = (unsigned char)UDS_TxLen;
-		memcpy(&frame[1], UDS_TxShadow, UDS_TxLen);
+		if (UDS_TxLen <= 7U)
+		{
+			/* Short form: SF_DL in the low nibble, data starts at byte 1. */
+			offset = 1U;
+			frame[0] = (unsigned char)UDS_TxLen;
+		}
+		else
+		{
+			/* Long form (CAN FD): SF_DL in the second PCI byte. */
+			offset = 2U;
+			frame[0] = 0x00U;
+			frame[1] = (unsigned char)UDS_TxLen;
+		}
 
-		if (E_OK == UDS_CanTpWrite(UDS_RESP_ADDR, frame, 8U))
+		memcpy(&frame[offset], UDS_TxShadow, UDS_TxLen);
+
+		if (E_OK == UDS_CanTpWrite(UDS_RESP_ADDR, frame, UDS_CANTP_TX_LEN))
 		{
 			UDS_TxBusy = 0U;
 			UDS_TxState = UDS_TP_TX_IDLE;
@@ -412,13 +511,37 @@ void UDS_CanTpTxPoll(void)
 	}
 	else if (UDS_TP_TX_FF == UDS_TxState)
 	{
-		frame[0] = (unsigned char)(0x10U | ((UDS_TxLen >> 8) & 0x0FU));
-		frame[1] = (unsigned char)(UDS_TxLen & 0xFFU);
-		memcpy(&frame[2], UDS_TxShadow, 6U);
-
-		if (E_OK == UDS_CanTpWrite(UDS_RESP_ADDR, frame, 8U))
+		if (UDS_TxLen <= 0xFFFU)
 		{
-			UDS_TxOffset = 6U;
+			/* 12-bit length: byte 0 = 0x1 | length bits 8..11. */
+			offset = 2U;
+			frame[0] = (unsigned char)(0x10U | ((UDS_TxLen >> 8) & 0x0FU));
+			frame[1] = (unsigned char)(UDS_TxLen & 0xFFU);
+		}
+		else
+		{
+			/* 32-bit length (CAN FD): byte 0 = 0x10, byte 1 = 0x00 and the
+			 * length follows in bytes 2..5. */
+			offset = 6U;
+			frame[0] = 0x10U;
+			frame[1] = 0x00U;
+			frame[2] = (unsigned char)((UDS_TxLen >> 24) & 0xFFU);
+			frame[3] = (unsigned char)((UDS_TxLen >> 16) & 0xFFU);
+			frame[4] = (unsigned char)((UDS_TxLen >> 8) & 0xFFU);
+			frame[5] = (unsigned char)(UDS_TxLen & 0xFFU);
+		}
+
+		copyLen = UDS_CANTP_TX_LEN - offset;
+		if (copyLen > UDS_TxLen)
+		{
+			copyLen = UDS_TxLen;
+		}
+
+		memcpy(&frame[offset], UDS_TxShadow, copyLen);
+
+		if (E_OK == UDS_CanTpWrite(UDS_RESP_ADDR, frame, UDS_CANTP_TX_LEN))
+		{
+			UDS_TxOffset = copyLen;
 			UDS_TxState = UDS_TP_TX_WAIT_FC;
 			UDS_TxLastTick = now;
 		}
@@ -436,12 +559,18 @@ void UDS_CanTpTxPoll(void)
 		}
 
 		remaining = UDS_TxLen - UDS_TxOffset;
-		copyLen = (remaining > 7U) ? 7U : remaining;
+
+		/* A classic frame carries 7 data bytes, a 64 byte CAN FD frame 63. */
+		copyLen = UDS_CANTP_TX_LEN - 1U;
+		if (copyLen > remaining)
+		{
+			copyLen = remaining;
+		}
 
 		frame[0] = (unsigned char)(0x20U | (UDS_TxSN & 0x0FU));
 		memcpy(&frame[1], &UDS_TxShadow[UDS_TxOffset], copyLen);
 
-		if (E_OK == UDS_CanTpWrite(UDS_RESP_ADDR, frame, 8U))
+		if (E_OK == UDS_CanTpWrite(UDS_RESP_ADDR, frame, UDS_CANTP_TX_LEN))
 		{
 			UDS_TxOffset += copyLen;
 			UDS_TxSN = (unsigned char)((UDS_TxSN + 1U) & 0x0FU);

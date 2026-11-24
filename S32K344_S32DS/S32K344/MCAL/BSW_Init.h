@@ -17,7 +17,7 @@
  *                      and CAN/CanIf.  Everything the first frame needs.
  *                      Called from main() before the OS is started.
  *
- *    BSW_InitLateTask() the rest (NVM, ICU, watchdog, UART/DMA).  Registered
+ *    BSW_InitLateTask() the rest (NVM, DEM, ICU, watchdog, UART/DMA).  Registered
  *                      as a 1 ms low-priority task; it advances one small step
  *                      per call so the cooperative scheduler keeps dispatching
  *                      the 2 ms / 5 ms CAN tasks and the periodic frames are
@@ -42,7 +42,7 @@ void BSW_InitEarly(void);
 /**
  * @brief One step of the deferred initialisation (1 ms, low priority task).
  *
- * Sequence: watchdog -> ICU -> NVM (sliced) -> UART/DMA.
+ * Sequence: watchdog -> ICU -> NVM (sliced) -> DEM -> UART/DMA.
  * The NVM part only advances a small slice per call, so a single call stays
  * far below 1 ms and never disturbs the CAN cadence.  When the sequence is
  * complete the task removes itself from the scheduler (BSW_UnregTask).

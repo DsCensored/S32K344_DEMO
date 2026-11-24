@@ -87,6 +87,7 @@ Contains the following MCAL drivers:
 
 ### CAN Communication
 - CAN FD Support
+- ISO-TP (UDS transport): UDS_CANTP_CANFD_ENABLE selects classic CAN (8 byte frames) or CAN FD, UDS_CANTP_FD_TX_LEN sets the transmit frame length (8/12/16/20/24/32/48/64). With CAN FD enabled the receiver accepts 64 byte frames (long form single frame up to 62 bytes, 63 bytes per consecutive frame, 32-bit first frame length)
 - CAN Callback Handling
 - Network Management Integration
 - Receive/Transmit Channel Management
@@ -103,6 +104,15 @@ Contains the following MCAL drivers:
 - Data Block Management
 - Block Status Tracking
 - Application Data Storage
+
+### Diagnostic Event Memory (DEM)
+- Split in two modules: `UDS_DEM.c` only diagnoses faults (monitors, fault delay, rising/falling edge requests) and never touches the NVM; `UDS_DTC.c` only maintains the DTC memory (status byte, ageing, extended data, freeze frame, NVM)
+- DTC maintenance is strictly request driven (set / recover / test completed / clear), there is no polling
+- Freeze frame built from a DID table (`UDS_DemSnapshotDids[]`), only the sampled data is stored
+- DTC memory in NVM block 2 is a pool of records (`DEM_NVM_SLOT_NUM`), so the fault table may be much longer than the store (a BMS with more than 100 faults uses the same 4 x 256 B NVM)
+- NVM is only written for a confirmed DTC: a healthy ECU never touches the NVM, a recovered fault never rewrites a record
+- `0x14` ClearDiagnosticInformation, `0x19` ReadDTCInformation (report types 01/02/03/04/06/0A/14), `0x85` ControlDtcSetting
+- Fault table, DTC table, freeze frame DIDs and sizing configured in `UDS_DemCfg.c/h`
 
 ### Serial Communication
 - UART6 DMA Reception

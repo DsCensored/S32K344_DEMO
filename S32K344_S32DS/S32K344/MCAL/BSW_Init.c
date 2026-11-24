@@ -26,6 +26,7 @@
 #include "Dma_Mux_Ip.h"
 #include "BSW_UART.h"
 #include "Nvm.h"
+#include "UDS_DemCfg.h"  /* DEM initialisation needs the NVM shadow            */
 #include "AutoSarNm.h"
 #include "Icu.h"
 #include "Icu_PBcfg.h"
@@ -34,18 +35,21 @@
 /* Steps of the deferred initialisation.  The watchdog comes first: it is a
  * safety item and must be re-configured as early as possible, whereas the
  * NVM scan runs for a few hundred milliseconds and the UART is not needed
- * until the 1 s task sends its first string. */
+ * until the 1 s task sends its first string.  The DEM follows the NVM: it
+ * restores the DTC memory from the NVM shadow. */
 #define BSW_LATE_STEP_WDG       (0U)
 #define BSW_LATE_STEP_ICU       (1U)
 #define BSW_LATE_STEP_NVM       (2U)   /* Nvm_InitStep() until it is done      */
-#define BSW_LATE_STEP_UART      (3U)
-#define BSW_LATE_STEP_DONE      (4U)
+#define BSW_LATE_STEP_DEM       (3U)   /* UDS_AppDemInit()                     */
+#define BSW_LATE_STEP_UART      (4U)
+#define BSW_LATE_STEP_DONE      (5U)
 
 static uint8 BSW_LateStep = BSW_LATE_STEP_WDG;
 static uint8 BSW_stInitDone = 0U;
 
 /* Debug view of the deferred start-up (J-Link watch, no side effects):
- *   g_bswInitLateStep : current step (0 WDG, 1 ICU, 2 NVM, 3 UART, 4 done)
+ *   g_bswInitLateStep : current step (0 WDG, 1 ICU, 2 NVM, 3 DEM, 4 UART,
+ *                       5 done)
  *   g_bswInitLateNvm  : 1 once Nvm_InitStep() reported DONE
  *   g_bswInitDone     : 1 once the whole sequence (incl. UART) finished
  * A step that is never reached (e.g. the NVM start-up being skipped) is
@@ -189,6 +193,15 @@ void BSW_InitLateTask(void)
 		{
 			g_bswInitLateNvm = 1U;
 		}
+		BSW_LateStep = BSW_LATE_STEP_DEM;
+		break;
+
+	case BSW_LATE_STEP_DEM:
+		/* The DEM restores the DTC memory of the last power cycle, ages the
+		 * DTCs that did not fail and opens a new operation cycle.  It needs
+		 * the NVM shadow, so it runs after the NVM step; without a valid NVM
+		 * the DTC memory simply starts empty. */
+		UDS_AppDemInit();
 		BSW_LateStep = BSW_LATE_STEP_UART;
 		break;
 

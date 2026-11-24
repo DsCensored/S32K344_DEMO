@@ -12,6 +12,8 @@
 
 #include "UDS_DcmCfg.h"
 #include "UDS_CanTp.h"
+#include "UDS_DEM.h"
+#include "UDS_DTC.h"
 #include "ASW_CanCallback.h"
 #include "UserOS.h"
 #include "Mcu.h"
@@ -88,6 +90,10 @@ static unsigned char UDS_DcmSetSession(UDS_DcmSessionType session, unsigned int 
 	if (UDS_DCM_SESSION_DEFAULT == session)
 	{
 		UDS_DcmResetCommunicationControl();
+
+		/* 0x85 02 must not survive the session: otherwise no DTC would ever
+		 * be recorded again after the tester left the extended session. */
+		UDS_DtcSetSettingOff(0U);
 	}
 
 	UDS_TxBuf[1] = (unsigned char)session;
@@ -992,8 +998,6 @@ static unsigned char UDS_DcmCommunicationControl(const unsigned char *req,
 	return 0U;
 }
 
-static unsigned char UDS_DcmDtcSettingOff;
-
 static unsigned char UDS_DcmControlDtcSetting(const unsigned char *req,
                                               unsigned int len,
                                               unsigned int *rspLen)
@@ -1005,13 +1009,16 @@ static unsigned char UDS_DcmControlDtcSetting(const unsigned char *req,
 		return (unsigned char)NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
 	}
 
+	/* ISO 14229-1: 0x01 on (enable DTC setting), 0x02 off (freeze it). */
 	subFn = (unsigned char)(req[1] & 0x7FU);
 	if ((0x01U != subFn) && (0x02U != subFn))
 	{
 		return (unsigned char)NRC_SUBFUNCTION_NOT_SUPPORTED;
 	}
 
-	UDS_DcmDtcSettingOff = (0x02U == subFn) ? 1U : 0U;
+	/* The DEM keeps running the monitors for the application but stops
+	 * updating and storing the DTC status bytes while DTC setting is off. */
+	UDS_DtcSetSettingOff((0x02U == subFn) ? 1U : 0U);
 
 	UDS_TxBuf[1] = subFn;
 	*rspLen = 2U;
@@ -1022,15 +1029,586 @@ static unsigned char UDS_DcmClearDiagnosticInformation(const unsigned char *req,
                                                        unsigned int len,
                                                        unsigned int *rspLen)
 {
-	(void)req;
+	unsigned int group;
+	unsigned char res;
 
+	/* 14 <groupOfDTC 3 bytes> */
 	if (len < 4U)
 	{
 		return (unsigned char)NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
 	}
 
+	group = ((unsigned int)req[1] << 16) |
+	        ((unsigned int)req[2] << 8) |
+	         (unsigned int)req[3];
+
+	res = UDS_DtcClearGroup(group);
+
+	if (DEM_OK != res)
+	{
+		if (DEM_WRITE_FAILED == res)
+		{
+			/* ISO 14229-1, 12.2.4: the memory could not be written. */
+			return (unsigned char)NRC_GENERAL_PROGRAMMING_FAILURE;
+		}
+
+		return (DEM_NOT_READY == res) ? (unsigned char)NRC_CONDITIONS_NOT_CORRECT :
+		                                (unsigned char)NRC_REQUEST_OUT_OF_RANGE;
+	}
+
+	/* The clear sets the "not completed" status bits again: let the running
+	 * monitors report their next result so the bits clear as specified in
+	 * Table D.7 / D.9. */
+	UDS_DemRestartTestReport();
+
+	/* Positive response is the SID alone (the DCM core sends at least one
+	 * byte), no parameter is echoed. */
 	*rspLen = 1U;
 	return 0U;
+}
+
+/* ------------------------------------------------------------------------- */
+/* Read DTC information 0x19                                                 */
+/* ------------------------------------------------------------------------- */
+
+/*
+ * Supported report types (ISO 14229-1).  A report type that has no row in
+ * UDS_DcmServices[] is answered with NRC 0x12 by the DCM core.
+ *
+ *   0x01  reportNumberOfDTCByStatusMask
+ *   0x02  reportDTCByStatusMask
+ *   0x03  reportDTCSnapshotIdentification
+ *   0x04  reportDTCSnapshotRecordByDTCNumber
+ *   0x06  reportDTCExtDataRecordByDTCNumber
+ *   0x0A  reportSupportedDTC
+ *   0x14  reportDTCFaultDetectionCounter
+ *
+ * Response layouts (UDS_TxBuf[0] = 0x59 is filled in by the DCM core):
+ *
+ *   59 01 <availabilityMask> <formatId 01> <countH> <countL>
+ *   59 02 <availabilityMask> [<DTC 3> <status>]...
+ *   59 03 [<DTC 3> <recordNumber>]...
+ *   59 04 <DTC 3> <status> [<recordNumber> <numberOfDids> [<DID 2> <data>]...]...
+ *   59 06 <DTC 3> <status> [<recordNumber> <data>]...
+ *   59 0A <availabilityMask> [<DTC 3> <status>]...
+ *   59 14 <availabilityMask> [<DTC 3> <faultDetectionCounter>]...
+ *
+ * A supported DTC whose record number exists but that never failed is
+ * reported without freeze frame data (0x04) or with an empty ageing counter
+ * (0x06): NRC 0x31 is only used for an unknown DTC or record number.
+ */
+#define UDS_DCM_DTC_REPORT_NUMBER_BY_MASK   0x01U
+#define UDS_DCM_DTC_REPORT_BY_MASK          0x02U
+#define UDS_DCM_DTC_REPORT_SNAPSHOT_ID      0x03U
+#define UDS_DCM_DTC_REPORT_SNAPSHOT_BY_DTC  0x04U
+#define UDS_DCM_DTC_REPORT_EXT_DATA_BY_DTC  0x06U
+#define UDS_DCM_DTC_REPORT_SUPPORTED_DTC    0x0AU
+#define UDS_DCM_DTC_REPORT_FAULT_DETECTION  0x14U
+
+/* DTCFormatIdentifier of a 0x19 01 response: ISO 14229-1 DTC format. */
+#define UDS_DCM_DTC_FORMAT_ISO14229         0x01U
+
+/*
+ * Extended data records of 0x19 06 (project specific, see UDS_DemCfg.h):
+ *   0x01  ageing counter                          (1 byte)
+ *   0x02  ageing counter + number of occurrences  (2 bytes)
+ *   0xFF  every record, each one preceded by its record number
+ */
+#define UDS_DCM_DTC_EXT_AGING               0x01U
+#define UDS_DCM_DTC_EXT_AGING_OCCURRENCE    0x02U
+#define UDS_DCM_DTC_RECORD_ALL              0xFFU
+
+/* Append "<DTC 3>" and return the new write position. */
+static unsigned int UDS_DcmDtcAppendCode(unsigned int pos, unsigned int DtcCode)
+{
+	UDS_TxBuf[pos] = (unsigned char)((DtcCode >> 16) & 0xFFU);
+	UDS_TxBuf[pos + 1U] = (unsigned char)((DtcCode >> 8) & 0xFFU);
+	UDS_TxBuf[pos + 2U] = (unsigned char)(DtcCode & 0xFFU);
+	return pos + 3U;
+}
+
+/* Append "<DTC 3> <status>" and return the new write position. */
+static unsigned int UDS_DcmDtcAppendCodeStatus(unsigned int pos,
+                                                unsigned int DtcCode,
+                                                unsigned char Status)
+{
+	pos = UDS_DcmDtcAppendCode(pos, DtcCode);
+	UDS_TxBuf[pos] = Status;
+	return pos + 1U;
+}
+
+/*
+ * Append "<numberOfDids> [<DID 2> <data>]..." for the freeze frame of one DTC.
+ *
+ * The NVM only stores the data of the configured freeze frame DIDs (one
+ * DEM_SNAPSHOT_DID_LEN block per DID), so the DID and the number of bytes to
+ * report are read from the configuration table (UDS_DemCfg.c).
+ */
+static unsigned int UDS_DcmDtcAppendSnapshot(unsigned int pos,
+                                              const DtcSnapshotData *Snapshot)
+{
+	unsigned int i;
+	unsigned int k;
+	unsigned int len;
+
+	UDS_TxBuf[pos] = (unsigned char)UDS_DemSnapshotDidCount;
+	pos++;
+
+	for (i = 0U; (i < UDS_DemSnapshotDidCount) && (i < DEM_SNAPSHOT_DID_MAX); i++)
+	{
+		len = (unsigned int)UDS_DemSnapshotDids[i].Len;
+		if (len > DEM_SNAPSHOT_DID_LEN)
+		{
+			len = DEM_SNAPSHOT_DID_LEN;
+		}
+
+		UDS_TxBuf[pos] = (unsigned char)(UDS_DemSnapshotDids[i].Did >> 8);
+		pos++;
+		UDS_TxBuf[pos] = (unsigned char)(UDS_DemSnapshotDids[i].Did & 0xFFU);
+		pos++;
+
+		for (k = 0U; k < len; k++)
+		{
+			UDS_TxBuf[pos] = Snapshot->Data[(i * DEM_SNAPSHOT_DID_LEN) + k];
+			pos++;
+		}
+	}
+
+	return pos;
+}
+
+/* TRUE when Need more response bytes start below the end of UDS_TxBuf[]. */
+static unsigned char UDS_DcmDtcRoom(unsigned int Pos, unsigned int Need)
+{
+	return ((Pos + Need) <= UDS_TX_BUF_LEN) ? 1U : 0U;
+}
+
+static unsigned char UDS_DcmDtcReportNumberByMask(const unsigned char *req,
+                                                   unsigned int len,
+                                                   unsigned int *rspLen)
+{
+	const DtcEntryStruct *table;
+	unsigned int count = 0U;
+	unsigned int matched = 0U;
+	unsigned int i;
+	unsigned char avail = UDS_DtcGetStatusAvailabilityMask();
+	unsigned char mask;
+
+	/* 19 01 <statusMask> */
+	if (len != 3U)
+	{
+		return (unsigned char)NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
+	}
+
+	table = UDS_DtcGetTable(&count);
+	if (NULL_PTR == table)
+	{
+		return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+	}
+
+	/* Status bits that are not supported are ignored, they can never match. */
+	mask = (unsigned char)(req[2] & avail);
+
+	for (i = 0U; i < count; i++)
+	{
+		if (0U != (unsigned char)(table[i].ErrSts.all & mask))
+		{
+			matched++;
+		}
+	}
+
+	UDS_TxBuf[2] = avail;
+	UDS_TxBuf[3] = UDS_DCM_DTC_FORMAT_ISO14229;
+	UDS_TxBuf[4] = (unsigned char)((matched >> 8) & 0xFFU);
+	UDS_TxBuf[5] = (unsigned char)(matched & 0xFFU);
+	*rspLen = 6U;
+
+	return 0U;
+}
+
+static unsigned char UDS_DcmDtcReportByMask(const unsigned char *req,
+                                             unsigned int len,
+                                             unsigned int *rspLen)
+{
+	const DtcEntryStruct *table;
+	unsigned int count = 0U;
+	unsigned int out;
+	unsigned int i;
+	unsigned char avail = UDS_DtcGetStatusAvailabilityMask();
+	unsigned char mask;
+
+	/* 19 02 <statusMask> */
+	if (len != 3U)
+	{
+		return (unsigned char)NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
+	}
+
+	table = UDS_DtcGetTable(&count);
+	if (NULL_PTR == table)
+	{
+		return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+	}
+
+	mask = (unsigned char)(req[2] & avail);
+
+	UDS_TxBuf[2] = avail;
+	out = 3U;
+
+	for (i = 0U; i < count; i++)
+	{
+		if (0U == (unsigned char)(table[i].ErrSts.all & mask))
+		{
+			continue;
+		}
+
+		if (0U == UDS_DcmDtcRoom(out, 4U))
+		{
+			return (unsigned char)NRC_RESPONSE_TOO_LONG;
+		}
+
+		out = UDS_DcmDtcAppendCodeStatus(out, table[i].DTC_Code, table[i].ErrSts.all);
+	}
+
+	*rspLen = out;
+	return 0U;
+}
+
+static unsigned char UDS_DcmDtcReportSnapshotId(const unsigned char *req,
+                                                 unsigned int len,
+                                                 unsigned int *rspLen)
+{
+	const DtcEntryStruct *table;
+	unsigned int count = 0U;
+	unsigned int out;
+	unsigned int i;
+
+	(void)req;
+
+	/* 19 03 */
+	if (len != 2U)
+	{
+		return (unsigned char)NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
+	}
+
+	table = UDS_DtcGetTable(&count);
+	if (NULL_PTR == table)
+	{
+		return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+	}
+
+	out = 2U;
+
+	for (i = 0U; i < count; i++)
+	{
+		if (0U == table[i].SnapshotValid)
+		{
+			continue;
+		}
+
+		if (0U == UDS_DcmDtcRoom(out, 4U))
+		{
+			return (unsigned char)NRC_RESPONSE_TOO_LONG;
+		}
+
+		out = UDS_DcmDtcAppendCode(out, table[i].DTC_Code);
+		UDS_TxBuf[out] = DEM_SNAPSHOT_RECORD_NUM;
+		out++;
+	}
+
+	*rspLen = out;
+	return 0U;
+}
+
+static unsigned char UDS_DcmDtcReportSnapshotByDtc(const unsigned char *req,
+                                                    unsigned int len,
+                                                    unsigned int *rspLen)
+{
+	const DtcEntryStruct *dtc;
+	unsigned int dtcCode;
+	unsigned int out;
+	unsigned char recordNum;
+
+	/* 19 04 <DTC 3> <recordNumber> */
+	if (len != 6U)
+	{
+		return (unsigned char)NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
+	}
+
+	dtcCode = ((unsigned int)req[2] << 16) |
+	          ((unsigned int)req[3] << 8) |
+	           (unsigned int)req[4];
+	recordNum = req[5];
+
+	dtc = UDS_DtcFind(dtcCode);
+	if (NULL_PTR == dtc)
+	{
+		return (unsigned char)NRC_REQUEST_OUT_OF_RANGE;
+	}
+
+	/* One freeze frame per DTC, so 0x01 is the only record number.  0xFF
+	 * addresses all records of the DTC, which is the same single record. */
+	if ((DEM_SNAPSHOT_RECORD_NUM != recordNum) &&
+	    (UDS_DCM_DTC_RECORD_ALL != recordNum))
+	{
+		return (unsigned char)NRC_REQUEST_OUT_OF_RANGE;
+	}
+
+	out = 2U;
+	out = UDS_DcmDtcAppendCodeStatus(out, dtc->DTC_Code, dtc->ErrSts.all);
+
+	/* Supported DTC without a stored freeze frame: the DTC and its status are
+	 * reported, the record part is omitted (ISO 14229-1). */
+	if (0U == dtc->SnapshotValid)
+	{
+		*rspLen = out;
+		return 0U;
+	}
+
+	if (0U == UDS_DcmDtcRoom(out, 1U + (DEM_SNAPSHOT_DID_MAX * (2U + DEM_SNAPSHOT_DID_LEN))))
+	{
+		return (unsigned char)NRC_RESPONSE_TOO_LONG;
+	}
+
+	UDS_TxBuf[out] = DEM_SNAPSHOT_RECORD_NUM;
+	out++;
+
+	out = UDS_DcmDtcAppendSnapshot(out, &dtc->FreezeFrame);
+
+	*rspLen = out;
+	return 0U;
+}
+
+static unsigned char UDS_DcmDtcReportExtDataByDtc(const unsigned char *req,
+                                                   unsigned int len,
+                                                   unsigned int *rspLen)
+{
+	const DtcEntryStruct *dtc;
+	unsigned int dtcCode;
+	unsigned int out;
+	unsigned char recordNum;
+
+	/* 19 06 <DTC 3> <extendedDataRecordNumber> */
+	if (len != 6U)
+	{
+		return (unsigned char)NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
+	}
+
+	dtcCode = ((unsigned int)req[2] << 16) |
+	          ((unsigned int)req[3] << 8) |
+	           (unsigned int)req[4];
+	recordNum = req[5];
+
+	dtc = UDS_DtcFind(dtcCode);
+	if (NULL_PTR == dtc)
+	{
+		return (unsigned char)NRC_REQUEST_OUT_OF_RANGE;
+	}
+
+	if ((UDS_DCM_DTC_EXT_AGING != recordNum) &&
+	    (UDS_DCM_DTC_EXT_AGING_OCCURRENCE != recordNum) &&
+	    (UDS_DCM_DTC_RECORD_ALL != recordNum))
+	{
+		return (unsigned char)NRC_REQUEST_OUT_OF_RANGE;
+	}
+
+	out = 2U;
+	out = UDS_DcmDtcAppendCodeStatus(out, dtc->DTC_Code, dtc->ErrSts.all);
+
+	/* ISO 14229-1, Table 324 (C1): the record number and the data are only
+	 * present when at least one record is available.  A DTC that was never
+	 * confirmed has no extended data record, so only the DTC and its status
+	 * are reported. */
+	if (0U == dtc->ErrSts.bit.confirmedDTC)
+	{
+		*rspLen = out;
+		return 0U;
+	}
+
+	/* Both records together need five bytes. */
+	if (0U == UDS_DcmDtcRoom(out, 5U))
+	{
+		return (unsigned char)NRC_RESPONSE_TOO_LONG;
+	}
+
+	if ((UDS_DCM_DTC_EXT_AGING == recordNum) || (UDS_DCM_DTC_RECORD_ALL == recordNum))
+	{
+		UDS_TxBuf[out] = UDS_DCM_DTC_EXT_AGING;
+		out++;
+		UDS_TxBuf[out] = dtc->ExtData.AgingCnt;
+		out++;
+	}
+
+	if ((UDS_DCM_DTC_EXT_AGING_OCCURRENCE == recordNum) ||
+	    (UDS_DCM_DTC_RECORD_ALL == recordNum))
+	{
+		UDS_TxBuf[out] = UDS_DCM_DTC_EXT_AGING_OCCURRENCE;
+		out++;
+		UDS_TxBuf[out] = dtc->ExtData.AgingCnt;
+		out++;
+		UDS_TxBuf[out] = dtc->ExtData.OccurrenceCnt;
+		out++;
+	}
+
+	*rspLen = out;
+	return 0U;
+}
+
+static unsigned char UDS_DcmDtcReportSupported(const unsigned char *req,
+                                                unsigned int len,
+                                                unsigned int *rspLen)
+{
+	const DtcEntryStruct *table;
+	unsigned int count = 0U;
+	unsigned int out;
+	unsigned int i;
+	unsigned char avail = UDS_DtcGetStatusAvailabilityMask();
+
+	(void)req;
+
+	/* 19 0A */
+	if (len != 2U)
+	{
+		return (unsigned char)NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
+	}
+
+	table = UDS_DtcGetTable(&count);
+	if (NULL_PTR == table)
+	{
+		return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+	}
+
+	UDS_TxBuf[2] = avail;
+	out = 3U;
+
+	for (i = 0U; i < count; i++)
+	{
+		if (0U == UDS_DcmDtcRoom(out, 4U))
+		{
+			return (unsigned char)NRC_RESPONSE_TOO_LONG;
+		}
+
+		out = UDS_DcmDtcAppendCodeStatus(out, table[i].DTC_Code, table[i].ErrSts.all);
+	}
+
+	*rspLen = out;
+	return 0U;
+}
+
+static unsigned char UDS_DcmDtcReportFaultDetection(const unsigned char *req,
+                                                     unsigned int len,
+                                                     unsigned int *rspLen)
+{
+	const DtcEntryStruct *table;
+	unsigned int count = 0U;
+	unsigned int out;
+	unsigned int i;
+	unsigned char fdc;
+
+	(void)req;
+
+	/* 19 14 */
+	if (len != 2U)
+	{
+		return (unsigned char)NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
+	}
+
+	table = UDS_DtcGetTable(&count);
+	if (NULL_PTR == table)
+	{
+		return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+	}
+
+	/* ISO 14229-1, Table 326: the response is 59 14 followed directly by
+	 * DTCFaultDetectionCounterRecord[]; there is no availability mask byte,
+	 * and a record is only reported for a positive counter below 0x7F (i.e.
+	 * DTCs on their way to a failure, not the ones that already failed). */
+	out = 2U;
+
+	for (i = 0U; i < count; i++)
+	{
+		fdc = UDS_DemGetFaultDetectionCounter(table[i].DTC_Code);
+
+		if ((0U == fdc) || (fdc >= 0x7FU))
+		{
+			continue;
+		}
+
+		if (0U == UDS_DcmDtcRoom(out, 4U))
+		{
+			return (unsigned char)NRC_RESPONSE_TOO_LONG;
+		}
+
+		out = UDS_DcmDtcAppendCode(out, table[i].DTC_Code);
+		UDS_TxBuf[out] = fdc;
+		out++;
+	}
+
+	*rspLen = out;
+	return 0U;
+}
+
+static unsigned char UDS_DcmReadDtcInformation(const unsigned char *req,
+                                                unsigned int len,
+                                                unsigned int *rspLen)
+{
+	unsigned char reportType;
+	unsigned char nrc;
+
+	if (len < 2U)
+	{
+		return (unsigned char)NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
+	}
+
+	/* The DTC memory is only meaningful once the NVM store was restored. */
+	if (0U == UDS_DtcIsInitialized())
+	{
+		return (unsigned char)NRC_CONDITIONS_NOT_CORRECT;
+	}
+
+	reportType = (unsigned char)(req[1] & 0x7FU);
+
+	switch (reportType)
+	{
+		case UDS_DCM_DTC_REPORT_NUMBER_BY_MASK:
+			nrc = UDS_DcmDtcReportNumberByMask(req, len, rspLen);
+			break;
+
+		case UDS_DCM_DTC_REPORT_BY_MASK:
+			nrc = UDS_DcmDtcReportByMask(req, len, rspLen);
+			break;
+
+		case UDS_DCM_DTC_REPORT_SNAPSHOT_ID:
+			nrc = UDS_DcmDtcReportSnapshotId(req, len, rspLen);
+			break;
+
+		case UDS_DCM_DTC_REPORT_SNAPSHOT_BY_DTC:
+			nrc = UDS_DcmDtcReportSnapshotByDtc(req, len, rspLen);
+			break;
+
+		case UDS_DCM_DTC_REPORT_EXT_DATA_BY_DTC:
+			nrc = UDS_DcmDtcReportExtDataByDtc(req, len, rspLen);
+			break;
+
+		case UDS_DCM_DTC_REPORT_SUPPORTED_DTC:
+			nrc = UDS_DcmDtcReportSupported(req, len, rspLen);
+			break;
+
+		case UDS_DCM_DTC_REPORT_FAULT_DETECTION:
+			nrc = UDS_DcmDtcReportFaultDetection(req, len, rspLen);
+			break;
+
+		default:
+			nrc = (unsigned char)NRC_SUBFUNCTION_NOT_SUPPORTED;
+			break;
+	}
+
+	if (0U == nrc)
+	{
+		/* Every 0x19 response starts with 59 <reportType>. */
+		UDS_TxBuf[1] = reportType;
+	}
+
+	return nrc;
 }
 
 unsigned char UDS_DcmIsCommunicationDisabled(void)
@@ -1068,12 +1646,22 @@ unsigned char UDS_DcmIsCommunicationDisabled(void)
  *
  *   0x10 DiagnosticSessionControl   all sessions          no security
  *   0x11 ECUReset                   all sessions          no security
+ *   0x14 ClearDiagnosticInformation Default, Extended     no security
+ *                                   physical addressing only
+ *   0x19 ReadDTCInformation         Default, Extended     no security
+ *                                   mask based reports (01/02/0A) physical and
+ *                                   functional, DTC specific ones (03/04/06/14)
+ *                                   physical addressing only
  *   0x22 ReadDataByIdentifier       all sessions          no security
  *   0x27 SecurityAccess             all sessions          no security
  *   0x28 CommunicationControl       Extended              no security
  *   0x2E WriteDataByIdentifier      Extended, Programming Level 1
  *   0x31 RoutineControl             Extended, Programming Level 1
  *                                   physical addressing only
+ *   0x85 ControlDtcSetting          Extended              no security
+ *
+ * The data of 0x14 / 0x19 comes from the DEM (UDS_DEM.h), the DTC memory is
+ * configured in UDS_DemCfg.c.
  *
  * Adjust the mask/level fields below when the diagnostic specification
  * changes; the DCM core does not need to be modified.
@@ -1112,6 +1700,15 @@ const UDS_DcmServiceType UDS_DcmServices[] =
 
 	{0x14U, UDS_DCM_NO_SUBFN, (UDS_DCM_SESSION_MASK_DEFAULT | UDS_DCM_SESSION_MASK_EXTENDED), UDS_DCM_SECURITY_NONE, UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmClearDiagnosticInformation},
 
+	/* 0x19 ReadDTCInformation (DEM, see UDS_DEM.h). */
+	{0x19U, 0x01U, (UDS_DCM_SESSION_MASK_DEFAULT | UDS_DCM_SESSION_MASK_EXTENDED), UDS_DCM_SECURITY_NONE, UDS_DCM_ADDR_MASK_ALL,      UDS_DcmReadDtcInformation},
+	{0x19U, 0x02U, (UDS_DCM_SESSION_MASK_DEFAULT | UDS_DCM_SESSION_MASK_EXTENDED), UDS_DCM_SECURITY_NONE, UDS_DCM_ADDR_MASK_ALL,      UDS_DcmReadDtcInformation},
+	{0x19U, 0x03U, (UDS_DCM_SESSION_MASK_DEFAULT | UDS_DCM_SESSION_MASK_EXTENDED), UDS_DCM_SECURITY_NONE, UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmReadDtcInformation},
+	{0x19U, 0x04U, (UDS_DCM_SESSION_MASK_DEFAULT | UDS_DCM_SESSION_MASK_EXTENDED), UDS_DCM_SECURITY_NONE, UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmReadDtcInformation},
+	{0x19U, 0x06U, (UDS_DCM_SESSION_MASK_DEFAULT | UDS_DCM_SESSION_MASK_EXTENDED), UDS_DCM_SECURITY_NONE, UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmReadDtcInformation},
+	{0x19U, 0x0AU, (UDS_DCM_SESSION_MASK_DEFAULT | UDS_DCM_SESSION_MASK_EXTENDED), UDS_DCM_SECURITY_NONE, UDS_DCM_ADDR_MASK_ALL,      UDS_DcmReadDtcInformation},
+	{0x19U, 0x14U, (UDS_DCM_SESSION_MASK_DEFAULT | UDS_DCM_SESSION_MASK_EXTENDED), UDS_DCM_SECURITY_NONE, UDS_DCM_ADDR_MASK_PHYSICAL, UDS_DcmReadDtcInformation},
+
 	{0x3EU, 0x00U, UDS_DCM_SESSION_MASK_ALL,                           UDS_DCM_SECURITY_NONE,  UDS_DCM_ADDR_MASK_ALL,  UDS_DcmKeepSession},
 };
 
@@ -1130,6 +1727,9 @@ void UDS_DcmCfgSessionTimeout(void)
 	 * session change also restores the default communication state, so a
 	 * disabled ECU cannot stay silent forever. */
 	UDS_DcmResetCommunicationControl();
+
+	/* 0x85 02 must not outlive the session either. */
+	UDS_DtcSetSettingOff(0U);
 }
 
 void UDS_DcmCfgPoll(void)

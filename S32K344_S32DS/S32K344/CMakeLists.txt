@@ -98,6 +98,19 @@ foreach(_arg IN LISTS _s32ds_args)
   endif()
 endforeach()
 
+# The DEM sources were added to the project while the S32DS makefiles in
+# Debug_FLASH were already generated.  They are appended explicitly (and only
+# when subdir.mk does not list them yet, e.g. after a project refresh in the
+# IDE, so the same file is never compiled twice).
+foreach(_extra IN ITEMS "UDS/UDS_DEM.c" "UDS/UDS_DTC.c" "UDS/UDS_DemCfg.c")
+  get_filename_component(_extra_abs "${CMAKE_CURRENT_SOURCE_DIR}/${_extra}" ABSOLUTE)
+  list(FIND FW_SOURCES "${_extra_abs}" _extra_index)
+  if(_extra_index EQUAL -1)
+    message(STATUS "S32K344: adding DEM source ${_extra} (not in the S32DS makefiles)")
+    list(APPEND FW_SOURCES "${_extra_abs}")
+  endif()
+endforeach()
+
 add_executable(S32K344 ${FW_SOURCES})
 
 set_target_properties(S32K344 PROPERTIES

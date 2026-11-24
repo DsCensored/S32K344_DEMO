@@ -41,9 +41,11 @@ static void UDS_DcmSendPositiveResponse(unsigned char sid, unsigned int rspLen)
 {
 	UDS_TxBuf[0] = (unsigned char)(sid + 0x40U);
 
-	if (rspLen < 2U)
+	/* At least the SID byte is sent: 0x14 has a one byte positive response and
+	 * every other handler reports its parameters by adding to rspLen. */
+	if (0U == rspLen)
 	{
-		rspLen = 2U;
+		rspLen = 1U;
 	}
 
 	if (0U == UDS_CanTpSend(rspLen))

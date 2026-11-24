@@ -26,6 +26,68 @@
 
 #define UDS_INVFIL 0xAA
 
+/* ------------------------------------------------------------------------- */
+/* CAN / CAN FD                                                              */
+/* ------------------------------------------------------------------------- */
+
+/*
+ * UDS_CANTP_CANFD_ENABLE
+ *   0 = classic CAN: every frame carries 8 bytes (7 diagnostic bytes in a
+ *       single frame / consecutive frame, 6 in a first frame).
+ *   1 = CAN FD: reception accepts frames up to 64 bytes (long single frame
+ *       form with SF_DL up to 62, 63 diagnostic bytes per consecutive frame,
+ *       12-bit and 32-bit first frame length), transmission uses frames of
+ *       UDS_CANTP_FD_TX_LEN bytes.
+ *
+ * The CAN controller must be configured for CAN FD as well (EB tresos:
+ * CanControllerFdBaudrateConfig with "FD enable" and a data bit rate); this
+ * macro only switches the transport layer.  With CAN FD disabled the
+ * transport layer keeps the classic 8 byte framing.
+ */
+#ifndef UDS_CANTP_CANFD_ENABLE
+#define UDS_CANTP_CANFD_ENABLE      (0U)
+#endif
+
+/*
+ * Payload length of every CAN FD frame this ECU transmits.  It also decides
+ * how many diagnostic bytes fit into one frame:
+ *   single frame      : UDS_CANTP_TX_LEN - 2 (the long form needs a second
+ *                       PCI byte; up to 7 bytes the short form is used)
+ *   first frame       : UDS_CANTP_TX_LEN - 2
+ *   consecutive frame : UDS_CANTP_TX_LEN - 1
+ * Valid CAN FD payload lengths are 8, 12, 16, 20, 24, 32, 48 and 64.
+ */
+#ifndef UDS_CANTP_FD_TX_LEN
+#define UDS_CANTP_FD_TX_LEN         (64U)
+#endif
+
+#if ((UDS_CANTP_CANFD_ENABLE != 0) && (UDS_CANTP_CANFD_ENABLE != 1))
+#error "UDS_CANTP_CANFD_ENABLE must be 0 or 1"
+#endif
+
+#if ((UDS_CANTP_FD_TX_LEN < 8U) || (UDS_CANTP_FD_TX_LEN > 64U))
+#error "UDS_CANTP_FD_TX_LEN must be 8..64"
+#endif
+
+#if ((UDS_CANTP_FD_TX_LEN != 8U) && (UDS_CANTP_FD_TX_LEN != 12U) &&  \
+     (UDS_CANTP_FD_TX_LEN != 16U) && (UDS_CANTP_FD_TX_LEN != 20U) && \
+     (UDS_CANTP_FD_TX_LEN != 24U) && (UDS_CANTP_FD_TX_LEN != 32U) && \
+     (UDS_CANTP_FD_TX_LEN != 48U) && (UDS_CANTP_FD_TX_LEN != 64U))
+#error "UDS_CANTP_FD_TX_LEN is not a valid CAN FD payload length"
+#endif
+
+#if (UDS_CANTP_CANFD_ENABLE != 0)
+/* Length of every transmitted frame. */
+#define UDS_CANTP_TX_LEN            (UDS_CANTP_FD_TX_LEN)
+/* Largest single frame payload: the short form carries up to 7 bytes, above
+ * that the second PCI byte is needed. */
+#define UDS_CANTP_SF_MAX            (((UDS_CANTP_TX_LEN) > 8U) ? ((UDS_CANTP_TX_LEN) - 2U) : 7U)
+#else
+#define UDS_CANTP_TX_LEN            (8U)
+#define UDS_CANTP_SF_MAX            (7U)
+#endif
+
+
 typedef struct{
 	unsigned char SID;
 	unsigned int Len;

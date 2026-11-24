@@ -8,6 +8,12 @@
  *  be addressed by name. C puts all enumerators into one namespace, therefore
  *  the names are prefixed with the block number (kBlock0_... etc.).
  *
+ *  Block usage:
+ *    block 0  F190 (VIN), see below
+ *    block 1  free for the application
+ *    block 2  DEM DTC store (UDS_DEM.c, format in UDS_DemCfg.h)
+ *    block 3  bootloader only (the APP may not write it)
+ *
  *  The wrapper functions work on the RAM shadow of the Nvm module:
  *    - Nvm_BlockX_Read_U8()  returns the current byte (fast, no DFlash access)
  *    - Nvm_BlockX_Write_U8() updates the shadow and requests a commit
@@ -55,7 +61,12 @@ typedef enum{
 
 typedef enum{
 	kBlock2_DataStart = 0,
-	kBlock2_Resv = kBlock2_DataStart,
+	/* Block 2 payload holds the DEM DTC store: a pool of DTC records
+	 * (status, ageing data and freeze frames) that only confirmed DTCs
+	 * occupy.  Layout and sizing are in UDS_DemCfg.h, accessed through the
+	 * byte wrappers below (Nvm_Block2_Read_U8 / Nvm_Block2_Write_U8) by
+	 * UDS_DEM.c. */
+	kBlock2_DemStore = kBlock2_DataStart,
 	kBlock2_End = MAX_NVM_LEN - 1
 }Block2Data;
 
