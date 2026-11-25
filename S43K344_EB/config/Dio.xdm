@@ -61,16 +61,23 @@
                   <d:ctr name="DioPort_BH" type="IDENTIFIABLE">
                     <d:var name="DioPortId" type="INTEGER" value="3"/>
                     <d:lst name="DioChannel" type="MAP">
-                      <d:ctr name="DioChannel_PB19" type="IDENTIFIABLE">
-                        <d:var name="DioChannelId" type="INTEGER" value="3"/>
+                      <d:ctr name="DioChannel_PB18" type="IDENTIFIABLE">
+                        <d:var name="DioChannelId" type="INTEGER" value="2"/>
                         <d:var name="PDACSlot" type="ENUMERATION" 
                                value="VIRTUAL_WRAPPER_PDAC0">
                           <a:a name="IMPORTER_INFO" value="@DEF"/>
                         </d:var>
                         <d:lst name="DioChannelEcucPartitionRef"/>
                       </d:ctr>
-                      <d:ctr name="DioChannel_PB18" type="IDENTIFIABLE">
-                        <d:var name="DioChannelId" type="INTEGER" value="2"/>
+                    </d:lst>
+                    <d:lst name="DioChannelGroup" type="MAP"/>
+                    <d:lst name="DioPortEcucPartitionRef"/>
+                  </d:ctr>
+                  <d:ctr name="DioPort_CH" type="IDENTIFIABLE">
+                    <d:var name="DioPortId" type="INTEGER" value="5"/>
+                    <d:lst name="DioChannel" type="MAP">
+                      <d:ctr name="DioChannel_PC20" type="IDENTIFIABLE">
+                        <d:var name="DioChannelId" type="INTEGER" value="4"/>
                         <d:var name="PDACSlot" type="ENUMERATION" 
                                value="VIRTUAL_WRAPPER_PDAC0">
                           <a:a name="IMPORTER_INFO" value="@DEF"/>

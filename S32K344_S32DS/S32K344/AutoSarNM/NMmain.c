@@ -135,7 +135,7 @@ void NM_BsmGetWkupMode(void)
 	 * start (ignition already on) has no WKPU edge, so also sample the pin
 	 * level through Port/Dio. */
 	if ((kl15Wakeup != FALSE) ||
-	    (Dio_ReadChannel(DioConf_DioChannel_DioChannel_PB19) != 0U))
+	    (Dio_ReadChannel(DioConf_DioChannel_DioChannel_PC20) != 0U))
 	{
 		AutoSarNM_stWKUPMode = 0x00U;
 	}

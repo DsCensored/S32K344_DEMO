@@ -5,7 +5,7 @@
  *
  * Model version                  : 14.414
  * Simulink Coder version         : 9.8 (R2022b) 13-May-2022
- * C/C++ source code generated on : Mon Nov 23 09:12:31 2026
+ * C/C++ source code generated on : Wed Nov 25 09:28:05 2026
  *
  * Target selection: ert.tlc
  * Embedded hardware selection: ARM Compatible->ARM 7
@@ -46,8 +46,8 @@ void DSC_step(void)
    *  Constant: '<S1>/Constant'
    *  UnitDelay: '<Root>/Unit Delay6'
    */
-  ErrDiag_IO((uint8_T)(ASW_stLEDR1Ctrl == 0), 1, 0, 1000U, DSC_MODEL_CYCLE, 0,
-             1000U, &DSC_B.Subsystem1, &DSC_DW.Subsystem1);
+  ErrDiag_IO((uint8_T)(ASW_stLEDR1Ctrl == 0), 1, 0, 1000U, 0, 1000U,
+             DSC_MODEL_CYCLE, &DSC_B.Subsystem1, &DSC_DW.Subsystem1);
 
   /* End of Outputs for SubSystem: '<Root>/Subsystem1' */
 

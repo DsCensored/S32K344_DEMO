@@ -35,7 +35,9 @@ This project is demo code for the NXP S32K344 Automotive Grade MCU. It includes 
 
 ###ASIL
 - **HSE TRNG**
-- **HSE AES128 for UDS 27 service**
+- **HSE ECC P-521 (ECDSA/SHA-256) for UDS 27 service** (app and boot): TRNG seed is sent in plaintext, the tester signs it with its private key and the ECU verifies the signature with the public key installed by AA01; see `UDS27_ECC521.md`
+- **SA_DEMO (ZLG tester DLL)**: `sa_demo/` implements the same ECDSA-P521/SHA-256 signing; the private key is compiled into `sa_key.h` (no external key file). VS2026 solution (`sa_demo.sln`, v145).
+- **AES-128 for UDS 27 kept but disabled** by `UDS27_ALGO_AES128` (see `MCAL/HSE/hse_crypto_cfg.h`); source remains for rollback
 - **HSE SHA-256 for flashing image integrity (0x37 / FF01 / FF02)**
 - **HSE RSA-2048 public key for 31 01 02 02 image signature check (installed by 31 01 AA01)**
 - **HSE AB Swap OTA**: images are programmed into the passive partition (BOOT `0x00600000`, APP `0x00648000`) and activated with `HSE_SRV_ID_ACTIVATE_PASSIVE_BLOCK`; `31 01 FF 02` finalises an APP **or BOOT** update (BOOT-only exchanges the two APP digests and keeps the passive APP) and `31 01 AC C1` switches/rolls back without a new download

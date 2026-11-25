@@ -102,7 +102,8 @@ endforeach()
 # Debug_FLASH were already generated.  They are appended explicitly (and only
 # when subdir.mk does not list them yet, e.g. after a project refresh in the
 # IDE, so the same file is never compiled twice).
-foreach(_extra IN ITEMS "UDS/UDS_DEM.c" "UDS/UDS_DTC.c" "UDS/UDS_DemCfg.c")
+foreach(_extra IN ITEMS "UDS/UDS_DEM.c" "UDS/UDS_DTC.c" "UDS/UDS_DemCfg.c"
+                        "MCAL/HSE/hse_ecc.c" "MCAL/HSE/hse_ecc_key.c")
   get_filename_component(_extra_abs "${CMAKE_CURRENT_SOURCE_DIR}/${_extra}" ABSOLUTE)
   list(FIND FW_SOURCES "${_extra_abs}" _extra_index)
   if(_extra_index EQUAL -1)

@@ -13,6 +13,7 @@
 #include "SchM_Can_43_FLEXCAN.h"
 #include "UDS_CanTp.h"
 #include "UDS_DCM.h"
+#include "UDS_DEM.h"
 #include "UDS_DemCfg.h"
 #include "Nvm.h"
 #include "NvmApp.h"
@@ -79,11 +80,12 @@ static void ASW_userTask10ms(void)
 	 * RTE_POLLING() so BSW_stKL15 reflects the current ignition state. */
 	AutoSarNm_step();
 	BSW_CANRX_TIMEOUT_POLL();
-
+#if UDS_DEM_ENABLE == 1
 	/* DEM: run the fault monitors and update the DTC status bytes/storage.
 	 * It has to run before the NVM commit so a DTC record that changed in this
 	 * cycle is written to the DFlash in the same task pass (NVM block 2). */
 	UDS_AppDemPolling();
+#endif
 	Nvm_UserBlock_Polling_10ms();
 }
 static void ASW_userTask20ms(void)
@@ -93,6 +95,7 @@ static void ASW_userTask20ms(void)
 static void ASW_userTask50ms(void)
 {
 	DSC_step();
+
 }
 static void ASW_userTask100ms(void)
 {

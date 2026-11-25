@@ -19,7 +19,8 @@ del .\*.s19
 set "ver=V1"
 
 :: APP 镜像（基地址 0x00448000）
-set "app_file=.\S32K344\Debug_FLASH\S32K344.s19"
+::set "app_file=.\S32K344\Debug_FLASH\S32K344.s19"
+set "app_file=.\S32K344\out\build\s32ds-gcc\S32K344.s19"
 set "app_name=S32K344_App"
 set "app_base=00448000"
 

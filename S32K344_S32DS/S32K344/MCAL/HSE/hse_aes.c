@@ -1,11 +1,15 @@
 /**
  * @file    hse_aes.c
- * @brief   HSE AES-128-ECB for UDS 0x27 seed/key.
+ * @brief   HSE AES-128-ECB for UDS 0x27 (legacy, selected by macro).
  *
  * Algorithm (same as the PC-side sa_demo.dll):
  *     key16 = AES128-ECB(HSE AES key[level], seed16)
  *     level 1: 1b966c61e4255ecc8d69ef4525b42762
  *     level 2: 4d8bba5aad575d2867387fb77f856fec
+ *
+ * UDS27_ALGO_AES128 selects this implementation.  When UDS27_ALGO_ECC521 is
+ * selected (default) the AES key import and cipher code below is compiled
+ * out, but the source is kept for a quick rollback.
  *
  * The keys live in the HSE NVM key catalog (group 0, slots 0/1) so they
  * survive a reset.  A blank HSE has INSTALL_OK = 0 and empty key catalogs;
@@ -13,12 +17,16 @@
  * (this is what routine 0x31 01 AA01 does, exactly like the reference
  * bootloader's HSE_Crypto_Init).  A later 0x27 request just uses the keys.
  *
+ * The catalog formatting itself is shared with the ECC/RSA paths and is
+ * therefore always compiled (HseKeyCatalog_Format).
+ *
  * All HSE shared buffers are placed in .non_cacheable_data because HSE
  * cannot access the M7 DTCM (the stack lives there).
  */
 #include <string.h>
 
 #include "hse_aes.h"
+#include "hse_crypto_cfg.h"
 #include "hse_trng.h"
 #include "hse_trng_cfg.h"      /* shared section + D-cache helpers */
 
@@ -33,18 +41,26 @@
 #endif
 
 /* NVM catalog layout used by both the bootloader and the application.
- * Group 0: two AES-128 slots.  Slot 0 = level 1, slot 1 = level 2. */
+ * Group 0: two AES-128 slots.  Slot 0 = level 1, slot 1 = level 2.
+ * Group 1: RSA-2048 public key (bootloader image signature).
+ * Group 2: ECC P-521 public key (0x27, used when UDS27_ALGO_ECC521 = 1). */
 #define HSE_AES_KEY_GROUP       (0U)
 #define HSE_AES_KEY_SLOT_L1     (0U)
 #define HSE_AES_KEY_SLOT_L2     (1U)
+#define HSE_RSA_KEY_GROUP_CFG   (1U)
+#define HSE_ECC_KEY_GROUP_CFG   (2U)
 #define HSE_AES_KEY_HANDLE(slot) \
     ((hseKeyHandle_t)GET_KEY_HANDLE(HSE_KEY_CATALOG_ID_NVM, HSE_AES_KEY_GROUP, (slot)))
 
 static HSE_AES_SHARED hseSrvDescriptor_t     s_desc;
+/* 3 configured groups + one all-zero terminator entry (HSE walks the table
+ * until it sees a zero entry, see the HSE service API reference). */
+static HSE_AES_SHARED hseKeyGroupCfgEntry_t  s_nvmCatalog[4];
+static HSE_AES_SHARED hseKeyGroupCfgEntry_t  s_ramCatalog[4];
+
+#if UDS27_ALGO_AES128
 static HSE_AES_SHARED hseKeyInfo_t           s_keyInfo;
 static HSE_AES_SHARED hseKeyInfo_t           s_infoOut;
-static HSE_AES_SHARED hseKeyGroupCfgEntry_t  s_nvmCatalog[2];
-static HSE_AES_SHARED hseKeyGroupCfgEntry_t  s_ramCatalog[2];
 static HSE_AES_SHARED uint8_t                s_keyBuf[16];
 static HSE_AES_SHARED uint8_t                s_inBuf[16];
 static HSE_AES_SHARED uint8_t                s_outBuf[16];
@@ -55,6 +71,7 @@ static const uint8_t KEY_L1[16] = {
 static const uint8_t KEY_L2[16] = {
     0x4d,0x8b,0xba,0x5a,0xad,0x57,0x5d,0x28,0x67,0x38,0x7f,0xb7,0x7f,0x85,0x6f,0xec
 };
+#endif /* UDS27_ALGO_AES128 */
 
 /* Debug view for the J-Link:
  *   [0] HSE status at init       [1] reserved (0)
@@ -65,7 +82,9 @@ static const uint8_t KEY_L2[16] = {
 volatile uint32_t g_hseAesDiag[8];
 
 static uint8_t  s_channel   = 0xFFU;
+#if UDS27_ALGO_AES128
 static uint8_t  s_keysReady = 0U;
+#endif
 static uint32_t s_lastRsp   = 0U;
 
 /*---------------------------------------------------------------------------
@@ -117,23 +136,10 @@ uint8_t HseAes_Init(void)
     return 0U;
 }
 
-static uint8_t HseAes_KeyExists(uint8_t slot)
-{
-    (void)memset(&s_infoOut, 0, sizeof(s_infoOut));
-    (void)memset(&s_desc, 0, sizeof(s_desc));
-    s_desc.srvId = HSE_SRV_ID_GET_KEY_INFO;
-    s_desc.hseSrv.getKeyInfoReq.keyHandle = HSE_AES_KEY_HANDLE(slot);
-    s_desc.hseSrv.getKeyInfoReq.pKeyInfo  = (HOST_ADDR)&s_infoOut;
-
-    HseTrng_CacheClean(&s_desc, (uint32_t)sizeof(s_desc));
-    HseTrng_CacheClean(&s_infoOut, (uint32_t)sizeof(s_infoOut));
-    HseTrng_Dsb();
-
-    (void)HseAes_Send();
-    return (HSE_SRV_RSP_OK == (hseSrvResponse_t)s_lastRsp) ? 1U : 0U;
-}
-
-static uint8_t HseAes_FormatCatalogs(void)
+/*---------------------------------------------------------------------------
+ * Key catalog formatting (shared by AES / RSA / ECC)
+ *-------------------------------------------------------------------------*/
+uint8_t HseKeyCatalog_Format(void)
 {
     (void)memset(s_nvmCatalog, 0, sizeof(s_nvmCatalog));
     s_nvmCatalog[0].muMask        = (hseMuMask_t)HSE_ALL_MU_MASK;
@@ -142,12 +148,41 @@ static uint8_t HseAes_FormatCatalogs(void)
     s_nvmCatalog[0].numOfKeySlots = 2U;
     s_nvmCatalog[0].maxKeyBitLen  = HSE_KEY128_BITS;
 
+    /* Group 1: RSA-2048 public key used by 0x31 01 02 02.  The application
+     * does not import it, but the layout must match the bootloader. */
+    s_nvmCatalog[1].muMask        = (hseMuMask_t)HSE_ALL_MU_MASK;
+    s_nvmCatalog[1].groupOwner    = HSE_KEY_OWNER_CUST;
+    s_nvmCatalog[1].keyType       = HSE_KEY_TYPE_RSA_PUB;
+    s_nvmCatalog[1].numOfKeySlots = 1U;
+    s_nvmCatalog[1].maxKeyBitLen  = HSE_KEY2048_BITS;
+
+    /* Group 2: ECC P-521 public key used by UDS 0x27 (installed by AA01). */
+    s_nvmCatalog[2].muMask        = (hseMuMask_t)HSE_ALL_MU_MASK;
+    s_nvmCatalog[2].groupOwner    = HSE_KEY_OWNER_CUST;
+    s_nvmCatalog[2].keyType       = HSE_KEY_TYPE_ECC_PUB;
+    s_nvmCatalog[2].numOfKeySlots = 1U;
+    s_nvmCatalog[2].maxKeyBitLen  = HSE_KEY521_BITS;
+
     (void)memset(s_ramCatalog, 0, sizeof(s_ramCatalog));
     s_ramCatalog[0].muMask        = (hseMuMask_t)HSE_ALL_MU_MASK;
     s_ramCatalog[0].groupOwner    = HSE_KEY_OWNER_ANY;
     s_ramCatalog[0].keyType       = HSE_KEY_TYPE_AES;
     s_ramCatalog[0].numOfKeySlots = 2U;
     s_ramCatalog[0].maxKeyBitLen  = HSE_KEY128_BITS;
+
+    /* Keep the RAM catalog layout aligned with the NVM one (same groups,
+     * owner ANY for RAM).  No RAM RSA/ECC key is imported by the app. */
+    s_ramCatalog[1].muMask        = (hseMuMask_t)HSE_ALL_MU_MASK;
+    s_ramCatalog[1].groupOwner    = HSE_KEY_OWNER_ANY;
+    s_ramCatalog[1].keyType       = HSE_KEY_TYPE_RSA_PUB;
+    s_ramCatalog[1].numOfKeySlots = 1U;
+    s_ramCatalog[1].maxKeyBitLen  = HSE_KEY2048_BITS;
+
+    s_ramCatalog[2].muMask        = (hseMuMask_t)HSE_ALL_MU_MASK;
+    s_ramCatalog[2].groupOwner    = HSE_KEY_OWNER_ANY;
+    s_ramCatalog[2].keyType       = HSE_KEY_TYPE_ECC_PUB;
+    s_ramCatalog[2].numOfKeySlots = 1U;
+    s_ramCatalog[2].maxKeyBitLen  = HSE_KEY521_BITS;
 
     (void)memset(&s_desc, 0, sizeof(s_desc));
     s_desc.srvId = HSE_SRV_ID_FORMAT_KEY_CATALOGS;
@@ -163,6 +198,26 @@ static uint8_t HseAes_FormatCatalogs(void)
     g_hseAesDiag[2] = s_lastRsp;
 
     return (HSE_SRV_RSP_OK == (hseSrvResponse_t)s_lastRsp) ? 0U : (uint8_t)(s_lastRsp & 0xFFU);
+}
+
+#if UDS27_ALGO_AES128
+/*===========================================================================
+ * Legacy AES-128 implementation (kept for rollback, disabled by default)
+ *=========================================================================*/
+static uint8_t HseAes_KeyExists(uint8_t slot)
+{
+    (void)memset(&s_infoOut, 0, sizeof(s_infoOut));
+    (void)memset(&s_desc, 0, sizeof(s_desc));
+    s_desc.srvId = HSE_SRV_ID_GET_KEY_INFO;
+    s_desc.hseSrv.getKeyInfoReq.keyHandle = HSE_AES_KEY_HANDLE(slot);
+    s_desc.hseSrv.getKeyInfoReq.pKeyInfo  = (HOST_ADDR)&s_infoOut;
+
+    HseTrng_CacheClean(&s_desc, (uint32_t)sizeof(s_desc));
+    HseTrng_CacheClean(&s_infoOut, (uint32_t)sizeof(s_infoOut));
+    HseTrng_Dsb();
+
+    (void)HseAes_Send();
+    return (HSE_SRV_RSP_OK == (hseSrvResponse_t)s_lastRsp) ? 1U : 0U;
 }
 
 static uint8_t HseAes_ImportOne(uint8_t slot, const uint8_t *pKey)
@@ -200,9 +255,8 @@ static uint8_t HseAes_ImportOne(uint8_t slot, const uint8_t *pKey)
     return (HSE_SRV_RSP_OK == (hseSrvResponse_t)s_lastRsp) ? 0U : (uint8_t)(s_lastRsp & 0xFFU);
 }
 
-/*---------------------------------------------------------------------------
- * Public API
- *-------------------------------------------------------------------------*/
+/* Import the two AES keys.  The key catalogs must already be formatted
+ * (HseKeyCatalog_Format()); AA01 does that before calling this function. */
 uint8_t HseAes_ProgramKeys(void)
 {
     uint8_t err;
@@ -211,16 +265,6 @@ uint8_t HseAes_ProgramKeys(void)
     if (0U != HseAes_Init())
     {
         return 0xE1U;
-    }
-
-    /* A blank HSE has no key catalog at all.  Formatting also clears the old
-     * NVM keys, which is what the reference AA01 routine does.  (An explicit
-     * ERASE_ALL_NVM_KEYS request is rejected while the catalog is unformatted,
-     * so format first.) */
-    err = HseAes_FormatCatalogs();
-    if (0U != err)
-    {
-        return err;
     }
 
     err = HseAes_ImportOne(HSE_AES_KEY_SLOT_L1, KEY_L1);
@@ -273,6 +317,11 @@ static uint8_t HseAes_EnsureKeys(void)
      * installed yet, so formatting them is safe and lets 0x27 work. */
     if (0U == (status & (uint16_t)HSE_STATUS_INSTALL_OK))
     {
+        uint8_t err = HseKeyCatalog_Format();
+        if (0U != err)
+        {
+            return err;
+        }
         return HseAes_ProgramKeys();
     }
 
@@ -332,6 +381,7 @@ uint8_t HseAes_EncryptBlock(uint8_t level, const uint8_t in[16], uint8_t out[16]
     (void)memcpy(out, s_outBuf, 16U);
     return 0U;
 }
+#endif /* UDS27_ALGO_AES128 */
 
 uint8_t HseAes_GetLastError(void)
 {

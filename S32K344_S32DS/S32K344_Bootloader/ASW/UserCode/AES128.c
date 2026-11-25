@@ -5,7 +5,10 @@
  *   gcc -DAES128_DECRYPT -c aes128.c -o aes128_dec.o
  * ============================================================ */
 #include "AES128.h"
+#include "hse_crypto_cfg.h"
 #include <string.h>
+
+#if UDS27_ALGO_AES128
 
 /* ---------- 接口 2：默认密钥数组（可读可改） ---------- */
 uint8_t aes128_key_bootloader[AES128_LEN] = {
@@ -200,3 +203,5 @@ void aes128_decrypt(uint8_t *seed, const uint8_t *key) {
 }
 
 #endif /* AES128_ENCRYPT / AES128_DECRYPT */
+
+#endif /* UDS27_ALGO_AES128 */

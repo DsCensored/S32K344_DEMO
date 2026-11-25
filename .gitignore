@@ -25,3 +25,5 @@
 .hse_ws/
 *.bak_hsetrng
 /S32K344_S32DS/S32K344/out
+/Doc
+/S32K344_S32DS/Tools

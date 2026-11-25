@@ -28,7 +28,7 @@ typedef struct
 
 static GPIO_IN_STU GPIO_IN_RTE[] =
 {
-		{DioConf_DioChannel_DioChannel_PB19, &BSW_stKL15},
+		{DioConf_DioChannel_DioChannel_PC20, &BSW_stKL15},
 };
 
 static GPIO_OUT_STU GPIO_OUT_RTE[] =

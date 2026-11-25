@@ -10,6 +10,12 @@
 
 #include <stdint.h>
 
+#include "hse_crypto_cfg.h"
+
+/* 0x27 已切换到 ECC521（UDS27_ALGO_ECC521 = 1）时，本软件 AES 实现整体
+ * 不参与编译；源码保留，把 hse_crypto_cfg.h 里的开关切回 AES128 即可恢复。 */
+#if UDS27_ALGO_AES128
+
 #define AES128_ENCRYPT
 
 /* ---- 模式宏：必须二选一 ---- */
@@ -31,5 +37,7 @@ void aes128_crypt  (uint8_t *seed, const uint8_t *key);   /* 用 key 加密 seed
 #else
 void aes128_decrypt(uint8_t *seed, const uint8_t *key);   /* 用 key 解密 seed，明文原地写回 */
 #endif
+
+#endif /* UDS27_ALGO_AES128 */
 
 #endif /* AES128_H */

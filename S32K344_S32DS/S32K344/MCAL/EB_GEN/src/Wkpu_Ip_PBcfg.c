@@ -147,7 +147,7 @@ const Wkpu_Ip_ChannelConfigType Wkpu_Ip_ChannelConfig_PB[2U] =
     /** @brief IcuWkpuChannels_KL15 */
     {
         /** @brief Wkpu HW Channel used by the Icu channel */
-        42U,
+        47U,
         /** @brief Wkpu HW Channel Filter enable */
         (boolean)FALSE,
         /** @brief Wkpu HW Channel Pullup enable */

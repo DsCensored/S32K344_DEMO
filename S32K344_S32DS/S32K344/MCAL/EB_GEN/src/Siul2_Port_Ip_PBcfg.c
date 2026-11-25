@@ -307,7 +307,7 @@ const Siul2_Port_Ip_PinSettingsConfig g_pin_mux_InitConfigArr[NUM_OF_CONFIGURED_
     },
     {
         .base                        = IP_SIUL2,
-        .pinPortIdx                  = 51,
+        .pinPortIdx                  = 84,
         .mux                         = PORT_MUX_AS_GPIO,
         .safeMode                    = PORT_SAFE_MODE_DISABLED,
         .pullConfig                  = PORT_INTERNAL_PULL_NOT_ENABLED,

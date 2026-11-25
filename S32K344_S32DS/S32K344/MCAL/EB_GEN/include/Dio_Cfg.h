@@ -298,18 +298,26 @@ extern "C"{
 
 
 /**
-* @brief          Symbolic name for the channel DioChannel_PB19.
-*
-*/
-#define  DioConf_DioChannel_DioChannel_PB19 ((uint16)0x0033U)
-
-
-
-/**
 * @brief          Symbolic name for the channel DioChannel_PB18.
 *
 */
 #define  DioConf_DioChannel_DioChannel_PB18 ((uint16)0x0032U)
+
+/* ---------- DioPort_CH ---------- */
+
+/**
+* @brief          Symbolic name for the port DioPort_CH.
+*
+*/
+#define DioConf_DioPort_DioPort_CH  ((uint8)0x05U)
+
+
+
+/**
+* @brief          Symbolic name for the channel DioChannel_PC20.
+*
+*/
+#define  DioConf_DioChannel_DioChannel_PC20 ((uint16)0x0054U)
 
 
 /*=================================================================================================

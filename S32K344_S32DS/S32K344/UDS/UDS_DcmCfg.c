@@ -26,7 +26,9 @@
 #include "NvmApp.h"
 #include <string.h>
 #include "hse_trng.h"
-#include "hse_aes.h"      /* HSE 硬件 TRNG，供 UDS 0x27 取随机种子 */
+#include "hse_crypto_cfg.h" /* 0x27 算法选择：ECC521（默认）/ AES128（保留） */
+#include "hse_aes.h"      /* HSE 密钥目录格式化 / 旧 AES-128（保留） */
+#include "hse_ecc.h"      /* HSE ECDSA P-521，供 UDS 0x27 */
 #include "hse_host.h"     /* HSE GetAttr，供 UDS 0x22 FE08 */
 
 UDS_DcmContextType UDS_DcmCtx;
@@ -65,9 +67,28 @@ static void UDS_DcmResetCommunicationControl(void)
 	UDS_DcmApplyCommunicationControl();
 }
 
+#if UDS27_ALGO_ECC521
+/*
+ * UDS 0x27（ECC-P521 / ECDSA-SHA256，上位机签名、ECU 验签）
+ *
+ *   seed 请求: 27 01 / 27 03
+ *   seed 应答: 67 <sub> <R:32>                    （共 34 字节）
+ *   key  请求: 27 02 / 27 04 <r:66> <s:66>       （共 134 字节）
+ *
+ * R 是 HSE TRNG 生成的 32 字节明文种子；上位机用私钥对 SHA-256(R) 做
+ * ECDSA 签名，把 (r,s) 作为 key 回送；ECU 用 HSE 内的公钥（AA01 注入）
+ * 验签。R 每次都是新的，签名无法重放。
+ * 帧格式详见仓库根目录 UDS27_ECC521.md。
+ */
+#define UDS27_ECC_RAND_LEN      (32U)
+#define UDS27_ECC_SIG_LEN       (66U)   /* P-521: ceil(521/8) */
+
+static unsigned char UDS_Seed32[UDS27_ECC_RAND_LEN];
+#else
 /* UDS 0x27：16 字节种子 + AES128 预期密钥（文件内静态，避免改上下文结构体） */
 static unsigned char UDS_Seed16[16];
 static unsigned char UDS_ExpectedKey[16];
+#endif
 
 /* ------------------------------------------------------------------------- */
 /* Session / reset                                                           */
@@ -83,6 +104,9 @@ static unsigned char UDS_DcmSetSession(UDS_DcmSessionType session, unsigned int 
 	UDS_DcmCtx.Seed = 0U;
 	UDS_DcmCtx.SeedLevel = 0U;
 	UDS_DcmCtx.SecurityFailCount = 0U;
+#if UDS27_ALGO_ECC521
+	(void)memset(UDS_Seed32, 0, sizeof(UDS_Seed32));
+#endif
 
 	/* Returning to the default session restores the default communication
 	 * state, so a tester that switched communication off cannot leave the
@@ -251,6 +275,30 @@ static unsigned char UDS_DcmSeedRequest(const unsigned char *req, unsigned int l
 
 	UDS_DcmCtx.SeedLevel = level;
 
+#if UDS27_ALGO_ECC521
+	/* 32 字节明文种子（HSE TRNG）。上位机用私钥对 R 签名，把 (r,s)
+	 * 作为 0x27 key 回送，ECU 再用 HSE 公钥验签。
+	 * TRNG 不可用时用 tick 派生的伪随机填充，保证 0x27 不失效。 */
+	if (0U != HseTrng_GetBytes(UDS_Seed32, UDS27_ECC_RAND_LEN))
+	{
+		unsigned int t = BSW_GetSystemTick();
+		unsigned char k;
+		for (k = 0U; k < UDS27_ECC_RAND_LEN; k++)
+		{
+			t = (t * 1664525U) + 1013904223U;
+			UDS_Seed32[k] = (unsigned char)(t >> 24);
+		}
+	}
+
+	UDS_DcmCtx.Seed = ((unsigned int)UDS_Seed32[0] << 24)
+	                | ((unsigned int)UDS_Seed32[1] << 16)
+	                | ((unsigned int)UDS_Seed32[2] << 8)
+	                |  (unsigned int)UDS_Seed32[3];
+
+	UDS_TxBuf[1] = subFn;
+	(void)memcpy(&UDS_TxBuf[2], UDS_Seed32, UDS27_ECC_RAND_LEN);
+	*rspLen = 2U + UDS27_ECC_RAND_LEN;
+#else
 	/* 16 字节种子（HSE TRNG）；密钥 = AES128(HSE 密钥[level], seed)。
 	 * TRNG 不可用时用 tick 派生的伪随机填充，保证 0x27 不失效。 */
 	if (0U != HseTrng_GetBytes(UDS_Seed16, 16U))
@@ -269,6 +317,7 @@ static unsigned char UDS_DcmSeedRequest(const unsigned char *req, unsigned int l
 	UDS_TxBuf[1] = subFn;
 	(void)memcpy(&UDS_TxBuf[2], UDS_Seed16, 16U);	
 	*rspLen = 18U;
+#endif
 
 	return 0U;
 }
@@ -277,9 +326,13 @@ static unsigned char UDS_DcmKeyRequest(const unsigned char *req, unsigned int le
 {
 	unsigned char subFn;
 	unsigned char level;
-	unsigned int key;
+	unsigned char keyOk;
 
+#if UDS27_ALGO_ECC521
+	if (len < (2U + (2U * UDS27_ECC_SIG_LEN)))
+#else
 	if (len < 18U)
+#endif
 	{
 		return NRC_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT;
 	}
@@ -302,17 +355,47 @@ static unsigned char UDS_DcmKeyRequest(const unsigned char *req, unsigned int le
 		return NRC_REQUEST_SEQUENCE_ERROR;
 	}
 
-	key = ((unsigned int)req[2] << 24) |
-	      ((unsigned int)req[3] << 16) |
-	      ((unsigned int)req[4] << 8) |
-	      (unsigned int)req[5];
-
-	if (0U != HseAes_EncryptBlock((1U == level) ? HSE_AES_LEVEL1 : HSE_AES_LEVEL2, UDS_Seed16, UDS_ExpectedKey))
+#if UDS27_ALGO_ECC521
+	/* 上位机对明文种子 R 的签名：(r,s) 各 66 字节，大端、左补零。 */
 	{
-		return NRC_CONDITIONS_NOT_CORRECT;
+		unsigned char verr;
+
+		verr = HseEcc_Verify(UDS_Seed32, UDS27_ECC_RAND_LEN,
+		                     &req[2], (unsigned short)UDS27_ECC_SIG_LEN,
+		                     &req[2U + UDS27_ECC_SIG_LEN], (unsigned short)UDS27_ECC_SIG_LEN);
+
+		if (0U == verr)
+		{
+			keyOk = 1U;
+		}
+		else if (HSE_ECC_ERR_VERIFY == verr)
+		{
+			keyOk = 0U;               /* signature does not match the seed */
+		}
+		else
+		{
+			return NRC_CONDITIONS_NOT_CORRECT;   /* HSE / key not available */
+		}
 	}
-	(void)key;
-	if (0 != memcmp(&req[2], UDS_ExpectedKey, 16U))
+#else
+	{
+		unsigned int key;
+
+		key = ((unsigned int)req[2] << 24) |
+		      ((unsigned int)req[3] << 16) |
+		      ((unsigned int)req[4] << 8) |
+		      (unsigned int)req[5];
+
+		if (0U != HseAes_EncryptBlock((1U == level) ? HSE_AES_LEVEL1 : HSE_AES_LEVEL2, UDS_Seed16, UDS_ExpectedKey))
+		{
+			return NRC_CONDITIONS_NOT_CORRECT;
+		}
+		(void)key;
+		keyOk = (0 == memcmp(&req[2], UDS_ExpectedKey, 16U)) ? 1U : 0U;
+	}
+#endif
+
+	if (0U == keyOk)
 	{
 		UDS_DcmCtx.SecurityFailCount++;
 
@@ -331,6 +414,9 @@ static unsigned char UDS_DcmKeyRequest(const unsigned char *req, unsigned int le
 	UDS_DcmCtx.SecurityFailCount = 0U;
 	UDS_DcmCtx.Seed = 0U;
 	UDS_DcmCtx.SeedLevel = 0U;
+#if UDS27_ALGO_ECC521
+	(void)memset(UDS_Seed32, 0, sizeof(UDS_Seed32));
+#endif
 
 	UDS_TxBuf[1] = subFn;
 	*rspLen = 2U;

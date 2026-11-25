@@ -2713,7 +2713,7 @@ PORT_CONFIG_PB
 #define PortConf_PortPin_PortPin_UART6_RX_PA15  2
 #define PortConf_PortPin_PortPin_UART6_TX_PA16  3
 #define PortConf_PortPin_PortPin_LED0_PA29  4
-#define PortConf_PortPin_PortPin_KL15_PB19  5
+#define PortConf_PortPin_PortPin_KL15_PC20  5
 #define PortConf_PortPin_PortPin_LED1_PA30  6
 #define PortConf_PortPin_PortPin_LED2_PA31  7
 #define PortConf_PortPin_PortPin_LED3_PB18  8

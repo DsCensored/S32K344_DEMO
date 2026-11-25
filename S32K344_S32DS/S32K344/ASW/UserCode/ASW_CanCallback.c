@@ -13,6 +13,7 @@
 #include "XCP.h"
 #include "XCP_Para.h"
 #include <string.h>
+#include "DSC.h"
 
 CAN_FD_MESSAGE TX_DATA1 =
 {
@@ -33,7 +34,10 @@ CAN_FD_MESSAGE TX_DATA1 =
 
 void TestCAN(CAN_TX_BufType *buf)
 {
-	memcpy(buf->Message.Data,XCP_Cal_au8Demo,8);
+	buf->Message.Data[0] = ASW_stLEDG1Ctrl;
+	buf->Message.Data[1] = ASW_stLEDR1Ctrl;
+	buf->Message.Data[2] = ASW_stLEDY1Ctrl;
+	buf->Message.Data[3] = ASW_stLEDB1Ctrl;
 }
 
 /* Storage for the received NM frame (only the CBV byte is evaluated). */

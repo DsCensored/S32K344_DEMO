@@ -189,7 +189,7 @@
                         </d:var>
                       </d:ctr>
                       <d:ctr name="IcuWkpuChannels_KL15" type="IDENTIFIABLE">
-                        <d:var name="IcuWkpuChannel" type="INTEGER" value="42"/>
+                        <d:var name="IcuWkpuChannel" type="INTEGER" value="47"/>
                         <d:var name="Icu_EXT_ISR_WIFERDigitalFilter" 
                                type="BOOLEAN" value="false">
                           <a:a name="IMPORTER_INFO" value="@DEF"/>
@@ -211,7 +211,7 @@
                   </d:ctr>
                   <d:ctr name="IcuHwInterruptConfigList_1" type="IDENTIFIABLE">
                     <d:var name="IcuIsrHwId" type="ENUMERATION" 
-                           value="WKPU_CH_42"/>
+                           value="WKPU_CH_47"/>
                   </d:ctr>
                 </d:lst>
               </d:ctr>

@@ -14,12 +14,17 @@
 
 /* WKPU hardware channels used as standby wake-up sources.
  * Keep these in sync with S43K344_EB/config/Icu.xdm and Port.xdm:
- *   CAN0_RX -> WKPU channel 19 (CAN0 RX pin)
- *   KL15    -> WKPU channel 43 (PB19, Port mode WKPU_WKPU_43_IN)
+ *   CAN0_RX -> WKPU channel 19 (PA6, Port mode WKPU_WKPU_15_IN)
+ *   KL15    -> WKPU channel 47 (PC20, Port mode WKPU_WKPU_43_IN)
+ *
+ * NOTE: the number in the Port pin mode name (WKPU_WKPU_xx_IN) is the pad
+ * mux function, NOT the ICU/WKPU driver channel.  For the KL15 pad PC20 the
+ * mux is WKPU_43 while the IcuWkpuChannel in Icu.xdm is 47 - those two
+ * numbers must not be mixed up.
  */
 #define NM_WKPU_INSTANCE						(0U)
 #define NM_WKPU_CH_CAN0_RX						(19U)
-#define NM_WKPU_CH_KL15							(42U)
+#define NM_WKPU_CH_KL15							(47U)
 
 #define CAN_ID_VEH_RX_NM                        (402784010)        	//整车CAN网络管理的接收报文ID(低8位掩码屏蔽不关心) 或 两者皆可(CAN_TYPE_STD_FD)
 
