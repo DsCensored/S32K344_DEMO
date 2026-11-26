@@ -220,6 +220,9 @@ void NM_EnterSleepMode(void)
 	IP_DCM_GPR->DCMRWF1 |= (uint32)(1UL << 18U);
 
 	Dio_WriteChannel(DioConf_DioChannel_DioChannel_PA29, 1U);
+	Dio_WriteChannel(DioConf_DioChannel_DioChannel_PA30, 1U);
+	Dio_WriteChannel(DioConf_DioChannel_DioChannel_PA31, 1U);
+	Dio_WriteChannel(DioConf_DioChannel_DioChannel_PB18, 1U);
 
 	for(i = 0; i < GPT_NUM_CONFIG; i++)
 	{
